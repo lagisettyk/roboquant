@@ -1,0 +1,17 @@
+{% extends 'strategies/base.html' %}
+
+{% load staticfiles %}
+
+{% block title %}Index{% endblock %}
+
+{% block body_block %}
+
+	{% if user.is_authenticated %}
+	<div class="page-header">
+			<h1> XiQuant says ... hello {{ user.username }}! Under Construction!!! Please come back later...</h1>
+	{% else %}
+		<h1>XiQuant says ... hello world!... Under construction!!! But we encourage you to register...</h1>
+	{% endif %}
+	</div>
+
+{% endblock %}

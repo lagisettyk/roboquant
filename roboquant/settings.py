@@ -15,6 +15,8 @@ import os
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
+TEMPLATE_PATH = os.path.join(BASE_DIR, 'templates')
+#print TEMPLATE_PATH
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/1.8/howto/deployment/checklist/
@@ -30,6 +32,13 @@ DEBUG = True
 # # Allow all host hosts/domain names for this site
 ALLOWED_HOSTS = ['*']
 
+## settings related to registraion package...
+REGISTRATION_OPEN = True  # If True users can register
+ACCOUNT_ACTIVATION_DAYS = 7 # one-week activation window;
+REGISTRATION_AUTO_LOGIN = True # If true, the user will be automatically logged on
+LOGIN_REDIRECT_URL = '/strategies/' # The page you want to see after users login
+LOGIN_URL = '/accounts/login/' # The page users are directed if they are not logged on
+
 
 # Application definition
 
@@ -40,6 +49,9 @@ INSTALLED_APPS = (
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'bootstrap_toolkit', # django's bootstrap toolkit package
+    'registration', # add in the django registation package
+    'strategies', # xiQuant shell application
 )
 
 MIDDLEWARE_CLASSES = (
@@ -58,7 +70,7 @@ ROOT_URLCONF = 'roboquant.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [TEMPLATE_PATH,],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -104,7 +116,7 @@ import dj_database_url
 DATABASES = {}
 DATABASES['default'] =  dj_database_url.config()
 DATABASES['default']['ENGINE'] = 'django.db.backends.postgresql_psycopg2'
-print DATABASES
+#print DATABASES
 
 
 # Honor the 'X-Forwarded-Proto' header for request.is_secure()
