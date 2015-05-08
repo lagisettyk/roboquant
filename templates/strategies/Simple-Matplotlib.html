@@ -1,0 +1,19 @@
+{% extends 'strategies/base.html' %}
+
+{% load staticfiles %}
+
+{% load bootstrap_toolkit %}
+
+{% block title %}Simple Matplotlib example{% endblock %}
+
+{% block body_block %}
+	<div class="page-header">
+		<h1>Simple Matplotlib example</h1>
+	</div>
+	<button id="matplotlib-btn"> Click Me-for sample matplotlib chart</button>
+	<button id="highstock-btn"> Highstock chart integrated with Quandl data </button>
+	<pre>
+	<div id="content"></div>
+	<div id="container" data-hicharts = "{{ tmp }}" style="height: 400px; min-width: 310px"></div>
+	</pre>
+{% endblock %}
