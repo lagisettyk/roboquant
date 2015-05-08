@@ -7,4 +7,5 @@ urlpatterns = patterns('',
 	url(r'^display_hichart/$', views.display_hichart, name='display_hichart'),
 	url(r'^charts/$', views.display_matplotlib, name='display_matplotlib'),
 	url(r'^hichart_quandl/$', views.hichart_quandl, name='hichart_quandl'),
+	url(r'^charts/simple.png$', views.simple, name='simple'),
 	)
