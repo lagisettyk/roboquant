@@ -31,6 +31,13 @@ urlpatterns = [
     url(r'^admin/', include(admin.site.urls)),
     url(r'^strategies/', include('strategies.urls')), # URLS related to strategies application...
     # URLS related to registraion app..
-    url(r'^accounts/register/$', MyRegistrationView.as_view(), name='registration_register'),
-    url(r'^accounts/', include('registration.backends.simple.urls')),
+    #url(r'^accounts/register/$', MyRegistrationView.as_view(), name='registration_register'),
+    #url(r'^accounts/', include('registration.backends.simple.urls')),
+
+
+
+    ### URL's related to 'allauth' application logout one is to avoid the confirmation page
+    url(r'^accounts/logout/$', 'django.contrib.auth.views.logout',{'next_page': 'strategies/'}),
+    url(r'^accounts/', include('allauth.urls')),
+
 ]

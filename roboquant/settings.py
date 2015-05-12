@@ -32,13 +32,45 @@ DEBUG = True
 # # Allow all host hosts/domain names for this site
 ALLOWED_HOSTS = ['*']
 
-## settings related to registraion package...
+#### Settings for 'allauth' package
+AUTHENTICATION_BACKENDS = (
+    # Need to login by username in Django admin, regardless of 'allauth'
+    'django.contrib.auth.backends.ModelBackend',
+    # 'allauth' specific authentication methods, such as login by email
+    'allauth.account.auth_backends.AuthenticationBackend',
+)
+
+# settings for 'allauth' template context processors
+TEMPLATE_CONTEXT_PROCESSORS = (
+    'django.core.context_processors.request',
+    'django.contrib.auth.context_processors.auth',
+    'allauth.account.context_processors.account',
+    'allauth.socialaccount.context_processors.socialaccount',
+)
+
+## settings related to django-registraion-redux package...
+'''
 REGISTRATION_OPEN = True  # If True users can register
 ACCOUNT_ACTIVATION_DAYS = 7 # one-week activation window;
 REGISTRATION_AUTO_LOGIN = True # If true, the user will be automatically logged on
 LOGIN_REDIRECT_URL = '/strategies/' # The page you want to see after users login
 LOGIN_URL = '/accounts/login/' # The page users are directed if they are not logged on
+'''
 
+# auth and all auth settings
+SITE_ID = 1
+LOGIN_REDIRECT_URL = "/strategies/"
+LOGIN_URL = '/accounts/login/'
+SOCIALACCOUNT_QUERY_EMAIL = True
+SOCIALACCOUNT_PROVIDERS = \
+     {'facebook':
+       {'SCOPE': ['email', 'public_profile', 'user_friends'],
+        'AUTH_PARAMS': {'auth_type': 'reauthenticate'},
+        'METHOD': 'js_sdk',
+        'LOCALE_FUNC': lambda request: 'zh_CN',
+        'VERIFIED_EMAIL': False,
+        'VERSION': 'v2.3'}}
+#### We still need to add email settings related to SendGrid on heroku...
 
 # Application definition
 
@@ -49,9 +81,18 @@ INSTALLED_APPS = (
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+
     'bootstrap_toolkit', # django's bootstrap toolkit package
-    'registration', # add in the django registation package
+    #'registration', # add in the django registation package
     'strategies', # xiQuant shell application
+
+    ### 'allauth' related applications
+    'django.contrib.sites',
+    'allauth',
+    'allauth.account',
+    'allauth.socialaccount',
+    'allauth.socialaccount.providers.facebook',
+    'allauth.socialaccount.providers.google',
 )
 
 MIDDLEWARE_CLASSES = (
@@ -78,6 +119,12 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+
+                ### 'allauth' settings.... duplicate in addition to the TEMPLATE_CONTEXT
+                'django.core.context_processors.request',
+                'django.contrib.auth.context_processors.auth',
+                'allauth.account.context_processors.account',
+                'allauth.socialaccount.context_processors.socialaccount',
             ],
         },
     },

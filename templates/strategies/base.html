@@ -34,10 +34,10 @@
           <ul class="nav navbar-nav navbar-right">
                 <li><a href="{% url 'index' %}">Home</a></li>
                     {% if user.is_authenticated %}
-                        <li><a href="{% url 'auth_logout' %}?next=/strategies/">Logout</a></li>
+                        <li><a href="{% url 'account_email' %}">Profile</a></li>
+                        <li><a href="{% url 'account_logout' %}?next=/strategies/">Log Out</a></li>
                     {% else %}
-                        <li><a href="{% url 'registration_register' %}">Register Here</a></li>
-                        <li><a href="{% url 'auth_login' %}">Login</a></li>
+                         <li><a href="{% url 'account_login' %}">Log In</a></li>    
                     {% endif %}
                         <li><a href="{% url 'display_matplotlib' %}">Demo-Charts</a></li>
                         <li><a href="{% url 'display_hichart' %}">Demo-HiStock</a></li>
@@ -56,8 +56,15 @@
         </div>
         <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
            <div>
-                {% block body_block %}{% endblock %}
-                </div>
+                <body>
+                {% block body_block %}
+                 {% block content %}
+                 {% endblock %}
+                 {% endblock %}
+                {% block extra_body %}
+                {% endblock %}
+              </body>
+            </div>
         </div>
       </div>
     </div>
