@@ -61,6 +61,8 @@ LOGIN_URL = '/accounts/login/' # The page users are directed if they are not log
 SITE_ID = 1
 LOGIN_REDIRECT_URL = "/strategies/"
 LOGIN_URL = '/accounts/login/'
+ACCOUNT_AUTHENTICATION_METHOD = 'username_email'
+ACCOUNT_EMAIL_REQUIRED = True
 SOCIALACCOUNT_QUERY_EMAIL = True
 SOCIALACCOUNT_PROVIDERS = \
      {'facebook':
