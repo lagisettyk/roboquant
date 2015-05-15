@@ -1,6 +1,8 @@
 from django.shortcuts import render
 from django.http import HttpResponse
 
+
+
 # Create your views here.
 def index(request):
 	context_dict = {}
@@ -21,11 +23,16 @@ def display_matplotlib(request):
 	context_dict = {'matplotlibmessage': "Simple-Matplotlib"}
 	return render(request, 'strategies/Simple-Matplotlib.html', context_dict)
 
+
 def hichart_quandl(request):
 	from Quandl import Quandl
 	import json
-	myAAPL_data  = Quandl.get("WIKI/AAPL", returns="pandas", column="11", 
-	  authtoken="L5A6rmU9FGvyss9F7Eym", trim_start='2006/06/15', trim_end='2007/06/15')
+
+	if request.method == 'GET':
+		ticker = request.GET['Ticker']
+
+	myAAPL_data  = Quandl.get("WIKI/"+ticker, returns="pandas", column="11", 
+	  authtoken="L5A6rmU9FGvyss9F7Eym", trim_start='2005/01/01')
     
 	data = json.loads(myAAPL_data.to_json()) # convert to JSON object...
 	#### Below logic is quite imp as
@@ -39,6 +46,67 @@ def hichart_quandl(request):
 
     ### This is important to note json.dumps() convert python data structure to JSON form
 	return HttpResponse(json.dumps(highcharts_data), content_type='application/json')
+
+
+#### Temporary purpose later need to move to models.....
+def populate_redis_datastore(redisConn, tickerList, startdate):
+
+	for ticker in range(len(tickerList)):
+	#for ticker in range(3):
+		if redisConn.zcard(tickerList[ticker]+':Adj. Close') == 0:
+			try:
+				my_data  = Quandl.get(
+					"WIKI/"+ tickerList[ticker], returns="pandas", 
+					column="11", sort_order="asc", authtoken="L5A6rmU9FGvyss9F7Eym",  
+					trim_start = startdate )
+				if not my_data.empty:
+					json_data = json.loads(my_data.to_json()) 
+					json_data_list = list(sorted(json_data['Adj. Close'].items()))
+
+					for x in range(len(json_data_list)):
+						dl = list(json_data_list[x])
+						### Store data in the sorted sets...
+						redisConn.zadd(tickerList[ticker]+':Adj. Close', dl[0], dl[1])
+			except:
+				pass
+
+		print "populated time series: ", tickerList[ticker]+':Adj. Close'
+		#sleep(0.20) # Sleep in between calls
+
+
+def highchart_dataformat(redisConn, sortedset):
+
+	redisTS = redisConn.zrange(sortedset, 0, -1, False, True)
+	hichart_data = []
+	for x in range(len(redisTS)):
+		hichart_data.append([int(redisTS[x][1]), float(redisTS[x][0])])
+	return hichart_data
+
+
+def hichart_redis(request):
+	import redis
+	import json
+	import urlparse
+	from django.conf import settings
+
+    # Intialize redis store.....
+	url = urlparse.urlparse(settings.REDIS_URL)
+	#print "$$$URL: ", url
+	redisConn = redis.StrictRedis(host=url.hostname, port=url.port, password=url.password)
+
+	####### This code needs to move to initialization of models sections...
+	tickerList = ['AAPL', 'MSFT', 'GS']
+	populate_redis_datastore(redisConn, tickerList, "2005/01/01")
+	###################################################################
+     
+	if request.method == 'GET':
+		ticker = request.GET['Ticker']
+	
+	highcharts_data = highchart_dataformat(redisConn, ticker+':Adj. Close')
+	
+    ### This is important to note json.dumps() convert python data structure to JSON form
+	return HttpResponse(json.dumps(highcharts_data), content_type='application/json')
+
 	
 def simple(request):
 	import random

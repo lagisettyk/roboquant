@@ -176,8 +176,10 @@ DATABASES['default']['ENGINE'] = 'django.db.backends.postgresql_psycopg2'
 # Honor the 'X-Forwarded-Proto' header for request.is_secure()
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
-# try to load local_settings.py if it exists
+### Add redis cloud URL settings here...
+REDIS_URL='redis://rediscloud:8onBIntrnVaqdl3u@pub-redis-18013.us-east-1-2.2.ec2.garantiadata.com:18013'
 
+# try to load local_settings.py if it exists
 try:
   from local_settings import *
   #print "Inside settings.py for local settings: ", DATABASES

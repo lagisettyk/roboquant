@@ -37,21 +37,21 @@ $(document).ready( function() {
     });
 
 
-    function displayData (data) {
+    function displayData (data, ticker) {
 
       console.log("inside displayData")
       //console.log(data)
       $('#container').highcharts('StockChart', {
               rangeSelector : {
-                  selected : 1
+                  selected : 5
               },
 
               title : {
-                  text : 'AAPL Stock Price'
+                  text : ticker +' Stock Price'
               },
 
               series : [{
-                  name : 'AAPL',
+                  name : ticker,
                   data : data,
                   tooltip: {
                       valueDecimals: 2
@@ -60,6 +60,7 @@ $(document).ready( function() {
           });
     }
 
+    /*
     $('#highstock-btn').click(function(){
       $.ajax({
             url: '/strategies/hichart_quandl/',
@@ -83,7 +84,161 @@ $(document).ready( function() {
              alert( "The request is complete!" );
             } 
       });
+    }); */
+
+  $('#action-1').click(function () {
+    $.ajax({
+              url: '/strategies/hichart_redis/?Ticker=AAPL',
+              type: 'GET',
+              async: true,
+              dataType: "json",
+              success: function (data) {
+                console.log("Inside Success")
+                var ticker = "AAPL"
+                displayData(data, ticker);
+              },
+              // Code to run if the request fails; the raw request and
+      // status codes are passed to the function
+              error: function( xhr, status, errorThrown ) {
+                    alert( "Sorry, there was a problem!" );
+                    console.log( "Error: " + errorThrown );
+                    console.log( "Status: " + status );
+                    console.dir( xhr );
+              },
+              // Code to run regardless of success or failure
+              complete: function( xhr, status ) {
+               //alert( "The request is complete!" );
+              } 
+        });
     });
 
+  $('#action-2').click(function () {
+    $.ajax({
+              url: '/strategies/hichart_redis/?Ticker=MSFT',
+              type: 'GET',
+              async: true,
+              dataType: "json",
+              success: function (data) {
+                console.log("Inside Success")
+                var ticker = "MSFT"
+                displayData(data, ticker);
+              },
+              // Code to run if the request fails; the raw request and
+      // status codes are passed to the function
+              error: function( xhr, status, errorThrown ) {
+                    alert( "Sorry, there was a problem!" );
+                    console.log( "Error: " + errorThrown );
+                    console.log( "Status: " + status );
+                    console.dir( xhr );
+              },
+              // Code to run regardless of success or failure
+              complete: function( xhr, status ) {
+               //alert( "The request is complete!" );
+              } 
+        });
+    });
+   $('#action-3').click(function () {
+    $.ajax({
+              url: '/strategies/hichart_redis/?Ticker=GS',
+              type: 'GET',
+              async: true,
+              dataType: "json",
+              success: function (data) {
+                console.log("Inside Success")
+                var ticker = "GS"
+                displayData(data, ticker);
+              },
+              // Code to run if the request fails; the raw request and
+      // status codes are passed to the function
+              error: function( xhr, status, errorThrown ) {
+                    alert( "Sorry, there was a problem!" );
+                    console.log( "Error: " + errorThrown );
+                    console.log( "Status: " + status );
+                    console.dir( xhr );
+              },
+              // Code to run regardless of success or failure
+              complete: function( xhr, status ) {
+               //alert( "The request is complete!" );
+              } 
+        });
+    });
+
+    $('#action-4').click(function () {
+    $.ajax({
+              url: '/strategies/hichart_quandl/?Ticker=AAPL',
+              type: 'GET',
+              async: true,
+              dataType: "json",
+              success: function (data) {
+                console.log("Inside Success")
+                var ticker = "AAPL"
+                displayData(data, ticker);
+              },
+              // Code to run if the request fails; the raw request and
+      // status codes are passed to the function
+              error: function( xhr, status, errorThrown ) {
+                    alert( "Sorry, there was a problem!" );
+                    console.log( "Error: " + errorThrown );
+                    console.log( "Status: " + status );
+                    console.dir( xhr );
+              },
+              // Code to run regardless of success or failure
+              complete: function( xhr, status ) {
+               //alert( "The request is complete!" );
+              } 
+        });
+    });
+
+    $('#action-5').click(function () {
+    $.ajax({
+              url: '/strategies/hichart_quandl/?Ticker=MSFT',
+              type: 'GET',
+              async: true,
+              dataType: "json",
+              success: function (data) {
+                console.log("Inside Success")
+                var ticker = "MSFT"
+                displayData(data, ticker);
+              },
+              // Code to run if the request fails; the raw request and
+      // status codes are passed to the function
+              error: function( xhr, status, errorThrown ) {
+                    alert( "Sorry, there was a problem!" );
+                    console.log( "Error: " + errorThrown );
+                    console.log( "Status: " + status );
+                    console.dir( xhr );
+              },
+              // Code to run regardless of success or failure
+              complete: function( xhr, status ) {
+               //alert( "The request is complete!" );
+              } 
+        });
+    });
+
+    $('#action-6').click(function () {
+    $.ajax({
+              url: '/strategies/hichart_quandl/?Ticker=GS',
+              type: 'GET',
+              async: true,
+              dataType: "json",
+              success: function (data) {
+                console.log("Inside Success")
+                var ticker = "GS"
+                displayData(data, ticker);
+              },
+              // Code to run if the request fails; the raw request and
+      // status codes are passed to the function
+              error: function( xhr, status, errorThrown ) {
+                    alert( "Sorry, there was a problem!" );
+                    console.log( "Error: " + errorThrown );
+                    console.log( "Status: " + status );
+                    console.dir( xhr );
+              },
+              // Code to run regardless of success or failure
+              complete: function( xhr, status ) {
+               //alert( "The request is complete!" );
+              } 
+        });
+    });
 
 }); //end of ready function

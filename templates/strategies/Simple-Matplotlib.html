@@ -11,7 +11,22 @@
 		<h1>Simple Matplotlib example</h1>
 	</div>
 	<button id="matplotlib-btn"> Click Me-for sample matplotlib chart</button>
-	<button id="highstock-btn"> Highstock chart integrated with Quandl data </button>
+	<div class="btn-group">
+            <button type="button" id="dLabel1" data-toggle="dropdown" class="btn btn-primary dropdown-toggle">Highstock chart integrated with Quandl data<span class="caret"></span></button>
+            <ul class="dropdown-menu">
+                <li><a href="#" id="action-4">AAPL</a></li>
+                <li><a href="#" id="action-5">MSFT</a></li>
+                <li><a href="#" id="action-6">GS</a></li>
+            </ul>
+     </div>
+	<div class="btn-group">
+            <button type="button" id="dLabel" data-toggle="dropdown" class="btn btn-primary dropdown-toggle">Redis Datastore Enabled<span class="caret"></span></button>
+            <ul class="dropdown-menu">
+                <li><a href="#" id="action-1">AAPL</a></li>
+                <li><a href="#" id="action-2">MSFT</a></li>
+                <li><a href="#" id="action-3">GS</a></li>
+            </ul>
+     </div>
 	<pre>
 	<div id="content"></div>
 	<div id="container" data-hicharts = "{{ tmp }}" style="height: 400px; min-width: 310px"></div>
