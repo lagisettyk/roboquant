@@ -92,7 +92,8 @@ def hichart_redis(request):
     # Intialize redis store.....
 	url = urlparse.urlparse(settings.REDIS_URL)
 	#print "$$$URL: ", url
-	redisConn = redis.StrictRedis(host=url.hostname, port=url.port, password=url.password)
+	#redisConn = redis.StrictRedis(host=url.hostname, port=url.port, password=url.password)
+	redisConn = redis.Redis(host=url.hostname, port=url.port, password=url.password)
 
 	####### This code needs to move to initialization of models sections...
 	tickerList = ['AAPL', 'MSFT', 'GS']
