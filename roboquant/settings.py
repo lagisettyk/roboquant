@@ -177,7 +177,7 @@ DATABASES['default']['ENGINE'] = 'django.db.backends.postgresql_psycopg2'
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 ### Add redis cloud URL settings here...
-REDIS_URL='redis://rediscloud:8onBIntrnVaqdl3u@pub-redis-18013.us-east-1-2.2.ec2.garantiadata.com:18013'
+REDIS_URL = 'redis://rediscloud:8onBIntrnVaqdl3u@pub-redis-18013.us-east-1-2.2.ec2.garantiadata.com:18013'
 
 # try to load local_settings.py if it exists
 try:
