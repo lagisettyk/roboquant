@@ -52,8 +52,9 @@ def hichart_quandl(request):
 def populate_redis_datastore(redisConn, tickerList, startdate):
 
 	for ticker in range(len(tickerList)):
-	#for ticker in range(3):
+		print("$$$$$I am here$$$$")
 		if redisConn.zcard(tickerList[ticker]+':Adj. Close') == 0:
+			print("%%%%% I am here...")
 			try:
 				my_data  = Quandl.get(
 					"WIKI/"+ tickerList[ticker], returns="pandas", 
@@ -67,6 +68,7 @@ def populate_redis_datastore(redisConn, tickerList, startdate):
 						dl = list(json_data_list[x])
 						### Store data in the sorted sets...
 						redisConn.zadd(tickerList[ticker]+':Adj. Close', dl[0], dl[1])
+					print redisConn.zrange(tickerList[ticker]+':Adj. Close', 0, -1)
 			except:
 				pass
 
@@ -91,9 +93,9 @@ def hichart_redis(request):
 
     # Intialize redis store.....
 	url = urlparse.urlparse(settings.REDIS_URL)
-	#print "$$$URL: ", url
-	#redisConn = redis.StrictRedis(host=url.hostname, port=url.port, password=url.password)
-	redisConn = redis.Redis(host=url.hostname, port=url.port, password=url.password)
+	print "$$$URL: ", url
+	redisConn = redis.StrictRedis(host=url.hostname, port=url.port, password=url.password)
+	#redisConn = redis.Redis(host=url.hostname, port=url.port, password=url.password)
 
 	####### This code needs to move to initialization of models sections...
 	tickerList = ['AAPL', 'MSFT', 'GS']
