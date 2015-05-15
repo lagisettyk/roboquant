@@ -60,14 +60,18 @@ def populate_redis_datastore(redisConn, tickerList, startdate):
 					"WIKI/"+ tickerList[ticker], returns="pandas", 
 					column="11", sort_order="asc", authtoken="L5A6rmU9FGvyss9F7Eym",  
 					trim_start = startdate )
+				print("%%%%% I am here...22222")
 				if not my_data.empty:
 					json_data = json.loads(my_data.to_json()) 
 					json_data_list = list(sorted(json_data['Adj. Close'].items()))
+					print("%%%%% I am here...33333333")
 
 					for x in range(len(json_data_list)):
 						dl = list(json_data_list[x])
+						print("%%%%% I am here...44444444444")
 						### Store data in the sorted sets...
 						redisConn.zadd(tickerList[ticker]+':Adj. Close', dl[0], dl[1])
+						print("%%%%% I am here...55555555555")
 					print redisConn.zrange(tickerList[ticker]+':Adj. Close', 0, -1)
 			except:
 				pass
