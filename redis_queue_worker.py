@@ -7,7 +7,11 @@ listen = ['high', 'default', 'low']
 
 redis_url = os.getenv('REDICLOUD_URL', 'redis://localhost:6379')
 
-conn = redis.from_url(redis_url)
+url = urlparse.urlparse(redis_url)
+
+#conn = redis.from_url(redis_url)
+
+conn = redis.StrictRedis(host=url.hostname, port=url.port, password=url.password)
 
 if __name__ == '__main__':
     with Connection(conn):
