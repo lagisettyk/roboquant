@@ -47,7 +47,7 @@ def hichart_quandl(request):
     ### This is important to note json.dumps() convert python data structure to JSON form
 	return HttpResponse(json.dumps(highcharts_data), content_type='application/json')
 
-
+'''
 #### Temporary purpose later need to move to models.....
 def populate_redis_datastore(redisConn, tickerList, startdate):
 	import Quandl
@@ -74,7 +74,7 @@ def populate_redis_datastore(redisConn, tickerList, startdate):
 
 		print "populated time series: ", tickerList[ticker]+':Adj. Close'
 		#sleep(0.20) # Sleep in between calls
-
+'''
 
 def highchart_dataformat(redisConn, sortedset):
 
@@ -98,8 +98,8 @@ def hichart_redis(request):
 	#redisConn = redis.Redis(host=url.hostname, port=url.port, password=url.password)
 
 	####### This code needs to move to initialization of models sections...
-	tickerList = ["AAPL", "MSFT", "GS"]
-	populate_redis_datastore(redisConn, tickerList, "2005/01/01")
+	#tickerList = ["AAPL", "MSFT", "GS"]
+	#populate_redis_datastore(redisConn, tickerList, "2005/01/01")
 	###################################################################
      
 	if request.method == 'GET':
