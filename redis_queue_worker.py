@@ -6,7 +6,7 @@ from rq import Worker, Queue, Connection
 
 listen = ['high', 'default', 'low']
 
-redis_url = os.getenv('REDICLOUD_URL', 'redis://localhost:6379')
+redis_url = os.environ.get('REDICLOUD_URL', 'redis://localhost:6379')
 
 url = urlparse.urlparse(redis_url)
 
