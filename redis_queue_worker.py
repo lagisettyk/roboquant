@@ -1,6 +1,7 @@
 import os
 
 import redis
+import urlparse
 from rq import Worker, Queue, Connection
 
 listen = ['high', 'default', 'low']
