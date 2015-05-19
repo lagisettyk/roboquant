@@ -12,7 +12,7 @@ sched = BlockingScheduler()
 def get_redis_conn():
 	redis_url = os.getenv('REDISCLOUD_URL', 'redis://localhost:6379')
 	url = urlparse.urlparse(redis_url)
-	print "$$$URL: ", url
+	#print "$$$URL: ", url
 	redisConn = redis.StrictRedis(host=url.hostname, port=url.port, password=url.password)
 	return redisConn
 
