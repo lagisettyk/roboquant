@@ -4,6 +4,11 @@ import redis
 import urlparse
 from rq import Worker, Queue, Connection
 
+import sys
+
+#sys.path.append('/home/parallels/Code/heroku-envbased/roboquant/strategies')
+#print sys.path
+
 listen = ['high', 'default', 'low']
 
 redis_url = os.getenv('REDISCLOUD_URL', 'redis://localhost:6379')

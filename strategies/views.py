@@ -23,6 +23,11 @@ def display_matplotlib(request):
 	context_dict = {'matplotlibmessage': "Simple-Matplotlib"}
 	return render(request, 'strategies/Simple-Matplotlib.html', context_dict)
 
+def display_backtest(request):
+	print ">>>>> entered display_backtest"
+	context_dict = {'backtestmessage': "display_backtest"}
+	return render(request, 'strategies/backtest.html', context_dict)
+
 
 def hichart_quandl(request):
 	from Quandl import Quandl
@@ -109,6 +114,34 @@ def hichart_redis(request):
 	
     ### This is important to note json.dumps() convert python data structure to JSON form
 	return HttpResponse(json.dumps(highcharts_data), content_type='application/json')
+
+
+def backtest(request):
+	import redis
+	import json
+	import urlparse
+	from django.conf import settings
+	from rq import Queue
+	from algotrade import simple_strategy
+	import time
+
+    # Intialize redis store.....
+	url = urlparse.urlparse(settings.REDIS_URL)
+	print "$$$URL: ", url
+	redisConn = redis.StrictRedis(host=url.hostname, port=url.port, password=url.password)
+	if request.method == 'GET':
+		ticker = request.GET['Ticker']
+		amount = request.GET['amount']
+
+	q = Queue(connection=redisConn)  # no args implies the default queue
+	job = q.enqueue(simple_strategy.run_strategy_redis, ticker, int(amount))
+	#print job.result   # => None
+	while (job.result is None):
+		time.sleep(1)
+	#print job.result
+	
+    ### This is important to note json.dumps() convert python data structure to JSON form
+	return HttpResponse(json.dumps(job.result), content_type='application/json')
 
 	
 def simple(request):

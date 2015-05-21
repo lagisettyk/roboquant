@@ -241,4 +241,86 @@ $(document).ready( function() {
         });
     });
 
+    $('#simulate-1').click(function () {
+      var amount = $('#InitialCash').val();
+      console.log("I am here....$$$$" + amount)
+    $.ajax({
+              url: '/strategies/backtest_results/?Ticker=AAPL'+'&amount='+amount,
+              type: 'GET',
+              async: true,
+              dataType: "json",
+              success: function (data) {
+                console.log("Inside Success")
+                var ticker = "AAPL"
+                displayData(data, ticker);
+              },
+              // Code to run if the request fails; the raw request and
+      // status codes are passed to the function
+              error: function( xhr, status, errorThrown ) {
+                    alert( "Sorry, there was a problem!" );
+                    console.log( "Error: " + errorThrown );
+                    console.log( "Status: " + status );
+                    console.dir( xhr );
+              },
+              // Code to run regardless of success or failure
+              complete: function( xhr, status ) {
+               //alert( "The request is complete!" );
+              } 
+        });
+    });
+
+    $('#simulate-2').click(function () {
+      var amount = $('#InitialCash').val();
+    $.ajax({
+              url: '/strategies/backtest_results/?Ticker=MSFT'+'&amount='+amount,
+              type: 'GET',
+              async: true,
+              dataType: "json",
+              success: function (data) {
+                console.log("Inside Success")
+                var ticker = "MSFT"
+                displayData(data, ticker);
+              },
+              // Code to run if the request fails; the raw request and
+      // status codes are passed to the function
+              error: function( xhr, status, errorThrown ) {
+                    alert( "Sorry, there was a problem!" );
+                    console.log( "Error: " + errorThrown );
+                    console.log( "Status: " + status );
+                    console.dir( xhr );
+              },
+              // Code to run regardless of success or failure
+              complete: function( xhr, status ) {
+               //alert( "The request is complete!" );
+              } 
+        });
+    });
+
+    $('#simulate-3').click(function () {
+      var amount = $('#InitialCash').val();
+    $.ajax({
+              url: '/strategies/backtest_results/?Ticker=GS'+'&amount='+amount,
+              type: 'GET',
+              async: true,
+              dataType: "json",
+              success: function (data) {
+                console.log("Inside Success")
+                var ticker = "GS"
+                displayData(data, ticker);
+              },
+              // Code to run if the request fails; the raw request and
+      // status codes are passed to the function
+              error: function( xhr, status, errorThrown ) {
+                    alert( "Sorry, there was a problem!" );
+                    console.log( "Error: " + errorThrown );
+                    console.log( "Status: " + status );
+                    console.dir( xhr );
+              },
+              // Code to run regardless of success or failure
+              complete: function( xhr, status ) {
+               //alert( "The request is complete!" );
+              } 
+        });
+    });
+
 }); //end of ready function

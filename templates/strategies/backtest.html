@@ -1,0 +1,31 @@
+{% extends 'strategies/base.html' %}
+
+{% load staticfiles %}
+
+{% load bootstrap_toolkit %}
+
+{% block title %}Simple Matplotlib example{% endblock %}
+
+{% block body_block %}
+	<div class="page-header">
+		<h1>Simulate Paper Portfolio</h1>
+	</div>
+    <form class="form-inline"> 
+        <div class="form-group">
+            <label for="InitialCash">Initial Amount</label>
+            <input type="number" class="form-control" id="InitialCash" min="10000" max="2500000">
+        </div>
+	   <div class="btn-group">
+            <button type="button" id="dLabel" data-toggle="dropdown" class="btn btn-primary dropdown-toggle">PyAlgoTrade Enabled<span class="caret"></span></button>
+            <ul class="dropdown-menu">
+                <li><a href="#" id="simulate-1">AAPL</a></li>
+                <li><a href="#" id="simulate-2">MSFT</a></li>
+                <li><a href="#" id="simulate-3">GS</a></li>
+            </ul>
+        </div>
+     </form>
+	<pre>
+	<div id="content"></div>
+	<div id="container" data-hicharts = "{{ tmp }}" style="height: 400px; min-width: 310px"></div>
+	</pre>
+{% endblock %}
