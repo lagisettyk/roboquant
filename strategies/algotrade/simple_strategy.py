@@ -81,13 +81,13 @@ class Feed(membf.BarFeed):
         self.addBarsFromSequence(instrument, bars)
 
 
-def run_strategy_redis(ticker, amount):
+def run_strategy_redis(ticker, amount, stdate, enddate):
     from pyalgotrade import plotter
     
-    dt1 = datetime.datetime(2014, 01, 01, 17, 0, 0, 0)
-    dt2 = datetime.datetime(2014, 12, 31, 17, 0, 0, 0)
-    seconds = mktime(dt1.timetuple())
-    seconds2 = mktime(dt2.timetuple())
+    #dt1 = datetime.datetime(2014, 01, 01, 17, 0, 0, 0)
+    #dt2 = datetime.datetime(2014, 12, 31, 17, 0, 0, 0)
+    seconds = mktime(stdate.timetuple())
+    seconds2 = mktime(enddate.timetuple())
 
     redis_url = os.environ.get('REDISCLOUD_URL', 'redis://localhost:6379')
     url = urlparse.urlparse(redis_url)

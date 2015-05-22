@@ -16,8 +16,6 @@ from pyalgotrade.dataseries.bards import BarDataSeries
 from pyalgotrade.bar import BasicBar, Frequency
 from pyalgotrade.barfeed import membf
 
-
-
 '''
 class Feed(membf.BarFeed):
     def __init__(self, frequency, maxLen=1024):
@@ -69,6 +67,12 @@ values = [(datetime.datetime.now() + datetime.timedelta(seconds=i), {"i": i}) fo
 print  [(datetime.datetime.now()+datetime.timedelta(seconds=5), 20),]
 '''
 
-print simple_strategy.run_strategy_redis("AAPL", 500000)
+import dateutil.parser
+yourdate = dateutil.parser.parse('2014-01-01T08:00:00.000Z')
+yourdate2 = dateutil.parser.parse('2014-12-31T08:00:00.000Z')
+
+print yourdate, yourdate2
+
+print simple_strategy.run_strategy_redis("AAPL", 500000, yourdate, yourdate2)
 #	simple_strategy.run_strategy_redis(i)
 

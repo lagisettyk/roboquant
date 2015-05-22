@@ -259,10 +259,10 @@ $(document).ready( function() {
       var amount = $('#InitialCash').val();
       //alert("You clicked the button using JQuery!");
       var drp = $('#reportrange2').data('daterangepicker');
-      console.log(drp.startDate._d);
+      console.log(drp.startDate);
       console.log("I am here....$$$$" + amount)
     $.ajax({
-              url: '/strategies/backtest_results/?Ticker=AAPL'+'&amount='+amount+"&stdate="+drp.startDate._d+"&enddate="+drp.endDate._d,
+              url: '/strategies/backtest_results/?Ticker=AAPL'+'&amount='+amount+"&stdate="+drp.startDate.toISOString()+"&enddate="+drp.endDate.toISOString(),
               type: 'GET',
               async: true,
               dataType: "json",
@@ -290,7 +290,7 @@ $(document).ready( function() {
       var amount = $('#InitialCash').val();
       var drp = $('#reportrange2').data('daterangepicker');
     $.ajax({
-              url: '/strategies/backtest_results/?Ticker=MSFT'+'&amount='+amount+"&stdate="+drp.startDate._d+"&enddate="+drp.endDate._d,
+              url: '/strategies/backtest_results/?Ticker=MSFT'+'&amount='+amount+"&stdate="+drp.startDate.toISOString()+"&enddate="+drp.endDate.toISOString(),
               type: 'GET',
               async: true,
               dataType: "json",
@@ -318,7 +318,7 @@ $(document).ready( function() {
       var amount = $('#InitialCash').val();
       var drp = $('#reportrange2').data('daterangepicker');
     $.ajax({
-              url: '/strategies/backtest_results/?Ticker=GS'+'&amount='+amount+"&stdate="+drp.startDate._d+"&enddate="+drp.endDate._d,
+              url: '/strategies/backtest_results/?Ticker=GS'+'&amount='+amount+"&stdate="+drp.startDate.toISOString()+"&enddate="+drp.endDate.toISOString(),
               type: 'GET',
               async: true,
               dataType: "json",
