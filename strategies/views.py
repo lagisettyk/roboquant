@@ -124,6 +124,7 @@ def backtest(request):
 	from rq import Queue
 	from algotrade import simple_strategy
 	import time
+	import email.utils as eut
 
     # Intialize redis store.....
 	url = urlparse.urlparse(settings.REDIS_URL)
@@ -132,6 +133,14 @@ def backtest(request):
 	if request.method == 'GET':
 		ticker = request.GET['Ticker']
 		amount = request.GET['amount']
+		stdate = request.GET['stdate']
+		enddate = request.GET['enddate']
+
+    ###too hook up tommorow....
+	#start_date = datetime.datetime(*eut.parsedate(stdate)[:6])
+	#end_date = datetime.datetime(*eut.parsedate(enddate)[:6])
+
+	print stdate, enddate
 
 	q = Queue(connection=redisConn)  # no args implies the default queue
 	job = q.enqueue(simple_strategy.run_strategy_redis, ticker, int(amount))

@@ -5,6 +5,20 @@ $(document).ready( function() {
     // Select an element, and then act on the element
     // Code aalso reflects ajax functions...
 
+    /////block corrosponds too date-range picker....
+    $('#reportrange2 span').html(moment().subtract(29, 'days').format('MMMM D, YYYY') + ' - ' + moment().format('MMMM D, YYYY'));
+    $("#reportrange2").daterangepicker({
+                    format: 'MM/DD/YYYY',
+                    minDate: '01/01/2012',
+                    maxDate: '12/31/2014',
+                    dateLimit: { days: 250 },
+                  }, function(start, end, label) {
+                    //alert("You clicked the button using JQuery!");
+                    console.log(start.toISOString(), end.toISOString(), label);
+                    $('#reportrange2 span').html(start.format('MMMM D, YYYY') + ' - ' + end.format('MMMM D, YYYY'));
+                  });
+
+
     $("#about-btn").addClass('btn btn-primary');
 
     $("#about-btn").click( function(event) {
@@ -243,9 +257,12 @@ $(document).ready( function() {
 
     $('#simulate-1').click(function () {
       var amount = $('#InitialCash').val();
+      //alert("You clicked the button using JQuery!");
+      var drp = $('#reportrange2').data('daterangepicker');
+      console.log(drp.startDate._d);
       console.log("I am here....$$$$" + amount)
     $.ajax({
-              url: '/strategies/backtest_results/?Ticker=AAPL'+'&amount='+amount,
+              url: '/strategies/backtest_results/?Ticker=AAPL'+'&amount='+amount+"&stdate="+drp.startDate._d+"&enddate="+drp.endDate._d,
               type: 'GET',
               async: true,
               dataType: "json",
@@ -271,8 +288,9 @@ $(document).ready( function() {
 
     $('#simulate-2').click(function () {
       var amount = $('#InitialCash').val();
+      var drp = $('#reportrange2').data('daterangepicker');
     $.ajax({
-              url: '/strategies/backtest_results/?Ticker=MSFT'+'&amount='+amount,
+              url: '/strategies/backtest_results/?Ticker=MSFT'+'&amount='+amount+"&stdate="+drp.startDate._d+"&enddate="+drp.endDate._d,
               type: 'GET',
               async: true,
               dataType: "json",
@@ -298,8 +316,9 @@ $(document).ready( function() {
 
     $('#simulate-3').click(function () {
       var amount = $('#InitialCash').val();
+      var drp = $('#reportrange2').data('daterangepicker');
     $.ajax({
-              url: '/strategies/backtest_results/?Ticker=GS'+'&amount='+amount,
+              url: '/strategies/backtest_results/?Ticker=GS'+'&amount='+amount+"&stdate="+drp.startDate._d+"&enddate="+drp.endDate._d,
               type: 'GET',
               async: true,
               dataType: "json",
