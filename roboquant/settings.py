@@ -80,8 +80,8 @@ SOCIALACCOUNT_PROVIDERS = \
 #EMAIL_HOST_PASSWORD = '9bclxblu2966'
 
 #########POSTMARK settings.......
-EMAIL_BACKEND = 'email_services.backends.PostmarkEmailBackend'
-EMAIL_SERVICES_CLIENT_KEY = '49faaa9f-4368-49ab-8b66-c30cb3a6ada'
+EMAIL_BACKEND = 'postmark.backends.PostmarkBackend'
+POSTMARK_API_KEY = '49faaa9f-4368-49ab-8b66-c30cb3a6ada'
 
 # Application definition
 
@@ -104,6 +104,7 @@ INSTALLED_APPS = (
     'allauth.socialaccount',
     'allauth.socialaccount.providers.facebook',
     'allauth.socialaccount.providers.google',
+    'postmark', #### for email backend services...
 )
 
 MIDDLEWARE_CLASSES = (

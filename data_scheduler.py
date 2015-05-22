@@ -35,8 +35,8 @@ def test_simple_strategy():
 test_simple_strategy()
 
 '''
-@sched.scheduled_job('interval', minutes=45)
-#@sched.scheduled_job('date')
+#@sched.scheduled_job('interval', minutes=45)
+@sched.scheduled_job('date')
 def timed_job():
 	print('This job is run immideately...')
 	# Tell RQ what Redis connection to use
