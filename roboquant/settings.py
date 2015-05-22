@@ -73,11 +73,15 @@ SOCIALACCOUNT_PROVIDERS = \
         'VERIFIED_EMAIL': False,
         'VERSION': 'v2.3'}}
 #### We still need to add email settings related to SendGrid on heroku...
-EMAIL_HOST_USER = 'app36635398@heroku.com'
-EMAIL_HOST= 'smtp.sendgrid.net'
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
-EMAIL_HOST_PASSWORD = '9bclxblu2966'
+#EMAIL_HOST_USER = 'app36635398@heroku.com'
+#EMAIL_HOST= 'smtp.sendgrid.net'
+#EMAIL_PORT = 587
+#EMAIL_USE_TLS = True
+#EMAIL_HOST_PASSWORD = '9bclxblu2966'
+
+#########POSTMARK settings.......
+EMAIL_BACKEND = 'email_services.backends.PostmarkEmailBackend'
+EMAIL_SERVICES_CLIENT_KEY = 49faaa9f-4368-49ab-8b66-c30cb3a6ada
 
 # Application definition
 
