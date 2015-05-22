@@ -81,7 +81,7 @@ SOCIALACCOUNT_PROVIDERS = \
 
 #########POSTMARK settings.......
 EMAIL_BACKEND = 'postmark.backends.PostmarkBackend'
-POSTMARK_API_KEY = '49faaa9f-4368-49ab-8b66-c30cb3a6ada'
+POSTMARK_API_KEY = '49faaa9f-4368-49ab-8b66-c30cb3a6adaa'
 
 # Application definition
 
