@@ -8,6 +8,11 @@ import os
 import urlparse
 import sys
 
+#sys.path.append('/home/parallels/Code/heroku-envbased/roboquant/strategies')
+#print sys.path
+#from algotrade import simple_strategy
+
+
 
 
 sched = BlockingScheduler()
@@ -19,18 +24,22 @@ def get_redis_conn():
 	print "$$$URL: ", url
 	redisConn = redis.StrictRedis(host=url.hostname, port=url.port, password=url.password)
 	return redisConn
+
 '''
 #@sched.scheduled_job('interval', minutes=1)
 def test_simple_strategy():
 	# Tell RQ what Redis connection to use
 	redis_conn = get_redis_conn()
 	q = Queue(connection=redis_conn)  # no args implies the default queue
-	job = q.enqueue(simple_strategy.run_strategy_redis, "AAPL")
-	#print job.result   # => None
+	import dateutil.parser
+	yourdate = dateutil.parser.parse('2014-01-01T08:00:00.000Z')
+	yourdate2 = dateutil.parser.parse('2014-12-31T08:00:00.000Z')
+	job = q.enqueue(simple_strategy.run_strategy_redis,"AAPL", 500000, yourdate, yourdate2)
 	while (job.result is None):
+		print job.result
 		time.sleep(1)
 	
-	print job.result   # => 889
+	print job.result.getTradeDetails()   # => 889
 
 test_simple_strategy()
 

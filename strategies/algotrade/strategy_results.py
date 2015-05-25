@@ -23,6 +23,7 @@ class StrategyResults(object):
         strat.getBarsProcessedEvent().subscribe(self.__onBarsProcessed)
         strat.getBroker().getOrderUpdatedEvent().subscribe(self.__onOrderEvent)
         self.__portfolioValues = []
+        self.__tradeDetails = []
 
     def __onBarsProcessed(self, strat, bars):
         dateTime = bars.getDateTime()
@@ -44,9 +45,18 @@ class StrategyResults(object):
             if action in [pyalgotrade.broker.Order.Action.BUY, pyalgotrade.broker.Order.Action.BUY_TO_COVER]:
                 #self.getSeries("Buy", BuyMarker).addValue(execInfo.getDateTime(), execInfo.getPrice())
                 print "BUY: ", execInfo.getDateTime(), execInfo.getPrice()
+                seconds = mktime(execInfo.getDateTime().timetuple())
+                val = {'x':int(seconds * 1000), 'title': 'B', 'text': 'Bought: ' + str(order.getInstrument()) +'  #No: ' + str(order.getQuantity())}
+                self.__tradeDetails.append(val)
             elif action in [pyalgotrade.broker.Order.Action.SELL, pyalgotrade.broker.Order.Action.SELL_SHORT]:
                 #self.getSeries("Sell", SellMarker).addValue(execInfo.getDateTime(), execInfo.getPrice())
                 print "SELL: ", execInfo.getDateTime(), execInfo.getPrice()
+                seconds = mktime(execInfo.getDateTime().timetuple())
+                val = {'x':int(seconds * 1000), 'title': 'S', 'text': 'SOLD:' + str(order.getInstrument()) +' #No:' + str(order.getQuantity())}
+                self.__tradeDetails.append(val)
 
     def getPortfolioResult(self):
-        return self.__portfolioValues        
+        return self.__portfolioValues
+
+    def getTradeDetails(self):
+        return self.__tradeDetails           

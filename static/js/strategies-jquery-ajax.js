@@ -51,7 +51,8 @@ $(document).ready( function() {
     });
 
 
-    function displayData (data, ticker) {
+
+  function displayRedisData (data, ticker) {
 
       console.log("inside displayData")
       //console.log(data)
@@ -72,33 +73,41 @@ $(document).ready( function() {
                   }
               }]
           });
-    }
+  }
 
-    /*
-    $('#highstock-btn').click(function(){
-      $.ajax({
-            url: '/strategies/hichart_quandl/',
-            type: 'GET',
-            async: true,
-            dataType: "json",
-            success: function (data) {
-              console.log("Inside Success")
-              displayData(data);
-            },
-            // Code to run if the request fails; the raw request and
-    // status codes are passed to the function
-            error: function( xhr, status, errorThrown ) {
-                  alert( "Sorry, there was a problem!" );
-                  console.log( "Error: " + errorThrown );
-                  console.log( "Status: " + status );
-                  console.dir( xhr );
-            },
-            // Code to run regardless of success or failure
-            complete: function( xhr, status ) {
-             alert( "The request is complete!" );
-            } 
-      });
-    }); */
+
+  function displayData (data, flagdata, ticker) {
+
+      console.log("inside displayData")
+      //var flagdata 
+      console.log(data)
+      //console.log(flagdata)
+      $('#container').highcharts('StockChart', {
+              rangeSelector : {
+                  selected : 5
+              },
+
+              title : {
+                  text : ticker +' Stock Price'
+              },
+
+              series : [{
+                  name : ticker,
+                  data : data,
+                  tooltip: {
+                      valueDecimals: 2
+                  },
+                  id : 'dataseries'
+               // the event marker flags
+            }, {
+                type : 'flags',
+                data : flagdata,
+                onSeries : 'dataseries',
+                shape : 'circlepin',
+                width : 16
+            }]
+          });
+    }
 
   $('#action-1').click(function () {
     $.ajax({
@@ -109,7 +118,9 @@ $(document).ready( function() {
               success: function (data) {
                 console.log("Inside Success")
                 var ticker = "AAPL"
-                displayData(data, ticker);
+                //console.log(data.seriesData)
+                displayRedisData(data, ticker);
+                //displayData(data.seriesData, data.flagData, ticker)
               },
               // Code to run if the request fails; the raw request and
       // status codes are passed to the function
@@ -135,7 +146,7 @@ $(document).ready( function() {
               success: function (data) {
                 console.log("Inside Success")
                 var ticker = "MSFT"
-                displayData(data, ticker);
+                displayRedisData(data, ticker);
               },
               // Code to run if the request fails; the raw request and
       // status codes are passed to the function
@@ -160,7 +171,7 @@ $(document).ready( function() {
               success: function (data) {
                 console.log("Inside Success")
                 var ticker = "GS"
-                displayData(data, ticker);
+                displayRedisData(data, ticker);
               },
               // Code to run if the request fails; the raw request and
       // status codes are passed to the function
@@ -186,7 +197,7 @@ $(document).ready( function() {
               success: function (data) {
                 console.log("Inside Success")
                 var ticker = "AAPL"
-                displayData(data, ticker);
+                displayRedisData(data, ticker);
               },
               // Code to run if the request fails; the raw request and
       // status codes are passed to the function
@@ -212,7 +223,7 @@ $(document).ready( function() {
               success: function (data) {
                 console.log("Inside Success")
                 var ticker = "MSFT"
-                displayData(data, ticker);
+                displayRedisData(data, ticker);
               },
               // Code to run if the request fails; the raw request and
       // status codes are passed to the function
@@ -238,7 +249,7 @@ $(document).ready( function() {
               success: function (data) {
                 console.log("Inside Success")
                 var ticker = "GS"
-                displayData(data, ticker);
+                displayRedisData(data, ticker);
               },
               // Code to run if the request fails; the raw request and
       // status codes are passed to the function
@@ -269,7 +280,7 @@ $(document).ready( function() {
               success: function (data) {
                 console.log("Inside Success")
                 var ticker = "AAPL"
-                displayData(data, ticker);
+                displayData(data.seriesData, data.flagData, ticker)
               },
               // Code to run if the request fails; the raw request and
       // status codes are passed to the function
@@ -297,7 +308,7 @@ $(document).ready( function() {
               success: function (data) {
                 console.log("Inside Success")
                 var ticker = "MSFT"
-                displayData(data, ticker);
+                displayData(data.seriesData, data.flagData, ticker)
               },
               // Code to run if the request fails; the raw request and
       // status codes are passed to the function
@@ -325,7 +336,9 @@ $(document).ready( function() {
               success: function (data) {
                 console.log("Inside Success")
                 var ticker = "GS"
-                displayData(data, ticker);
+                //var json_obj = $.parseJSON(data) /// This is technique for parsing response objecr...
+                displayData(data.seriesData, data.flagData, ticker)
+                //displayData(json_obj.data, json_obj.flagData, ticker)
               },
               // Code to run if the request fails; the raw request and
       // status codes are passed to the function

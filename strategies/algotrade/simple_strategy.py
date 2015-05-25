@@ -122,8 +122,9 @@ def run_strategy_redis(ticker, amount, stdate, enddate):
     #plt.plot()
 
     myStrategy.run()
-    portresults = results.getPortfolioResult()
+    #portresults = results.getPortfolioResult()
+    #tradeDetails = results.getTradeDetails()
     print "Final portfolio value: $%.2f" % myStrategy.getBroker().getEquity()
     #print "Portfolio results: ", portresults
-    return portresults;
+    return results;
     
