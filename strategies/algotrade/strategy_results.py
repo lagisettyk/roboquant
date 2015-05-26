@@ -14,7 +14,7 @@ class StrategyResults(object):
     :type plotPortfolio: boolean.
     """
 
-    def __init__(self, strat, plotAllInstruments=True, plotBuySell=True, plotPortfolio=True):
+    def __init__(self, strat, returnsAnalyzer, plotAllInstruments=True, plotBuySell=True, plotPortfolio=True):
         self.__dateTimes = set()
 
         self.__plotAllInstruments = plotAllInstruments
@@ -24,18 +24,29 @@ class StrategyResults(object):
         strat.getBroker().getOrderUpdatedEvent().subscribe(self.__onOrderEvent)
         self.__portfolioValues = []
         self.__tradeDetails = []
+        self.__instrumentDetails = []
+        #### attach returns analyzer to strategy...
+        strat.attachAnalyzer(returnsAnalyzer)
+        self.__returnsAnalyzer = returnsAnalyzer
 
     def __onBarsProcessed(self, strat, bars):
         dateTime = bars.getDateTime()
         self.__dateTimes.add(dateTime)
+        seconds = mktime(bars.getDateTime().timetuple())
+        
 
         # Feed the portfolio evolution subplot.
         if self.__plotPortfolio:
             #self.__portfolioValues[bars.getDateTime()] = strat.getBroker().getEquity()
-            seconds = mktime(bars.getDateTime().timetuple())
             val = [int(seconds * 1000), strat.getBroker().getEquity()]
             self.__portfolioValues.append(val)
+            
             #print "Datetime, value: ", bars.getDateTime(), strat.getBroker().getEquity()
+
+        if self.__plotAllInstruments:
+            for instrument in bars.getInstruments():
+                instrument_shares = [int(seconds * 1000), strat.getBroker().getShares(instrument)]
+                self.__instrumentDetails.append(instrument_shares)
 
     def __onOrderEvent(self, broker_, orderEvent):
         order = orderEvent.getOrder()
@@ -58,5 +69,36 @@ class StrategyResults(object):
     def getPortfolioResult(self):
         return self.__portfolioValues
 
+    def getInstrumentDetails(self):
+        return self.__instrumentDetails 
+
     def getTradeDetails(self):
-        return self.__tradeDetails           
+        return self.__tradeDetails
+
+    def getDateTimes(self):
+        return self.__dateTimes 
+
+    def getCumulativeReturns(self):
+        returns = self.__returnsAnalyzer.getCumulativeReturns()
+        dataseries = []
+        dateList = list(self.__dateTimes)
+        dateList.sort()
+        for x in range(len(dateList)):
+            dt =  dateList[x]
+            sec = mktime(dt.timetuple())
+            val = [int(sec * 1000), returns.getValueAbsolute(x)]
+            dataseries.append(val)
+        return dataseries
+
+    def getReturns(self):
+        returns = self.__returnsAnalyzer.getReturns()
+        dataseries = []
+        dateList = list(self.__dateTimes)
+        dateList.sort()
+        for x in range(len(dateList)):
+            dt =  dateList[x]
+            sec = mktime(dt.timetuple())
+            val = [int(sec * 1000), returns.getValueAbsolute(x)]
+            dataseries.append(val)
+        return dataseries
+

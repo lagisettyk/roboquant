@@ -147,25 +147,13 @@ def backtest(request):
 	job = q.enqueue(simple_strategy.run_strategy_redis, ticker, int(amount), start_date, end_date)
 	while (job.result is None):
 		time.sleep(1)
-	'''
-	flag_data = [{
-                    'x' : 1336003200000,
-                    'title' : 'H',
-                    'text' : 'Euro Contained by Channel Resistance'
-                }, {
-                    'x' : 1355788800000,
-                    'title' : 'G',
-                    'text' : 'EURUSD: Bulls Clear Path to 1.50 Figure'
-                }, {
-                    'x' : 1361923200000,
-                    'title' : 'F',
-                    'text' : 'EURUSD: Rate Decision to End Standstill'
-                }]
 
-
-	results = {"seriesData":job.result, "flagData": flag_data }
-	'''
-	results = {"seriesData":job.result.getPortfolioResult(), "flagData": job.result.getTradeDetails() }
+	results = {
+		"seriesData":job.result.getPortfolioResult(),
+		"cumulativeReturn":job.result.getCumulativeReturns(), 
+		"instrumentDetails":job.result.getInstrumentDetails(),
+		"flagData": job.result.getTradeDetails() 
+		}
 	
     ### This is important to note json.dumps() convert python data structure to JSON form
 	#return HttpResponse(json.dumps(job.result), content_type='application/json')

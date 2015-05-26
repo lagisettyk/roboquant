@@ -12,6 +12,42 @@ from pyalgotrade.barfeed import membf
 from pyalgotrade.utils import dt
 from pyalgotrade.stratanalyzer import returns
 from strategy_results import StrategyResults
+from pyalgotrade.technical import cross
+
+
+class SMACrossOver(strategy.BacktestingStrategy):
+    def __init__(self, feed, instrument, amount, smaPeriod):
+        strategy.BacktestingStrategy.__init__(self, feed, amount)
+        self.__instrument = instrument
+        self.__position = None
+        # We'll use adjusted close values instead of regular close values.
+        self.setUseAdjustedValues(True)
+        self.__prices = feed[instrument].getPriceDataSeries()
+        self.__sma = ma.SMA(self.__prices, smaPeriod)
+
+    def getSMA(self):
+        return self.__sma
+
+    def onEnterCanceled(self, position):
+        self.__position = None
+
+    def onExitOk(self, position):
+        self.__position = None
+
+    def onExitCanceled(self, position):
+        # If the exit was canceled, re-submit it.
+        self.__position.exitMarket()
+
+    def onBars(self, bars):
+        # If a position was not opened, check if we should enter a long position.
+        if self.__position is None:
+            if cross.cross_above(self.__prices, self.__sma) > 0:
+                shares = int(self.getBroker().getCash() * 0.9 / bars[self.__instrument].getPrice())
+                # Enter a buy market order. The order is good till canceled.
+                self.__position = self.enterLong(self.__instrument, shares, True)
+        # Check if we have to exit the position.
+        elif not self.__position.exitActive() and cross.cross_below(self.__prices, self.__sma) > 0:
+            self.__position.exitMarket()
 
 class MyStrategy(strategy.BacktestingStrategy):
     def __init__(self, feed, instrument, amount, smaPeriod):
@@ -107,15 +143,16 @@ def run_strategy_redis(ticker, amount, stdate, enddate):
 
 
     # Evaluate the strategy with the feed.
-    myStrategy = MyStrategy(feed, ticker, amount, 20)
+    #myStrategy = MyStrategy(feed, ticker, amount, 20)
+    myStrategy = SMACrossOver(feed, ticker, amount, 20)
 
     # Attach a returns analyzers to the strategy.
     returnsAnalyzer = returns.Returns()
-    myStrategy.attachAnalyzer(returnsAnalyzer)
+    results = StrategyResults(myStrategy, returnsAnalyzer)
 
     #plt = plotter.StrategyPlotter(myStrategy)
 
-    results = StrategyResults(myStrategy)
+    
     # Plot the simple returns on each bar.
     #plt.getOrCreateSubplot("returns").addDataSeries("Cumulative returns", returnsAnalyzer.getCumulativeReturns())
     # Plot the strategy.
@@ -127,4 +164,10 @@ def run_strategy_redis(ticker, amount, stdate, enddate):
     print "Final portfolio value: $%.2f" % myStrategy.getBroker().getEquity()
     #print "Portfolio results: ", portresults
     return results;
-    
+    '''
+    data_dates = list(results.getDateTimes())
+    data_dates.sort()
+    for x in range(len(data_dates)):
+        print "$$$$", data_dates[x]
+    return returnsAnalyzer.getCumulativeReturns()
+    '''

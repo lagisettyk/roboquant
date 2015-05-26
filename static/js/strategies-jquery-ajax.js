@@ -76,7 +76,7 @@ $(document).ready( function() {
   }
 
 
-  function displayData (data, flagdata, ticker) {
+  function displayPortfolioData (data, ticker) {
 
       console.log("inside displayData")
       //var flagdata 
@@ -88,7 +88,59 @@ $(document).ready( function() {
               },
 
               title : {
-                  text : ticker +' Stock Price'
+                  text : ticker +' portfolio value'
+              },
+
+              series : [{
+                  name : ticker,
+                  data : data,
+                  tooltip: {
+                      valueDecimals: 2
+                  },
+                  id : 'dataseries'
+             }]
+          });
+    }
+
+    function displayReturnData (data, ticker) {
+
+      console.log("inside displayData")
+      //var flagdata 
+      console.log(data)
+      //console.log(flagdata)
+      $('#container3').highcharts('StockChart', {
+              rangeSelector : {
+                  selected : 5
+              },
+
+              title : {
+                  text : ticker +' cumulative returns'
+              },
+
+              series : [{
+                  name : ticker,
+                  data : data,
+                  tooltip: {
+                      valueDecimals: 2
+                  },
+                  id : 'dataseries'
+             }]
+          });
+    }
+
+    function displayInstrumentData (data, flagdata, ticker) {
+
+      console.log("inside displayData")
+      //var flagdata 
+      console.log(data)
+      //console.log(flagdata)
+      $('#container2').highcharts('StockChart', {
+              rangeSelector : {
+                  selected : 5
+              },
+
+              title : {
+                  text : ticker +' positions'
               },
 
               series : [{
@@ -280,7 +332,9 @@ $(document).ready( function() {
               success: function (data) {
                 console.log("Inside Success")
                 var ticker = "AAPL"
-                displayData(data.seriesData, data.flagData, ticker)
+                displayPortfolioData(data.seriesData, ticker)
+                displayReturnData(data.cumulativeReturn, ticker)
+                displayInstrumentData(data.instrumentDetails, data.flagData, ticker)
               },
               // Code to run if the request fails; the raw request and
       // status codes are passed to the function
@@ -308,7 +362,9 @@ $(document).ready( function() {
               success: function (data) {
                 console.log("Inside Success")
                 var ticker = "MSFT"
-                displayData(data.seriesData, data.flagData, ticker)
+                displayPortfolioData(data.seriesData, ticker)
+                displayReturnData(data.cumulativeReturn, ticker)
+                displayInstrumentData(data.instrumentDetails, data.flagData, ticker)
               },
               // Code to run if the request fails; the raw request and
       // status codes are passed to the function
@@ -336,9 +392,9 @@ $(document).ready( function() {
               success: function (data) {
                 console.log("Inside Success")
                 var ticker = "GS"
-                //var json_obj = $.parseJSON(data) /// This is technique for parsing response objecr...
-                displayData(data.seriesData, data.flagData, ticker)
-                //displayData(json_obj.data, json_obj.flagData, ticker)
+                displayPortfolioData(data.seriesData, ticker)
+                displayReturnData(data.cumulativeReturn, ticker)
+                displayInstrumentData(data.instrumentDetails, data.flagData, ticker)
               },
               // Code to run if the request fails; the raw request and
       // status codes are passed to the function

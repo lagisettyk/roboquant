@@ -74,6 +74,9 @@ yourdate2 = dateutil.parser.parse('2014-12-31T08:00:00.000Z')
 print yourdate, yourdate2
 
 results = simple_strategy.run_strategy_redis("AAPL", 500000, yourdate, yourdate2)
-print results
-#	simple_strategy.run_strategy_redis(i)
+print results.getPortfolioResult()
+print results.getInstrumentDetails()
+print results.getTradeDetails()
+print results.getCumulativeReturns()
+
 
