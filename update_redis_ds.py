@@ -40,7 +40,7 @@ def populate_redis_eod_history(datasource, tickerList):
 	import datetime
 	redisConn = get_redis_conn()
 	if redisConn.get('history') is None:
-		populate_redis_eod(redisConn, tickerList, datasource, startdate = "2012/01/01", 
+		populate_redis_eod(redisConn, tickerList, datasource, startdate = "2005/01/01", 
 			  enddate=(datetime.date.today() - datetime.timedelta(days=1)), popFirstElement=False)
 		print "successfully populated history..."
 	else:
@@ -59,15 +59,13 @@ def populate_redis_eod(redisConn, tickerList, datasource, startdate, enddate, po
 			DICT = WIKI_DICT
 
 	for ticker in range(len(tickerList)):
-
-		for key in DICT:
-			try:
-				my_data  = Quandl.get(
-					datasource +"/" + tickerList[ticker], returns="pandas", 
-					column=DICT[key], sort_order="asc", authtoken="L5A6rmU9FGvyss9F7Eym",  
-					trim_start = startdate, trim_end = enddate)
-				if not my_data.empty:
-					json_data = json.loads(my_data.to_json()) 
+		try:
+			my_data  = Quandl.get(
+				datasource +"/" + tickerList[ticker], returns="pandas", sort_order="asc", authtoken="L5A6rmU9FGvyss9F7Eym",  
+				trim_start = startdate, trim_end = enddate)
+			if not my_data.empty:
+				json_data = json.loads(my_data.to_json())
+				for key in DICT:
 					json_data_list = list(sorted(json_data[key].items()))
 					for x in range(len(json_data_list)):
 						dl = list(json_data_list[x])
@@ -77,11 +75,14 @@ def populate_redis_eod(redisConn, tickerList, datasource, startdate, enddate, po
 					if popFirstElement:
 						redisConn.zremrangebyrank(tickerList[ticker]+':'+key, 0, 0)
 					print redisConn.zrange(tickerList[ticker]+':'+key, 0, -1)
-			except Exception,e: 
-				print str(e)
-				pass
+		except Exception,e: 
+			print str(e)
+			pass
 		print "populated EOD time series: ", tickerList[ticker]
 	### Set history flag to true...
 	redisConn.set('history', "TRUE")
 	status = "successfully populated redis store...."
 	return status
+
+
+

@@ -145,6 +145,7 @@ def backtest(request):
 
 	q = Queue(connection=redisConn)  # no args implies the default queue
 	job = q.enqueue(simple_strategy.run_strategy_redis, ticker, int(amount), start_date, end_date)
+	#job = q.enqueue(simple_strategy.run_strategy_multipleinstruments, int(amount), start_date, end_date)
 	while (job.result is None):
 		time.sleep(1)
 

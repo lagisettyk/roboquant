@@ -9,7 +9,7 @@ $(document).ready( function() {
     $('#reportrange2 span').html(moment().subtract(29, 'days').format('MMMM D, YYYY') + ' - ' + moment().format('MMMM D, YYYY'));
     $("#reportrange2").daterangepicker({
                     format: 'MM/DD/YYYY',
-                    minDate: '01/01/2012',
+                    minDate: '01/01/2005',
                     maxDate: '12/31/2014',
                     dateLimit: { days: 250 },
                   }, function(start, end, label) {
@@ -74,6 +74,77 @@ $(document).ready( function() {
               }]
           });
   }
+
+  
+  //##### to do.. Need to get dynamic list from dJango vieww
+  $('#tickerList').on('click', '#dLabel', function(){
+    console.log("inside dLabel")
+    $('#showList').empty()
+    $('#showList').html('<li><a href="#" id="simulate-1">AAPL</a>'
+                         +'</li><li><a href="#" id="simulate-1">AMZN</a></li>'
+                         +'</li><li><a href="#" id="simulate-1">FDX</a></li>'
+                         +'</li><li><a href="#" id="simulate-1">MA</a></li>'
+                         +'</li><li><a href="#" id="simulate-1">NFLX</a></li>'
+                         +'</li><li><a href="#" id="simulate-1">OCR</a></li>'
+                         +'</li><li><a href="#" id="simulate-1">SPY</a></li>'
+                         +'</li><li><a href="#" id="simulate-1">NXPI</a></li>'
+                         +'</li><li><a href="#" id="simulate-1">CVS</a></li>'
+                         +'</li><li><a href="#" id="simulate-1">UNP</a></li>'
+                         +'</li><li><a href="#" id="simulate-1">GILD</a></li>'
+                         +'</li><li><a href="#" id="simulate-1">VRX</a></li>'
+                         +'</li><li><a href="#" id="simulate-1">ACT</a></li>'
+                         +'</li><li><a href="#" id="simulate-1">GOOGL</a></li>'
+                         +'</li><li><a href="#" id="simulate-1">CF</a></li>'
+                         +'</li><li><a href="#" id="simulate-1">URI</a></li>'
+                         +'</li><li><a href="#" id="simulate-1">CP</a></li>'
+                         +'</li><li><a href="#" id="simulate-1">WHR</a></li>'
+                         +'</li><li><a href="#" id="simulate-1">IWM</a></li>'
+                         +'</li><li><a href="#" id="simulate-1">UNH</a></li>'
+                         +'</li><li><a href="#" id="simulate-1">VIAB</a></li>'
+                         +'</li><li><a href="#" id="simulate-1">FLT</a></li>'
+                         +'</li><li><a href="#" id="simulate-1">ODFL</a></li>'
+                         +'</li><li><a href="#" id="simulate-1">GD</a></li>'
+                         +'</li><li><a href="#" id="simulate-1">XLF</a></li>'
+                         +'</li><li><a href="#" id="simulate-1">ALL</a></li>'
+                         +'</li><li><a href="#" id="simulate-1">V</a></li>'
+                        );
+  });
+
+  $('#tickerList').on('click','#simulate-1',function(){
+      var amount = $('#InitialCash').val();
+      var drp = $('#reportrange2').data('daterangepicker');
+      //alert("Inside the even #simulate-1")
+      console.log("Selected Option:"+$(this).text())
+      var stockticker = $(this).text()
+      console.log(drp.startDate);
+      console.log("I am here....$$$$" + amount)
+    $.ajax({
+              url: '/strategies/backtest_results/?Ticker='+stockticker+'&amount='+amount+"&stdate="+drp.startDate.toISOString()+"&enddate="+drp.endDate.toISOString(),
+              type: 'GET',
+              async: true,
+              dataType: "json",
+              success: function (data) {
+                console.log("Inside Success")
+                //var ticker = "AAPL"
+                displayPortfolioData(data.seriesData, stockticker)
+                displayReturnData(data.cumulativeReturn, stockticker)
+                displayInstrumentData(data.instrumentDetails, data.flagData, stockticker)
+              },
+              // Code to run if the request fails; the raw request and
+      // status codes are passed to the function
+              error: function( xhr, status, errorThrown ) {
+                    alert( "Sorry, there was a problem!" );
+                    console.log( "Error: " + errorThrown );
+                    console.log( "Status: " + status );
+                    console.dir( xhr );
+              },
+              // Code to run regardless of success or failure
+              complete: function( xhr, status ) {
+               //alert( "The request is complete!" );
+              } 
+        });
+  });
+ 
 
 
   function displayPortfolioData (data, ticker) {
@@ -320,7 +391,7 @@ $(document).ready( function() {
 
     $('#simulate-1').click(function () {
       var amount = $('#InitialCash').val();
-      //alert("You clicked the button using JQuery!");
+      alert("You clicked the button using JQuery!");
       var drp = $('#reportrange2').data('daterangepicker');
       console.log(drp.startDate);
       console.log("I am here....$$$$" + amount)

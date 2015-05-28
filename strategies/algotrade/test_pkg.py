@@ -68,15 +68,16 @@ print  [(datetime.datetime.now()+datetime.timedelta(seconds=5), 20),]
 '''
 
 import dateutil.parser
-yourdate = dateutil.parser.parse('2014-01-01T08:00:00.000Z')
-yourdate2 = dateutil.parser.parse('2014-12-31T08:00:00.000Z')
+yourdate = dateutil.parser.parse('2005-01-01T08:00:00.000Z')
+yourdate2 = dateutil.parser.parse('2010-12-31T08:00:00.000Z')
 
 print yourdate, yourdate2
 
 results = simple_strategy.run_strategy_redis("AAPL", 500000, yourdate, yourdate2)
-print results.getPortfolioResult()
-print results.getInstrumentDetails()
-print results.getTradeDetails()
+#results = simple_strategy.run_strategy_multipleinstruments(500000, yourdate, yourdate2)
+#print results.getPortfolioResult()
+#print results.getInstrumentDetails()
+#print results.getTradeDetails()
 print results.getCumulativeReturns()
 
 
