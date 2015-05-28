@@ -14,10 +14,10 @@ import sys
 
 sched = BlockingScheduler()
 
-tickerList = ['AAPL', 'AMZN', 'FDX', 'MA', 'NFLX', 'OCR', 'SPY', 'NXPI', 'CVS', 'UNP', 'GILD', 'VRX' \
+tickerList = ['AAPL', 'AMZN', 'FDX', 'MA', 'NFLX', 'OCR', 'SPY', 'NXPI', 'CVS', 'UNP', 'GILD', 'VRX', \
         'ACT', 'GOOGL', 'CF', 'URI', 'CP', 'WHR', 'IWM', 'UNH', 'VIAB',  'FLT', 'ODFL', 'GD', 'XLF', 'ALL', 'V' ]
 
-#tickerList = ['AAPL', 'GOOGL']
+#tickerList = ['VRX', 'ACT']
 
 def get_redis_conn():
 	redis_url = os.getenv('REDISCLOUD_URL', 'redis://localhost:6379')
