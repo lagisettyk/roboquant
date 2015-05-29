@@ -3,7 +3,7 @@
 import numpy
 
 from pyalgotrade import dataseries
-from pyalgotrade.talibext import indicator
+#from pyalgotrade.talibext import indicator
 
 # Returns the last values of a dataseries as a numpy.array, or None if not enough values
 # could be retrieved from the dataseries.
