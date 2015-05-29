@@ -6,7 +6,7 @@ from pyalgotrade.technical import bollinger
 #from pyalgotrade.technical import linreg
 from pyalgotrade.stratanalyzer import sharpe
 #import talib
-from pyalgotrade.talibext import indicator
+#from pyalgotrade.talibext import indicator
 from pyalgotrade.technical import ma
 #from pyalgotrade.technical import cross
 from pyalgotrade.technical import rsi
