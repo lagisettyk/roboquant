@@ -222,3 +222,294 @@
 2015-05-29 12:44:22,014 strategies.xiQuant_strategies.BB_spread INFO     Tightened Stop Loss SELL order, due to lower band curving in, of 242 NFLX shares set to 421.53
 2015-05-29 12:44:22,014 strategies.xiQuant_strategies.BB_spread INFO     2014-06-09 00:00:00+00:00: SOLD 242 at $421.53
 2015-05-29 12:44:22,014 strategies.xiQuant_strategies.BB_spread INFO     Portfolio after SELL: $107416.67
+2015-05-29 13:44:48,944 __main__     INFO     Initial portfolio value: $1000000.00
+2015-05-29 13:44:49,081 __main__     INFO     Bullish; ENTERING a LONG position
+2015-05-29 13:44:49,082 __main__     INFO     2009-10-26 00:00:00: BOUGHT 16421 at $55.76
+2015-05-29 13:44:49,082 __main__     INFO     Portfolio cash after BUY: $84365.04
+2015-05-29 13:44:49,082 __main__     INFO     Stop Loss SELL order of 16421 nflx shares set at 52.35
+2015-05-29 13:44:49,083 __main__     INFO     Tightened Stop Loss SELL order of 16421 nflx shares set to 54.77
+2015-05-29 13:44:49,083 __main__     INFO     2009-10-27 00:00:00: SOLD 16421 at $54.77
+2015-05-29 13:44:49,083 __main__     INFO     Portfolio after SELL: $983743.21
+2015-05-29 13:44:49,106 __main__     INFO     Bullish; ENTERING a LONG position
+2015-05-29 13:44:49,106 __main__     INFO     2010-04-07 00:00:00: BOUGHT 11083 at $82.09
+2015-05-29 13:44:49,106 __main__     INFO     Portfolio cash after BUY: $73939.74
+2015-05-29 13:44:49,107 __main__     INFO     Stop Loss SELL order of 11083 nflx shares set at 81.90
+2015-05-29 13:44:49,107 __main__     INFO     Tightened Stop Loss SELL order, due to lower band curving in, of 11083 nflx shares set to 78.14
+2015-05-29 13:44:49,107 __main__     INFO     Tightened Stop Loss SELL order of 11083 nflx shares set to 79.02
+2015-05-29 13:44:49,108 __main__     INFO     Tightened Stop Loss SELL order of 11083 nflx shares set to 80.18
+2015-05-29 13:44:49,108 __main__     INFO     Tightened Stop Loss SELL order, due to lower band curving in, of 11083 nflx shares set to 81.52
+2015-05-29 13:44:49,109 __main__     INFO     Tightened Stop Loss SELL order, due to lower band curving in, of 11083 nflx shares set to 84.65
+2015-05-29 13:44:49,109 __main__     INFO     Tightened Stop Loss SELL order, due to lower band curving in, of 11083 nflx shares set to 85.82
+2015-05-29 13:44:49,110 __main__     INFO     2010-04-15 00:00:00: SOLD 11083 at $85.82
+2015-05-29 13:44:49,110 __main__     INFO     Portfolio after SELL: $1025067.28
+2015-05-29 13:44:49,155 __main__     INFO     Bullish; ENTERING a LONG position
+2015-05-29 13:44:49,156 __main__     INFO     2011-02-15 00:00:00: BOUGHT 3928 at $243.49
+2015-05-29 13:44:49,156 __main__     INFO     Portfolio cash after BUY: $68638.52
+2015-05-29 13:44:49,156 __main__     INFO     Stop Loss SELL order of 3928 nflx shares set at 241.61
+2015-05-29 13:44:49,156 __main__     INFO     2011-02-16 00:00:00: SOLD 3928 at $241.61
+2015-05-29 13:44:49,156 __main__     INFO     Portfolio after SELL: $1017702.22
+2015-05-29 13:44:49,162 __main__     INFO     Bullish; ENTERING a LONG position
+2015-05-29 13:44:49,163 __main__     INFO     2011-03-24 00:00:00: BOUGHT 4197 at $230.35
+2015-05-29 13:44:49,163 __main__     INFO     Portfolio cash after BUY: $50923.27
+2015-05-29 13:44:49,163 __main__     INFO     Stop Loss SELL order of 4197 nflx shares set at 225.56
+2015-05-29 13:44:49,166 __main__     INFO     2011-04-12 00:00:00: SOLD 4197 at $224.87
+2015-05-29 13:44:49,166 __main__     INFO     Portfolio after SELL: $994702.66
+2015-05-29 13:44:49,173 __main__     INFO     Bullish; ENTERING a LONG position
+2015-05-29 13:44:49,174 __main__     INFO     2011-05-26 00:00:00: BOUGHT 3630 at $259.30
+2015-05-29 13:44:49,174 __main__     INFO     Portfolio cash after BUY: $53443.70
+2015-05-29 13:44:49,174 __main__     INFO     Stop Loss SELL order of 3630 nflx shares set at 253.71
+2015-05-29 13:44:49,178 __main__     INFO     2011-06-16 00:00:00: SOLD 3630 at $253.71
+2015-05-29 13:44:49,178 __main__     INFO     Portfolio after SELL: $974392.85
+2015-05-29 13:44:49,209 __main__     INFO     Bullish; ENTERING a LONG position
+2015-05-29 13:44:49,210 __main__     INFO     2012-01-05 00:00:00: BOUGHT 11383 at $79.42
+2015-05-29 13:44:49,210 __main__     INFO     Portfolio cash after BUY: $70354.99
+2015-05-29 13:44:49,210 __main__     INFO     Stop Loss SELL order of 11383 nflx shares set at 76.40
+2015-05-29 13:44:49,229 __main__     INFO     2012-05-03 00:00:00: SOLD 11383 at $76.40
+2015-05-29 13:44:49,229 __main__     INFO     Portfolio after SELL: $940016.19
+2015-05-29 13:44:49,239 __main__     INFO     Bullish; ENTERING a LONG position
+2015-05-29 13:44:49,239 __main__     INFO     2012-07-06 00:00:00: BOUGHT 10726 at $83.25
+2015-05-29 13:44:49,239 __main__     INFO     Portfolio cash after BUY: $47076.69
+2015-05-29 13:44:49,239 __main__     INFO     Stop Loss SELL order of 10726 nflx shares set at 78.03
+2015-05-29 13:44:49,243 __main__     INFO     2012-07-24 00:00:00: SOLD 10726 at $78.03
+2015-05-29 13:44:49,243 __main__     INFO     Portfolio after SELL: $883972.84
+2015-05-29 13:44:49,254 __main__     INFO     Bullish; ENTERING a LONG position
+2015-05-29 13:44:49,255 __main__     INFO     2012-10-05 00:00:00: BOUGHT 12419 at $67.06
+2015-05-29 13:44:49,255 __main__     INFO     Portfolio cash after BUY: $51154.70
+2015-05-29 13:44:49,255 __main__     INFO     Stop Loss SELL order of 12419 nflx shares set at 64.66
+2015-05-29 13:44:49,256 __main__     INFO     2012-10-12 00:00:00: SOLD 12419 at $64.66
+2015-05-29 13:44:49,256 __main__     INFO     Portfolio after SELL: $854167.24
+2015-05-29 13:44:49,297 __main__     INFO     Bullish; ENTERING a LONG position
+2015-05-29 13:44:49,297 __main__     INFO     2013-07-10 00:00:00: BOUGHT 3275 at $245.55
+2015-05-29 13:44:49,298 __main__     INFO     Portfolio cash after BUY: $49990.99
+2015-05-29 13:44:49,298 __main__     INFO     Stop Loss SELL order of 3275 nflx shares set at 241.21
+2015-05-29 13:44:49,298 __main__     INFO     2013-07-11 00:00:00: SOLD 3275 at $241.21
+2015-05-29 13:44:49,298 __main__     INFO     Portfolio after SELL: $839953.72
+2015-05-29 13:44:49,299 __main__     INFO     Bullish; ENTERING a LONG position
+2015-05-29 13:44:49,299 __main__     INFO     2013-07-15 00:00:00: BOUGHT 3095 at $257.78
+2015-05-29 13:44:49,299 __main__     INFO     Portfolio cash after BUY: $42124.66
+2015-05-29 13:44:49,299 __main__     INFO     Stop Loss SELL order of 3095 nflx shares set at 251.55
+2015-05-29 13:44:49,301 __main__     INFO     2013-07-23 00:00:00: SOLD 3095 at $251.40
+2015-05-29 13:44:49,301 __main__     INFO     Portfolio after SELL: $820207.62
+2015-05-29 13:44:49,305 __main__     INFO     Bullish; ENTERING a LONG position
+2015-05-29 13:44:49,306 __main__     INFO     2013-08-21 00:00:00: BOUGHT 2844 at $272.89
+2015-05-29 13:44:49,306 __main__     INFO     Portfolio cash after BUY: $44108.44
+2015-05-29 13:44:49,306 __main__     INFO     Stop Loss SELL order of 2844 nflx shares set at 268.11
+2015-05-29 13:45:01,753 __main__     INFO     Initial portfolio value: $1000000.00
+2015-05-29 13:45:01,891 __main__     INFO     Bullish; ENTERING a LONG position
+2015-05-29 13:45:01,892 __main__     INFO     2009-10-26 00:00:00: BOUGHT 16421 at $55.76
+2015-05-29 13:45:01,892 __main__     INFO     Portfolio cash after BUY: $84365.04
+2015-05-29 13:45:01,892 __main__     INFO     Stop Loss SELL order of 16421 nflx shares set at 52.35
+2015-05-29 13:45:01,892 __main__     INFO     Tightened Stop Loss SELL order of 16421 nflx shares set to 54.77
+2015-05-29 13:45:01,892 __main__     INFO     2009-10-27 00:00:00: SOLD 16421 at $54.77
+2015-05-29 13:45:01,893 __main__     INFO     Portfolio after SELL: $983743.21
+2015-05-29 13:45:01,914 __main__     INFO     Bullish; ENTERING a LONG position
+2015-05-29 13:45:01,915 __main__     INFO     2010-04-07 00:00:00: BOUGHT 11083 at $82.09
+2015-05-29 13:45:01,915 __main__     INFO     Portfolio cash after BUY: $73939.74
+2015-05-29 13:45:01,915 __main__     INFO     Stop Loss SELL order of 11083 nflx shares set at 81.90
+2015-05-29 13:45:01,916 __main__     INFO     Tightened Stop Loss SELL order, due to lower band curving in, of 11083 nflx shares set to 78.14
+2015-05-29 13:45:01,916 __main__     INFO     Tightened Stop Loss SELL order of 11083 nflx shares set to 79.02
+2015-05-29 13:45:01,916 __main__     INFO     Tightened Stop Loss SELL order of 11083 nflx shares set to 80.18
+2015-05-29 13:45:01,917 __main__     INFO     Tightened Stop Loss SELL order, due to lower band curving in, of 11083 nflx shares set to 81.52
+2015-05-29 13:45:01,917 __main__     INFO     Tightened Stop Loss SELL order, due to lower band curving in, of 11083 nflx shares set to 84.65
+2015-05-29 13:45:01,918 __main__     INFO     Tightened Stop Loss SELL order, due to lower band curving in, of 11083 nflx shares set to 85.82
+2015-05-29 13:45:01,918 __main__     INFO     2010-04-15 00:00:00: SOLD 11083 at $85.82
+2015-05-29 13:45:01,918 __main__     INFO     Portfolio after SELL: $1025067.28
+2015-05-29 13:45:01,965 __main__     INFO     Bullish; ENTERING a LONG position
+2015-05-29 13:45:01,967 __main__     INFO     2011-02-15 00:00:00: BOUGHT 3928 at $243.49
+2015-05-29 13:45:01,967 __main__     INFO     Portfolio cash after BUY: $68638.52
+2015-05-29 13:45:01,967 __main__     INFO     Stop Loss SELL order of 3928 nflx shares set at 241.61
+2015-05-29 13:45:01,967 __main__     INFO     2011-02-16 00:00:00: SOLD 3928 at $241.61
+2015-05-29 13:45:01,968 __main__     INFO     Portfolio after SELL: $1017702.22
+2015-05-29 13:45:01,973 __main__     INFO     Bullish; ENTERING a LONG position
+2015-05-29 13:45:01,973 __main__     INFO     2011-03-24 00:00:00: BOUGHT 4197 at $230.35
+2015-05-29 13:45:01,973 __main__     INFO     Portfolio cash after BUY: $50923.27
+2015-05-29 13:45:01,974 __main__     INFO     Stop Loss SELL order of 4197 nflx shares set at 225.56
+2015-05-29 13:45:01,977 __main__     INFO     2011-04-12 00:00:00: SOLD 4197 at $224.87
+2015-05-29 13:45:01,977 __main__     INFO     Portfolio after SELL: $994702.66
+2015-05-29 13:45:01,983 __main__     INFO     Bullish; ENTERING a LONG position
+2015-05-29 13:45:01,984 __main__     INFO     2011-05-26 00:00:00: BOUGHT 3630 at $259.30
+2015-05-29 13:45:01,984 __main__     INFO     Portfolio cash after BUY: $53443.70
+2015-05-29 13:45:01,984 __main__     INFO     Stop Loss SELL order of 3630 nflx shares set at 253.71
+2015-05-29 13:45:01,987 __main__     INFO     2011-06-16 00:00:00: SOLD 3630 at $253.71
+2015-05-29 13:45:01,988 __main__     INFO     Portfolio after SELL: $974392.85
+2015-05-29 13:45:02,020 __main__     INFO     Bullish; ENTERING a LONG position
+2015-05-29 13:45:02,020 __main__     INFO     2012-01-05 00:00:00: BOUGHT 11383 at $79.42
+2015-05-29 13:45:02,020 __main__     INFO     Portfolio cash after BUY: $70354.99
+2015-05-29 13:45:02,020 __main__     INFO     Stop Loss SELL order of 11383 nflx shares set at 76.40
+2015-05-29 13:45:02,039 __main__     INFO     2012-05-03 00:00:00: SOLD 11383 at $76.40
+2015-05-29 13:45:02,039 __main__     INFO     Portfolio after SELL: $940016.19
+2015-05-29 13:45:02,050 __main__     INFO     Bullish; ENTERING a LONG position
+2015-05-29 13:45:02,050 __main__     INFO     2012-07-06 00:00:00: BOUGHT 10726 at $83.25
+2015-05-29 13:45:02,050 __main__     INFO     Portfolio cash after BUY: $47076.69
+2015-05-29 13:45:02,051 __main__     INFO     Stop Loss SELL order of 10726 nflx shares set at 78.03
+2015-05-29 13:45:02,053 __main__     INFO     2012-07-24 00:00:00: SOLD 10726 at $78.03
+2015-05-29 13:45:02,054 __main__     INFO     Portfolio after SELL: $883972.84
+2015-05-29 13:45:02,064 __main__     INFO     Bullish; ENTERING a LONG position
+2015-05-29 13:45:02,065 __main__     INFO     2012-10-05 00:00:00: BOUGHT 12419 at $67.06
+2015-05-29 13:45:02,065 __main__     INFO     Portfolio cash after BUY: $51154.70
+2015-05-29 13:45:02,065 __main__     INFO     Stop Loss SELL order of 12419 nflx shares set at 64.66
+2015-05-29 13:45:02,067 __main__     INFO     2012-10-12 00:00:00: SOLD 12419 at $64.66
+2015-05-29 13:45:02,067 __main__     INFO     Portfolio after SELL: $854167.24
+2015-05-29 13:45:02,106 __main__     INFO     Bullish; ENTERING a LONG position
+2015-05-29 13:45:02,107 __main__     INFO     2013-07-10 00:00:00: BOUGHT 3275 at $245.55
+2015-05-29 13:45:02,107 __main__     INFO     Portfolio cash after BUY: $49990.99
+2015-05-29 13:45:02,107 __main__     INFO     Stop Loss SELL order of 3275 nflx shares set at 241.21
+2015-05-29 13:45:02,107 __main__     INFO     2013-07-11 00:00:00: SOLD 3275 at $241.21
+2015-05-29 13:45:02,107 __main__     INFO     Portfolio after SELL: $839953.72
+2015-05-29 13:45:02,108 __main__     INFO     Bullish; ENTERING a LONG position
+2015-05-29 13:45:02,108 __main__     INFO     2013-07-15 00:00:00: BOUGHT 3095 at $257.78
+2015-05-29 13:45:02,108 __main__     INFO     Portfolio cash after BUY: $42124.66
+2015-05-29 13:45:02,109 __main__     INFO     Stop Loss SELL order of 3095 nflx shares set at 251.55
+2015-05-29 13:45:02,110 __main__     INFO     2013-07-23 00:00:00: SOLD 3095 at $251.40
+2015-05-29 13:45:02,110 __main__     INFO     Portfolio after SELL: $820207.62
+2015-05-29 13:45:02,115 __main__     INFO     Bullish; ENTERING a LONG position
+2015-05-29 13:45:02,115 __main__     INFO     2013-08-21 00:00:00: BOUGHT 2844 at $272.89
+2015-05-29 13:45:02,115 __main__     INFO     Portfolio cash after BUY: $44108.44
+2015-05-29 13:45:02,116 __main__     INFO     Stop Loss SELL order of 2844 nflx shares set at 268.11
+2015-05-29 13:45:29,953 __main__     INFO     Initial portfolio value: $1000000.00
+2015-05-29 13:45:30,091 __main__     INFO     Bullish; ENTERING a LONG position
+2015-05-29 13:45:30,092 __main__     INFO     2009-10-26 00:00:00: BOUGHT 16421 at $55.76
+2015-05-29 13:45:30,092 __main__     INFO     Portfolio cash after BUY: $84365.04
+2015-05-29 13:45:30,092 __main__     INFO     Stop Loss SELL order of 16421 nflx shares set at 52.35
+2015-05-29 13:45:30,092 __main__     INFO     Tightened Stop Loss SELL order of 16421 nflx shares set to 54.77
+2015-05-29 13:45:30,093 __main__     INFO     2009-10-27 00:00:00: SOLD 16421 at $54.77
+2015-05-29 13:45:30,093 __main__     INFO     Portfolio after SELL: $983743.21
+2015-05-29 13:45:30,116 __main__     INFO     Bullish; ENTERING a LONG position
+2015-05-29 13:45:30,116 __main__     INFO     2010-04-07 00:00:00: BOUGHT 11083 at $82.09
+2015-05-29 13:45:30,116 __main__     INFO     Portfolio cash after BUY: $73939.74
+2015-05-29 13:45:30,117 __main__     INFO     Stop Loss SELL order of 11083 nflx shares set at 81.90
+2015-05-29 13:45:30,117 __main__     INFO     Tightened Stop Loss SELL order, due to lower band curving in, of 11083 nflx shares set to 78.14
+2015-05-29 13:45:30,117 __main__     INFO     Tightened Stop Loss SELL order of 11083 nflx shares set to 79.02
+2015-05-29 13:45:30,118 __main__     INFO     Tightened Stop Loss SELL order of 11083 nflx shares set to 80.18
+2015-05-29 13:45:30,118 __main__     INFO     Tightened Stop Loss SELL order, due to lower band curving in, of 11083 nflx shares set to 81.52
+2015-05-29 13:45:30,118 __main__     INFO     Tightened Stop Loss SELL order, due to lower band curving in, of 11083 nflx shares set to 84.65
+2015-05-29 13:45:30,119 __main__     INFO     Tightened Stop Loss SELL order, due to lower band curving in, of 11083 nflx shares set to 85.82
+2015-05-29 13:45:30,119 __main__     INFO     2010-04-15 00:00:00: SOLD 11083 at $85.82
+2015-05-29 13:45:30,119 __main__     INFO     Portfolio after SELL: $1025067.28
+2015-05-29 13:45:30,166 __main__     INFO     Bullish; ENTERING a LONG position
+2015-05-29 13:45:30,166 __main__     INFO     2011-02-15 00:00:00: BOUGHT 3928 at $243.49
+2015-05-29 13:45:30,166 __main__     INFO     Portfolio cash after BUY: $68638.52
+2015-05-29 13:45:30,167 __main__     INFO     Stop Loss SELL order of 3928 nflx shares set at 241.61
+2015-05-29 13:45:30,167 __main__     INFO     2011-02-16 00:00:00: SOLD 3928 at $241.61
+2015-05-29 13:45:30,167 __main__     INFO     Portfolio after SELL: $1017702.22
+2015-05-29 13:45:30,173 __main__     INFO     Bullish; ENTERING a LONG position
+2015-05-29 13:45:30,173 __main__     INFO     2011-03-24 00:00:00: BOUGHT 4197 at $230.35
+2015-05-29 13:45:30,173 __main__     INFO     Portfolio cash after BUY: $50923.27
+2015-05-29 13:45:30,173 __main__     INFO     Stop Loss SELL order of 4197 nflx shares set at 225.56
+2015-05-29 13:45:30,176 __main__     INFO     2011-04-12 00:00:00: SOLD 4197 at $224.87
+2015-05-29 13:45:30,176 __main__     INFO     Portfolio after SELL: $994702.66
+2015-05-29 13:45:30,185 __main__     INFO     Bullish; ENTERING a LONG position
+2015-05-29 13:45:30,185 __main__     INFO     2011-05-26 00:00:00: BOUGHT 3630 at $259.30
+2015-05-29 13:45:30,185 __main__     INFO     Portfolio cash after BUY: $53443.70
+2015-05-29 13:45:30,186 __main__     INFO     Stop Loss SELL order of 3630 nflx shares set at 253.71
+2015-05-29 13:45:30,191 __main__     INFO     2011-06-16 00:00:00: SOLD 3630 at $253.71
+2015-05-29 13:45:30,191 __main__     INFO     Portfolio after SELL: $974392.85
+2015-05-29 13:45:30,226 __main__     INFO     Bullish; ENTERING a LONG position
+2015-05-29 13:45:30,226 __main__     INFO     2012-01-05 00:00:00: BOUGHT 11383 at $79.42
+2015-05-29 13:45:30,226 __main__     INFO     Portfolio cash after BUY: $70354.99
+2015-05-29 13:45:30,226 __main__     INFO     Stop Loss SELL order of 11383 nflx shares set at 76.40
+2015-05-29 13:45:30,246 __main__     INFO     2012-05-03 00:00:00: SOLD 11383 at $76.40
+2015-05-29 13:45:30,246 __main__     INFO     Portfolio after SELL: $940016.19
+2015-05-29 13:45:30,256 __main__     INFO     Bullish; ENTERING a LONG position
+2015-05-29 13:45:30,257 __main__     INFO     2012-07-06 00:00:00: BOUGHT 10726 at $83.25
+2015-05-29 13:45:30,257 __main__     INFO     Portfolio cash after BUY: $47076.69
+2015-05-29 13:45:30,257 __main__     INFO     Stop Loss SELL order of 10726 nflx shares set at 78.03
+2015-05-29 13:45:30,260 __main__     INFO     2012-07-24 00:00:00: SOLD 10726 at $78.03
+2015-05-29 13:45:30,260 __main__     INFO     Portfolio after SELL: $883972.84
+2015-05-29 13:45:30,271 __main__     INFO     Bullish; ENTERING a LONG position
+2015-05-29 13:45:30,272 __main__     INFO     2012-10-05 00:00:00: BOUGHT 12419 at $67.06
+2015-05-29 13:45:30,272 __main__     INFO     Portfolio cash after BUY: $51154.70
+2015-05-29 13:45:30,272 __main__     INFO     Stop Loss SELL order of 12419 nflx shares set at 64.66
+2015-05-29 13:45:30,274 __main__     INFO     2012-10-12 00:00:00: SOLD 12419 at $64.66
+2015-05-29 13:45:30,274 __main__     INFO     Portfolio after SELL: $854167.24
+2015-05-29 13:45:30,313 __main__     INFO     Bullish; ENTERING a LONG position
+2015-05-29 13:45:30,314 __main__     INFO     2013-07-10 00:00:00: BOUGHT 3275 at $245.55
+2015-05-29 13:45:30,314 __main__     INFO     Portfolio cash after BUY: $49990.99
+2015-05-29 13:45:30,314 __main__     INFO     Stop Loss SELL order of 3275 nflx shares set at 241.21
+2015-05-29 13:45:30,315 __main__     INFO     2013-07-11 00:00:00: SOLD 3275 at $241.21
+2015-05-29 13:45:30,315 __main__     INFO     Portfolio after SELL: $839953.72
+2015-05-29 13:45:30,315 __main__     INFO     Bullish; ENTERING a LONG position
+2015-05-29 13:45:30,316 __main__     INFO     2013-07-15 00:00:00: BOUGHT 3095 at $257.78
+2015-05-29 13:45:30,316 __main__     INFO     Portfolio cash after BUY: $42124.66
+2015-05-29 13:45:30,316 __main__     INFO     Stop Loss SELL order of 3095 nflx shares set at 251.55
+2015-05-29 13:45:30,318 __main__     INFO     2013-07-23 00:00:00: SOLD 3095 at $251.40
+2015-05-29 13:45:30,318 __main__     INFO     Portfolio after SELL: $820207.62
+2015-05-29 13:45:30,322 __main__     INFO     Bullish; ENTERING a LONG position
+2015-05-29 13:45:30,323 __main__     INFO     2013-08-21 00:00:00: BOUGHT 2844 at $272.89
+2015-05-29 13:45:30,323 __main__     INFO     Portfolio cash after BUY: $44108.44
+2015-05-29 13:45:30,323 __main__     INFO     Stop Loss SELL order of 2844 nflx shares set at 268.11
+2015-05-29 13:50:35,534 strategies.xiQuant_strategies.BB_spread INFO     Initial portfolio value: $100000.00
+2015-05-29 13:50:35,673 strategies.xiQuant_strategies.BB_spread INFO     Bullish; ENTERING a LONG position
+2015-05-29 13:50:35,674 strategies.xiQuant_strategies.BB_spread INFO     2014-05-22 00:00:00+00:00: BOUGHT 242 at $390.88
+2015-05-29 13:50:35,674 strategies.xiQuant_strategies.BB_spread INFO     Portfolio cash after BUY: $5407.04
+2015-05-29 13:50:35,674 strategies.xiQuant_strategies.BB_spread INFO     Stop Loss SELL order of 242 NFLX shares set at 382.86
+2015-05-29 13:50:35,675 strategies.xiQuant_strategies.BB_spread INFO     Tightened Stop Loss SELL order of 242 NFLX shares set to 387.25
+2015-05-29 13:50:35,676 strategies.xiQuant_strategies.BB_spread INFO     Tightened Stop Loss SELL order of 242 NFLX shares set to 389.41
+2015-05-29 13:50:35,676 strategies.xiQuant_strategies.BB_spread INFO     Tightened Stop Loss SELL order, due to lower band curving in, of 242 NFLX shares set to 390.83
+2015-05-29 13:50:35,677 strategies.xiQuant_strategies.BB_spread INFO     Tightened Stop Loss SELL order, due to lower band curving in, of 242 NFLX shares set to 393.22
+2015-05-29 13:50:35,677 strategies.xiQuant_strategies.BB_spread INFO     Tightened Stop Loss SELL order, due to lower band curving in, of 242 NFLX shares set to 406.90
+2015-05-29 13:50:35,678 strategies.xiQuant_strategies.BB_spread INFO     Tightened Stop Loss SELL order of 242 NFLX shares set to 411.36
+2015-05-29 13:50:35,678 strategies.xiQuant_strategies.BB_spread INFO     Tightened Stop Loss SELL order, due to lower band curving in, of 242 NFLX shares set to 413.62
+2015-05-29 13:50:35,678 strategies.xiQuant_strategies.BB_spread INFO     Tightened Stop Loss SELL order, due to lower band curving in, of 242 NFLX shares set to 409.22
+2015-05-29 13:50:35,679 strategies.xiQuant_strategies.BB_spread INFO     Tightened Stop Loss SELL order, due to lower band curving in, of 242 NFLX shares set to 414.75
+2015-05-29 13:50:35,679 strategies.xiQuant_strategies.BB_spread INFO     Tightened Stop Loss SELL order, due to lower band curving in, of 242 NFLX shares set to 419.78
+2015-05-29 13:50:35,680 strategies.xiQuant_strategies.BB_spread INFO     Tightened Stop Loss SELL order, due to lower band curving in, of 242 NFLX shares set to 421.53
+2015-05-29 13:50:35,680 strategies.xiQuant_strategies.BB_spread INFO     2014-06-09 00:00:00+00:00: SOLD 242 at $421.53
+2015-05-29 13:50:35,680 strategies.xiQuant_strategies.BB_spread INFO     Portfolio after SELL: $107416.67
+2015-05-29 13:51:03,362 strategies.xiQuant_strategies.BB_spread INFO     Initial portfolio value: $100000.00
+2015-05-29 13:51:03,590 strategies.xiQuant_strategies.BB_spread INFO     Bullish; ENTERING a LONG position
+2015-05-29 13:51:03,591 strategies.xiQuant_strategies.BB_spread INFO     2011-02-15 00:00:00+00:00: BOUGHT 383 at $240.74
+2015-05-29 13:51:03,591 strategies.xiQuant_strategies.BB_spread INFO     Portfolio cash after BUY: $7796.58
+2015-05-29 13:51:03,591 strategies.xiQuant_strategies.BB_spread INFO     Stop Loss SELL order of 383 NFLX shares set at 241.62
+2015-05-29 13:51:03,593 strategies.xiQuant_strategies.BB_spread INFO     Tightened Stop Loss SELL order, due to lower band curving in, of 383 NFLX shares set to 235.97
+2015-05-29 13:51:03,594 strategies.xiQuant_strategies.BB_spread INFO     Tightened Stop Loss SELL order, due to lower band curving in, of 383 NFLX shares set to 232.97
+2015-05-29 13:51:03,594 strategies.xiQuant_strategies.BB_spread INFO     Tightened Stop Loss SELL order, due to lower band curving in, of 383 NFLX shares set to 230.92
+2015-05-29 13:51:03,595 strategies.xiQuant_strategies.BB_spread INFO     Tightened Stop Loss SELL order, due to lower band curving in, of 383 NFLX shares set to 230.80
+2015-05-29 13:51:03,595 strategies.xiQuant_strategies.BB_spread INFO     2011-02-22 00:00:00+00:00: SOLD 383 at $225.37
+2015-05-29 13:51:03,595 strategies.xiQuant_strategies.BB_spread INFO     Portfolio after SELL: $94113.29
+2015-05-29 13:51:03,609 strategies.xiQuant_strategies.BB_spread INFO     Bullish; ENTERING a LONG position
+2015-05-29 13:51:03,610 strategies.xiQuant_strategies.BB_spread INFO     2011-05-26 00:00:00+00:00: BOUGHT 343 at $259.30
+2015-05-29 13:51:03,610 strategies.xiQuant_strategies.BB_spread INFO     Portfolio cash after BUY: $5173.39
+2015-05-29 13:51:03,610 strategies.xiQuant_strategies.BB_spread INFO     Stop Loss SELL order of 343 NFLX shares set at 253.71
+2015-05-29 13:51:03,611 strategies.xiQuant_strategies.BB_spread INFO     Tightened Stop Loss SELL order of 343 NFLX shares set to 258.31
+2015-05-29 13:51:03,611 strategies.xiQuant_strategies.BB_spread INFO     Tightened Stop Loss SELL order of 343 NFLX shares set to 261.27
+2015-05-29 13:51:03,611 strategies.xiQuant_strategies.BB_spread INFO     Tightened Stop Loss SELL order of 343 NFLX shares set to 264.15
+2015-05-29 13:51:03,612 strategies.xiQuant_strategies.BB_spread INFO     Tightened Stop Loss SELL order, due to lower band curving in, of 343 NFLX shares set to 261.91
+2015-05-29 13:51:03,612 strategies.xiQuant_strategies.BB_spread INFO     Tightened Stop Loss SELL order of 343 NFLX shares set to 263.87
+2015-05-29 13:51:03,613 strategies.xiQuant_strategies.BB_spread INFO     Tightened Stop Loss SELL order, due to lower band curving in, of 343 NFLX shares set to 268.23
+2015-05-29 13:51:03,613 strategies.xiQuant_strategies.BB_spread INFO     2011-06-06 00:00:00+00:00: SOLD 343 at $268.23
+2015-05-29 13:51:03,613 strategies.xiQuant_strategies.BB_spread INFO     Portfolio after SELL: $97175.58
+2015-05-29 13:51:03,649 strategies.xiQuant_strategies.BB_spread INFO     Bullish; ENTERING a LONG position
+2015-05-29 13:51:03,650 strategies.xiQuant_strategies.BB_spread INFO     2012-01-05 00:00:00+00:00: BOUGHT 1135 at $79.42
+2015-05-29 13:51:03,650 strategies.xiQuant_strategies.BB_spread INFO     Portfolio cash after BUY: $7033.88
+2015-05-29 13:51:03,650 strategies.xiQuant_strategies.BB_spread INFO     Stop Loss SELL order of 1135 NFLX shares set at 76.40
+2015-05-29 13:51:03,674 strategies.xiQuant_strategies.BB_spread INFO     2012-05-04 00:00:00+00:00: SOLD 1135 at $75.79
+2015-05-29 13:51:03,674 strategies.xiQuant_strategies.BB_spread INFO     Portfolio after SELL: $93055.53
+2015-05-29 13:51:03,684 strategies.xiQuant_strategies.BB_spread INFO     Bullish; ENTERING a LONG position
+2015-05-29 13:51:03,685 strategies.xiQuant_strategies.BB_spread INFO     2012-07-10 00:00:00+00:00: BOUGHT 1060 at $83.36
+2015-05-29 13:51:03,685 strategies.xiQuant_strategies.BB_spread INFO     Portfolio cash after BUY: $4688.63
+2015-05-29 13:51:03,685 strategies.xiQuant_strategies.BB_spread INFO     Stop Loss SELL order of 1060 NFLX shares set at 82.97
+2015-05-29 13:51:03,685 strategies.xiQuant_strategies.BB_spread INFO     2012-07-11 00:00:00+00:00: SOLD 1060 at $80.10
+2015-05-29 13:51:03,686 strategies.xiQuant_strategies.BB_spread INFO     Portfolio after SELL: $89594.63
+2015-05-29 13:51:03,700 strategies.xiQuant_strategies.BB_spread INFO     Bullish; ENTERING a LONG position
+2015-05-29 13:51:03,701 strategies.xiQuant_strategies.BB_spread INFO     2012-10-05 00:00:00+00:00: BOUGHT 1258 at $67.06
+2015-05-29 13:51:03,701 strategies.xiQuant_strategies.BB_spread INFO     Portfolio cash after BUY: $5233.15
+2015-05-29 13:51:03,701 strategies.xiQuant_strategies.BB_spread INFO     Stop Loss SELL order of 1258 NFLX shares set at 64.70
+2015-05-29 13:51:03,703 strategies.xiQuant_strategies.BB_spread INFO     2012-10-12 00:00:00+00:00: SOLD 1258 at $64.28
+2015-05-29 13:51:03,703 strategies.xiQuant_strategies.BB_spread INFO     Portfolio after SELL: $86101.79
+2015-05-29 13:51:03,749 strategies.xiQuant_strategies.BB_spread INFO     Bullish; ENTERING a LONG position
+2015-05-29 13:51:03,749 strategies.xiQuant_strategies.BB_spread INFO     2013-07-10 00:00:00+00:00: BOUGHT 330 at $245.55
+2015-05-29 13:51:03,749 strategies.xiQuant_strategies.BB_spread INFO     Portfolio cash after BUY: $5070.29
+2015-05-29 13:51:03,749 strategies.xiQuant_strategies.BB_spread INFO     Stop Loss SELL order of 330 NFLX shares set at 241.21
+2015-05-29 13:51:03,750 strategies.xiQuant_strategies.BB_spread INFO     2013-07-11 00:00:00+00:00: SOLD 330 at $241.21
+2015-05-29 13:51:03,750 strategies.xiQuant_strategies.BB_spread INFO     Portfolio after SELL: $84669.92
+2015-05-29 13:51:03,751 strategies.xiQuant_strategies.BB_spread INFO     Bullish; ENTERING a LONG position
+2015-05-29 13:51:03,751 strategies.xiQuant_strategies.BB_spread INFO     2013-07-15 00:00:00+00:00: BOUGHT 312 at $257.78
+2015-05-29 13:51:03,751 strategies.xiQuant_strategies.BB_spread INFO     Portfolio cash after BUY: $4242.56
+2015-05-29 13:51:03,752 strategies.xiQuant_strategies.BB_spread INFO     Stop Loss SELL order of 312 NFLX shares set at 251.55
+2015-05-29 13:51:03,753 strategies.xiQuant_strategies.BB_spread INFO     2013-07-23 00:00:00+00:00: SOLD 312 at $251.40
+2015-05-29 13:51:03,753 strategies.xiQuant_strategies.BB_spread INFO     Portfolio after SELL: $82679.36
+2015-05-29 13:51:03,758 strategies.xiQuant_strategies.BB_spread INFO     Bullish; ENTERING a LONG position
+2015-05-29 13:51:03,759 strategies.xiQuant_strategies.BB_spread INFO     2013-08-21 00:00:00+00:00: BOUGHT 286 at $272.89
+2015-05-29 13:51:03,759 strategies.xiQuant_strategies.BB_spread INFO     Portfolio cash after BUY: $4632.82
+2015-05-29 13:51:03,759 strategies.xiQuant_strategies.BB_spread INFO     Stop Loss SELL order of 286 NFLX shares set at 268.11

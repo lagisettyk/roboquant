@@ -5,7 +5,7 @@ from pyalgotrade.tools import yahoofinance
 from pyalgotrade.technical import bollinger
 #from pyalgotrade.technical import linreg
 from pyalgotrade.stratanalyzer import sharpe
-import talib
+#import talib
 from pyalgotrade.talibext import indicator
 from pyalgotrade.technical import ma
 #from pyalgotrade.technical import cross
@@ -24,6 +24,8 @@ import json
 
 import logging
 
+#########Kiran's additions
+import logging.handlers
 import os
 module_dir = os.path.dirname(__file__)  # get current directory
 
