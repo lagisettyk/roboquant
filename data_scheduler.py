@@ -11,6 +11,7 @@ import sys
 #sys.path.append('/home/parallels/Code/heroku-envbased/roboquant/strategies')
 #print sys.path
 #from algotrade import simple_strategy
+from xiQuant_strategies import xiQuantStrategyUtil
 
 sched = BlockingScheduler()
 
@@ -26,7 +27,6 @@ def get_redis_conn():
 	print "$$$URL: ", url
 	redisConn = redis.StrictRedis(host=url.hostname, port=url.port, password=url.password)
 	return redisConn
-
 '''
 #@sched.scheduled_job('interval', minutes=1)
 def test_simple_strategy():
@@ -34,14 +34,14 @@ def test_simple_strategy():
 	redis_conn = get_redis_conn()
 	q = Queue(connection=redis_conn)  # no args implies the default queue
 	import dateutil.parser
-	yourdate = dateutil.parser.parse('2014-01-01T08:00:00.000Z')
+	yourdate = dateutil.parser.parse('2012-01-01T08:00:00.000Z')
 	yourdate2 = dateutil.parser.parse('2014-12-31T08:00:00.000Z')
-	job = q.enqueue(simple_strategy.run_strategy_redis,"AAPL", 500000, yourdate, yourdate2)
+	job = q.enqueue(xiQuantStrategyUtil.run_strategy_redis, 20, "NFLX", 100000, yourdate, yourdate2)
 	while (job.result is None):
 		print job.result
 		time.sleep(1)
 	
-	print job.result.getTradeDetails()   # => 889
+	print job.result.getSeries("upper")   # => 889
 
 test_simple_strategy()
 

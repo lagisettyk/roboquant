@@ -1,0 +1,224 @@
+2015-05-29 12:35:55,624 xiQuant_strategies.BB_spread INFO     Initial portfolio value: $100000.00
+2015-05-29 12:35:55,753 xiQuant_strategies.BB_spread INFO     Bullish; ENTERING a LONG position
+2015-05-29 12:35:55,753 xiQuant_strategies.BB_spread INFO     2014-05-22 00:00:00+00:00: BOUGHT 242 at $390.88
+2015-05-29 12:35:55,753 xiQuant_strategies.BB_spread INFO     Portfolio cash after BUY: $5407.04
+2015-05-29 12:35:55,754 xiQuant_strategies.BB_spread INFO     Stop Loss SELL order of 242 NFLX shares set at 382.86
+2015-05-29 12:35:55,755 xiQuant_strategies.BB_spread INFO     Tightened Stop Loss SELL order of 242 NFLX shares set to 387.25
+2015-05-29 12:35:55,755 xiQuant_strategies.BB_spread INFO     Tightened Stop Loss SELL order of 242 NFLX shares set to 389.41
+2015-05-29 12:35:55,756 xiQuant_strategies.BB_spread INFO     Tightened Stop Loss SELL order, due to lower band curving in, of 242 NFLX shares set to 390.83
+2015-05-29 12:35:55,756 xiQuant_strategies.BB_spread INFO     Tightened Stop Loss SELL order, due to lower band curving in, of 242 NFLX shares set to 393.22
+2015-05-29 12:35:55,757 xiQuant_strategies.BB_spread INFO     Tightened Stop Loss SELL order, due to lower band curving in, of 242 NFLX shares set to 406.90
+2015-05-29 12:35:55,757 xiQuant_strategies.BB_spread INFO     Tightened Stop Loss SELL order of 242 NFLX shares set to 411.36
+2015-05-29 12:35:55,758 xiQuant_strategies.BB_spread INFO     Tightened Stop Loss SELL order, due to lower band curving in, of 242 NFLX shares set to 413.62
+2015-05-29 12:35:55,758 xiQuant_strategies.BB_spread INFO     Tightened Stop Loss SELL order, due to lower band curving in, of 242 NFLX shares set to 409.22
+2015-05-29 12:35:55,759 xiQuant_strategies.BB_spread INFO     Tightened Stop Loss SELL order, due to lower band curving in, of 242 NFLX shares set to 414.75
+2015-05-29 12:35:55,759 xiQuant_strategies.BB_spread INFO     Tightened Stop Loss SELL order, due to lower band curving in, of 242 NFLX shares set to 419.78
+2015-05-29 12:35:55,760 xiQuant_strategies.BB_spread INFO     Tightened Stop Loss SELL order, due to lower band curving in, of 242 NFLX shares set to 421.53
+2015-05-29 12:35:55,760 xiQuant_strategies.BB_spread INFO     2014-06-09 00:00:00+00:00: SOLD 242 at $421.53
+2015-05-29 12:35:55,760 xiQuant_strategies.BB_spread INFO     Portfolio after SELL: $107416.67
+2015-05-29 12:38:25,664 strategies.xiQuant_strategies.BB_spread INFO     Initial portfolio value: $100000.00
+2015-05-29 12:38:25,793 strategies.xiQuant_strategies.BB_spread INFO     Bullish; ENTERING a LONG position
+2015-05-29 12:38:25,793 strategies.xiQuant_strategies.BB_spread INFO     2014-05-22 00:00:00+00:00: BOUGHT 242 at $390.88
+2015-05-29 12:38:25,793 strategies.xiQuant_strategies.BB_spread INFO     Portfolio cash after BUY: $5407.04
+2015-05-29 12:38:25,793 strategies.xiQuant_strategies.BB_spread INFO     Stop Loss SELL order of 242 NFLX shares set at 382.86
+2015-05-29 12:38:25,794 strategies.xiQuant_strategies.BB_spread INFO     Tightened Stop Loss SELL order of 242 NFLX shares set to 387.25
+2015-05-29 12:38:25,794 strategies.xiQuant_strategies.BB_spread INFO     Tightened Stop Loss SELL order of 242 NFLX shares set to 389.41
+2015-05-29 12:38:25,795 strategies.xiQuant_strategies.BB_spread INFO     Tightened Stop Loss SELL order, due to lower band curving in, of 242 NFLX shares set to 390.83
+2015-05-29 12:38:25,795 strategies.xiQuant_strategies.BB_spread INFO     Tightened Stop Loss SELL order, due to lower band curving in, of 242 NFLX shares set to 393.22
+2015-05-29 12:38:25,796 strategies.xiQuant_strategies.BB_spread INFO     Tightened Stop Loss SELL order, due to lower band curving in, of 242 NFLX shares set to 406.90
+2015-05-29 12:38:25,796 strategies.xiQuant_strategies.BB_spread INFO     Tightened Stop Loss SELL order of 242 NFLX shares set to 411.36
+2015-05-29 12:38:25,796 strategies.xiQuant_strategies.BB_spread INFO     Tightened Stop Loss SELL order, due to lower band curving in, of 242 NFLX shares set to 413.62
+2015-05-29 12:38:25,797 strategies.xiQuant_strategies.BB_spread INFO     Tightened Stop Loss SELL order, due to lower band curving in, of 242 NFLX shares set to 409.22
+2015-05-29 12:38:25,797 strategies.xiQuant_strategies.BB_spread INFO     Tightened Stop Loss SELL order, due to lower band curving in, of 242 NFLX shares set to 414.75
+2015-05-29 12:38:25,798 strategies.xiQuant_strategies.BB_spread INFO     Tightened Stop Loss SELL order, due to lower band curving in, of 242 NFLX shares set to 419.78
+2015-05-29 12:38:25,798 strategies.xiQuant_strategies.BB_spread INFO     Tightened Stop Loss SELL order, due to lower band curving in, of 242 NFLX shares set to 421.53
+2015-05-29 12:38:25,799 strategies.xiQuant_strategies.BB_spread INFO     2014-06-09 00:00:00+00:00: SOLD 242 at $421.53
+2015-05-29 12:38:25,799 strategies.xiQuant_strategies.BB_spread INFO     Portfolio after SELL: $107416.67
+2015-05-29 12:39:14,905 strategies.xiQuant_strategies.BB_spread INFO     Initial portfolio value: $100000.00
+2015-05-29 12:39:41,655 strategies.xiQuant_strategies.BB_spread INFO     Initial portfolio value: $100000.00
+2015-05-29 12:40:18,033 strategies.xiQuant_strategies.BB_spread INFO     Initial portfolio value: $100000.00
+2015-05-29 12:40:18,273 strategies.xiQuant_strategies.BB_spread INFO     Bullish; ENTERING a LONG position
+2015-05-29 12:40:18,275 strategies.xiQuant_strategies.BB_spread INFO     2011-02-15 00:00:00+00:00: BOUGHT 383 at $240.74
+2015-05-29 12:40:18,276 strategies.xiQuant_strategies.BB_spread INFO     Portfolio cash after BUY: $7796.58
+2015-05-29 12:40:18,276 strategies.xiQuant_strategies.BB_spread INFO     Stop Loss SELL order of 383 NFLX shares set at 241.62
+2015-05-29 12:40:18,278 strategies.xiQuant_strategies.BB_spread INFO     Tightened Stop Loss SELL order, due to lower band curving in, of 383 NFLX shares set to 235.97
+2015-05-29 12:40:18,279 strategies.xiQuant_strategies.BB_spread INFO     Tightened Stop Loss SELL order, due to lower band curving in, of 383 NFLX shares set to 232.97
+2015-05-29 12:40:18,279 strategies.xiQuant_strategies.BB_spread INFO     Tightened Stop Loss SELL order, due to lower band curving in, of 383 NFLX shares set to 230.92
+2015-05-29 12:40:18,281 strategies.xiQuant_strategies.BB_spread INFO     Tightened Stop Loss SELL order, due to lower band curving in, of 383 NFLX shares set to 230.80
+2015-05-29 12:40:18,282 strategies.xiQuant_strategies.BB_spread INFO     2011-02-22 00:00:00+00:00: SOLD 383 at $225.37
+2015-05-29 12:40:18,283 strategies.xiQuant_strategies.BB_spread INFO     Portfolio after SELL: $94113.29
+2015-05-29 12:40:18,302 strategies.xiQuant_strategies.BB_spread INFO     Bullish; ENTERING a LONG position
+2015-05-29 12:40:18,302 strategies.xiQuant_strategies.BB_spread INFO     2011-05-26 00:00:00+00:00: BOUGHT 343 at $259.30
+2015-05-29 12:40:18,303 strategies.xiQuant_strategies.BB_spread INFO     Portfolio cash after BUY: $5173.39
+2015-05-29 12:40:18,303 strategies.xiQuant_strategies.BB_spread INFO     Stop Loss SELL order of 343 NFLX shares set at 253.71
+2015-05-29 12:40:18,303 strategies.xiQuant_strategies.BB_spread INFO     Tightened Stop Loss SELL order of 343 NFLX shares set to 258.31
+2015-05-29 12:40:18,303 strategies.xiQuant_strategies.BB_spread INFO     Tightened Stop Loss SELL order of 343 NFLX shares set to 261.27
+2015-05-29 12:40:18,304 strategies.xiQuant_strategies.BB_spread INFO     Tightened Stop Loss SELL order of 343 NFLX shares set to 264.15
+2015-05-29 12:40:18,305 strategies.xiQuant_strategies.BB_spread INFO     Tightened Stop Loss SELL order, due to lower band curving in, of 343 NFLX shares set to 261.91
+2015-05-29 12:40:18,305 strategies.xiQuant_strategies.BB_spread INFO     Tightened Stop Loss SELL order of 343 NFLX shares set to 263.87
+2015-05-29 12:40:18,306 strategies.xiQuant_strategies.BB_spread INFO     Tightened Stop Loss SELL order, due to lower band curving in, of 343 NFLX shares set to 268.23
+2015-05-29 12:40:18,306 strategies.xiQuant_strategies.BB_spread INFO     2011-06-06 00:00:00+00:00: SOLD 343 at $268.23
+2015-05-29 12:40:18,306 strategies.xiQuant_strategies.BB_spread INFO     Portfolio after SELL: $97175.58
+2015-05-29 12:40:18,352 strategies.xiQuant_strategies.BB_spread INFO     Bullish; ENTERING a LONG position
+2015-05-29 12:40:18,352 strategies.xiQuant_strategies.BB_spread INFO     2012-01-05 00:00:00+00:00: BOUGHT 1135 at $79.42
+2015-05-29 12:40:18,352 strategies.xiQuant_strategies.BB_spread INFO     Portfolio cash after BUY: $7033.88
+2015-05-29 12:40:18,353 strategies.xiQuant_strategies.BB_spread INFO     Stop Loss SELL order of 1135 NFLX shares set at 76.40
+2015-05-29 12:40:18,380 strategies.xiQuant_strategies.BB_spread INFO     2012-05-04 00:00:00+00:00: SOLD 1135 at $75.79
+2015-05-29 12:40:18,380 strategies.xiQuant_strategies.BB_spread INFO     Portfolio after SELL: $93055.53
+2015-05-29 12:40:18,395 strategies.xiQuant_strategies.BB_spread INFO     Bullish; ENTERING a LONG position
+2015-05-29 12:40:18,395 strategies.xiQuant_strategies.BB_spread INFO     2012-07-10 00:00:00+00:00: BOUGHT 1060 at $83.36
+2015-05-29 12:40:18,395 strategies.xiQuant_strategies.BB_spread INFO     Portfolio cash after BUY: $4688.63
+2015-05-29 12:40:18,395 strategies.xiQuant_strategies.BB_spread INFO     Stop Loss SELL order of 1060 NFLX shares set at 82.97
+2015-05-29 12:40:18,396 strategies.xiQuant_strategies.BB_spread INFO     2012-07-11 00:00:00+00:00: SOLD 1060 at $80.10
+2015-05-29 12:40:18,396 strategies.xiQuant_strategies.BB_spread INFO     Portfolio after SELL: $89594.63
+2015-05-29 12:40:18,417 strategies.xiQuant_strategies.BB_spread INFO     Bullish; ENTERING a LONG position
+2015-05-29 12:40:18,418 strategies.xiQuant_strategies.BB_spread INFO     2012-10-05 00:00:00+00:00: BOUGHT 1258 at $67.06
+2015-05-29 12:40:18,418 strategies.xiQuant_strategies.BB_spread INFO     Portfolio cash after BUY: $5233.15
+2015-05-29 12:40:18,418 strategies.xiQuant_strategies.BB_spread INFO     Stop Loss SELL order of 1258 NFLX shares set at 64.70
+2015-05-29 12:40:18,420 strategies.xiQuant_strategies.BB_spread INFO     2012-10-12 00:00:00+00:00: SOLD 1258 at $64.28
+2015-05-29 12:40:18,420 strategies.xiQuant_strategies.BB_spread INFO     Portfolio after SELL: $86101.79
+2015-05-29 12:40:18,475 strategies.xiQuant_strategies.BB_spread INFO     Bullish; ENTERING a LONG position
+2015-05-29 12:40:18,476 strategies.xiQuant_strategies.BB_spread INFO     2013-07-10 00:00:00+00:00: BOUGHT 330 at $245.55
+2015-05-29 12:40:18,476 strategies.xiQuant_strategies.BB_spread INFO     Portfolio cash after BUY: $5070.29
+2015-05-29 12:40:18,476 strategies.xiQuant_strategies.BB_spread INFO     Stop Loss SELL order of 330 NFLX shares set at 241.21
+2015-05-29 12:40:18,477 strategies.xiQuant_strategies.BB_spread INFO     2013-07-11 00:00:00+00:00: SOLD 330 at $241.21
+2015-05-29 12:40:18,477 strategies.xiQuant_strategies.BB_spread INFO     Portfolio after SELL: $84669.92
+2015-05-29 12:40:18,478 strategies.xiQuant_strategies.BB_spread INFO     Bullish; ENTERING a LONG position
+2015-05-29 12:40:18,478 strategies.xiQuant_strategies.BB_spread INFO     2013-07-15 00:00:00+00:00: BOUGHT 312 at $257.78
+2015-05-29 12:40:18,479 strategies.xiQuant_strategies.BB_spread INFO     Portfolio cash after BUY: $4242.56
+2015-05-29 12:40:18,479 strategies.xiQuant_strategies.BB_spread INFO     Stop Loss SELL order of 312 NFLX shares set at 251.55
+2015-05-29 12:40:18,480 strategies.xiQuant_strategies.BB_spread INFO     2013-07-23 00:00:00+00:00: SOLD 312 at $251.40
+2015-05-29 12:40:18,481 strategies.xiQuant_strategies.BB_spread INFO     Portfolio after SELL: $82679.36
+2015-05-29 12:40:18,486 strategies.xiQuant_strategies.BB_spread INFO     Bullish; ENTERING a LONG position
+2015-05-29 12:40:18,487 strategies.xiQuant_strategies.BB_spread INFO     2013-08-21 00:00:00+00:00: BOUGHT 286 at $272.89
+2015-05-29 12:40:18,487 strategies.xiQuant_strategies.BB_spread INFO     Portfolio cash after BUY: $4632.82
+2015-05-29 12:40:18,487 strategies.xiQuant_strategies.BB_spread INFO     Stop Loss SELL order of 286 NFLX shares set at 268.11
+2015-05-29 12:40:41,015 strategies.xiQuant_strategies.BB_spread INFO     Initial portfolio value: $100000.00
+2015-05-29 12:41:52,213 strategies.xiQuant_strategies.BB_spread INFO     Initial portfolio value: $100000.00
+2015-05-29 12:41:52,411 strategies.xiQuant_strategies.BB_spread INFO     Bullish; ENTERING a LONG position
+2015-05-29 12:41:52,411 strategies.xiQuant_strategies.BB_spread INFO     2011-02-15 00:00:00+00:00: BOUGHT 383 at $240.74
+2015-05-29 12:41:52,411 strategies.xiQuant_strategies.BB_spread INFO     Portfolio cash after BUY: $7796.58
+2015-05-29 12:41:52,411 strategies.xiQuant_strategies.BB_spread INFO     Stop Loss SELL order of 383 NFLX shares set at 241.62
+2015-05-29 12:41:52,412 strategies.xiQuant_strategies.BB_spread INFO     Tightened Stop Loss SELL order, due to lower band curving in, of 383 NFLX shares set to 235.97
+2015-05-29 12:41:52,412 strategies.xiQuant_strategies.BB_spread INFO     Tightened Stop Loss SELL order, due to lower band curving in, of 383 NFLX shares set to 232.97
+2015-05-29 12:41:52,413 strategies.xiQuant_strategies.BB_spread INFO     Tightened Stop Loss SELL order, due to lower band curving in, of 383 NFLX shares set to 230.92
+2015-05-29 12:41:52,413 strategies.xiQuant_strategies.BB_spread INFO     Tightened Stop Loss SELL order, due to lower band curving in, of 383 NFLX shares set to 230.80
+2015-05-29 12:41:52,413 strategies.xiQuant_strategies.BB_spread INFO     2011-02-22 00:00:00+00:00: SOLD 383 at $225.37
+2015-05-29 12:41:52,414 strategies.xiQuant_strategies.BB_spread INFO     Portfolio after SELL: $94113.29
+2015-05-29 12:41:52,428 strategies.xiQuant_strategies.BB_spread INFO     Bullish; ENTERING a LONG position
+2015-05-29 12:41:52,429 strategies.xiQuant_strategies.BB_spread INFO     2011-05-26 00:00:00+00:00: BOUGHT 343 at $259.30
+2015-05-29 12:41:52,429 strategies.xiQuant_strategies.BB_spread INFO     Portfolio cash after BUY: $5173.39
+2015-05-29 12:41:52,429 strategies.xiQuant_strategies.BB_spread INFO     Stop Loss SELL order of 343 NFLX shares set at 253.71
+2015-05-29 12:41:52,429 strategies.xiQuant_strategies.BB_spread INFO     Tightened Stop Loss SELL order of 343 NFLX shares set to 258.31
+2015-05-29 12:41:52,430 strategies.xiQuant_strategies.BB_spread INFO     Tightened Stop Loss SELL order of 343 NFLX shares set to 261.27
+2015-05-29 12:41:52,430 strategies.xiQuant_strategies.BB_spread INFO     Tightened Stop Loss SELL order of 343 NFLX shares set to 264.15
+2015-05-29 12:41:52,431 strategies.xiQuant_strategies.BB_spread INFO     Tightened Stop Loss SELL order, due to lower band curving in, of 343 NFLX shares set to 261.91
+2015-05-29 12:41:52,431 strategies.xiQuant_strategies.BB_spread INFO     Tightened Stop Loss SELL order of 343 NFLX shares set to 263.87
+2015-05-29 12:41:52,432 strategies.xiQuant_strategies.BB_spread INFO     Tightened Stop Loss SELL order, due to lower band curving in, of 343 NFLX shares set to 268.23
+2015-05-29 12:41:52,432 strategies.xiQuant_strategies.BB_spread INFO     2011-06-06 00:00:00+00:00: SOLD 343 at $268.23
+2015-05-29 12:41:52,432 strategies.xiQuant_strategies.BB_spread INFO     Portfolio after SELL: $97175.58
+2015-05-29 12:41:52,474 strategies.xiQuant_strategies.BB_spread INFO     Bullish; ENTERING a LONG position
+2015-05-29 12:41:52,474 strategies.xiQuant_strategies.BB_spread INFO     2012-01-05 00:00:00+00:00: BOUGHT 1135 at $79.42
+2015-05-29 12:41:52,475 strategies.xiQuant_strategies.BB_spread INFO     Portfolio cash after BUY: $7033.88
+2015-05-29 12:41:52,475 strategies.xiQuant_strategies.BB_spread INFO     Stop Loss SELL order of 1135 NFLX shares set at 76.40
+2015-05-29 12:41:52,498 strategies.xiQuant_strategies.BB_spread INFO     2012-05-04 00:00:00+00:00: SOLD 1135 at $75.79
+2015-05-29 12:41:52,498 strategies.xiQuant_strategies.BB_spread INFO     Portfolio after SELL: $93055.53
+2015-05-29 12:41:52,509 strategies.xiQuant_strategies.BB_spread INFO     Bullish; ENTERING a LONG position
+2015-05-29 12:41:52,509 strategies.xiQuant_strategies.BB_spread INFO     2012-07-10 00:00:00+00:00: BOUGHT 1060 at $83.36
+2015-05-29 12:41:52,509 strategies.xiQuant_strategies.BB_spread INFO     Portfolio cash after BUY: $4688.63
+2015-05-29 12:41:52,509 strategies.xiQuant_strategies.BB_spread INFO     Stop Loss SELL order of 1060 NFLX shares set at 82.97
+2015-05-29 12:41:52,510 strategies.xiQuant_strategies.BB_spread INFO     2012-07-11 00:00:00+00:00: SOLD 1060 at $80.10
+2015-05-29 12:41:52,510 strategies.xiQuant_strategies.BB_spread INFO     Portfolio after SELL: $89594.63
+2015-05-29 12:41:52,525 strategies.xiQuant_strategies.BB_spread INFO     Bullish; ENTERING a LONG position
+2015-05-29 12:41:52,526 strategies.xiQuant_strategies.BB_spread INFO     2012-10-05 00:00:00+00:00: BOUGHT 1258 at $67.06
+2015-05-29 12:41:52,526 strategies.xiQuant_strategies.BB_spread INFO     Portfolio cash after BUY: $5233.15
+2015-05-29 12:41:52,526 strategies.xiQuant_strategies.BB_spread INFO     Stop Loss SELL order of 1258 NFLX shares set at 64.70
+2015-05-29 12:41:52,528 strategies.xiQuant_strategies.BB_spread INFO     2012-10-12 00:00:00+00:00: SOLD 1258 at $64.28
+2015-05-29 12:41:52,528 strategies.xiQuant_strategies.BB_spread INFO     Portfolio after SELL: $86101.79
+2015-05-29 12:41:52,573 strategies.xiQuant_strategies.BB_spread INFO     Bullish; ENTERING a LONG position
+2015-05-29 12:41:52,573 strategies.xiQuant_strategies.BB_spread INFO     2013-07-10 00:00:00+00:00: BOUGHT 330 at $245.55
+2015-05-29 12:41:52,573 strategies.xiQuant_strategies.BB_spread INFO     Portfolio cash after BUY: $5070.29
+2015-05-29 12:41:52,574 strategies.xiQuant_strategies.BB_spread INFO     Stop Loss SELL order of 330 NFLX shares set at 241.21
+2015-05-29 12:41:52,574 strategies.xiQuant_strategies.BB_spread INFO     2013-07-11 00:00:00+00:00: SOLD 330 at $241.21
+2015-05-29 12:41:52,574 strategies.xiQuant_strategies.BB_spread INFO     Portfolio after SELL: $84669.92
+2015-05-29 12:41:52,575 strategies.xiQuant_strategies.BB_spread INFO     Bullish; ENTERING a LONG position
+2015-05-29 12:41:52,576 strategies.xiQuant_strategies.BB_spread INFO     2013-07-15 00:00:00+00:00: BOUGHT 312 at $257.78
+2015-05-29 12:41:52,576 strategies.xiQuant_strategies.BB_spread INFO     Portfolio cash after BUY: $4242.56
+2015-05-29 12:41:52,576 strategies.xiQuant_strategies.BB_spread INFO     Stop Loss SELL order of 312 NFLX shares set at 251.55
+2015-05-29 12:41:52,578 strategies.xiQuant_strategies.BB_spread INFO     2013-07-23 00:00:00+00:00: SOLD 312 at $251.40
+2015-05-29 12:41:52,578 strategies.xiQuant_strategies.BB_spread INFO     Portfolio after SELL: $82679.36
+2015-05-29 12:41:52,583 strategies.xiQuant_strategies.BB_spread INFO     Bullish; ENTERING a LONG position
+2015-05-29 12:41:52,584 strategies.xiQuant_strategies.BB_spread INFO     2013-08-21 00:00:00+00:00: BOUGHT 286 at $272.89
+2015-05-29 12:41:52,584 strategies.xiQuant_strategies.BB_spread INFO     Portfolio cash after BUY: $4632.82
+2015-05-29 12:41:52,584 strategies.xiQuant_strategies.BB_spread INFO     Stop Loss SELL order of 286 NFLX shares set at 268.11
+2015-05-29 12:43:51,288 strategies.xiQuant_strategies.BB_spread INFO     Initial portfolio value: $100000.00
+2015-05-29 12:43:51,549 strategies.xiQuant_strategies.BB_spread INFO     Bullish; ENTERING a LONG position
+2015-05-29 12:43:51,550 strategies.xiQuant_strategies.BB_spread INFO     2010-10-29 00:00:00+00:00: BOUGHT 528 at $174.94
+2015-05-29 12:43:51,550 strategies.xiQuant_strategies.BB_spread INFO     Portfolio cash after BUY: $7631.68
+2015-05-29 12:43:51,550 strategies.xiQuant_strategies.BB_spread INFO     Stop Loss SELL order of 528 NFLX shares set at 172.36
+2015-05-29 12:43:51,551 strategies.xiQuant_strategies.BB_spread INFO     2010-11-01 00:00:00+00:00: SOLD 528 at $172.36
+2015-05-29 12:43:51,551 strategies.xiQuant_strategies.BB_spread INFO     Portfolio after SELL: $98637.76
+2015-05-29 12:43:51,568 strategies.xiQuant_strategies.BB_spread INFO     Bullish; ENTERING a LONG position
+2015-05-29 12:43:51,569 strategies.xiQuant_strategies.BB_spread INFO     2011-02-15 00:00:00+00:00: BOUGHT 377 at $240.74
+2015-05-29 12:43:51,569 strategies.xiQuant_strategies.BB_spread INFO     Portfolio cash after BUY: $7878.78
+2015-05-29 12:43:51,569 strategies.xiQuant_strategies.BB_spread INFO     Stop Loss SELL order of 377 NFLX shares set at 241.62
+2015-05-29 12:43:51,569 strategies.xiQuant_strategies.BB_spread INFO     2011-02-16 00:00:00+00:00: SOLD 377 at $241.62
+2015-05-29 12:43:51,569 strategies.xiQuant_strategies.BB_spread INFO     Portfolio after SELL: $98967.64
+2015-05-29 12:43:51,585 strategies.xiQuant_strategies.BB_spread INFO     Bullish; ENTERING a LONG position
+2015-05-29 12:43:51,586 strategies.xiQuant_strategies.BB_spread INFO     2011-05-26 00:00:00+00:00: BOUGHT 361 at $259.30
+2015-05-29 12:43:51,586 strategies.xiQuant_strategies.BB_spread INFO     Portfolio cash after BUY: $5360.34
+2015-05-29 12:43:51,586 strategies.xiQuant_strategies.BB_spread INFO     Stop Loss SELL order of 361 NFLX shares set at 253.71
+2015-05-29 12:43:51,590 strategies.xiQuant_strategies.BB_spread INFO     2011-06-16 00:00:00+00:00: SOLD 361 at $253.71
+2015-05-29 12:43:51,590 strategies.xiQuant_strategies.BB_spread INFO     Portfolio after SELL: $96947.84
+2015-05-29 12:43:51,624 strategies.xiQuant_strategies.BB_spread INFO     Bullish; ENTERING a LONG position
+2015-05-29 12:43:51,625 strategies.xiQuant_strategies.BB_spread INFO     2012-01-05 00:00:00+00:00: BOUGHT 1132 at $79.42
+2015-05-29 12:43:51,625 strategies.xiQuant_strategies.BB_spread INFO     Portfolio cash after BUY: $7044.40
+2015-05-29 12:43:51,625 strategies.xiQuant_strategies.BB_spread INFO     Stop Loss SELL order of 1132 NFLX shares set at 76.40
+2015-05-29 12:43:51,647 strategies.xiQuant_strategies.BB_spread INFO     2012-05-04 00:00:00+00:00: SOLD 1132 at $75.79
+2015-05-29 12:43:51,647 strategies.xiQuant_strategies.BB_spread INFO     Portfolio after SELL: $92838.68
+2015-05-29 12:43:51,657 strategies.xiQuant_strategies.BB_spread INFO     Bullish; ENTERING a LONG position
+2015-05-29 12:43:51,657 strategies.xiQuant_strategies.BB_spread INFO     2012-07-10 00:00:00+00:00: BOUGHT 1057 at $83.36
+2015-05-29 12:43:51,658 strategies.xiQuant_strategies.BB_spread INFO     Portfolio cash after BUY: $4721.88
+2015-05-29 12:43:51,658 strategies.xiQuant_strategies.BB_spread INFO     Stop Loss SELL order of 1057 NFLX shares set at 82.97
+2015-05-29 12:43:51,658 strategies.xiQuant_strategies.BB_spread INFO     2012-07-11 00:00:00+00:00: SOLD 1057 at $80.10
+2015-05-29 12:43:51,658 strategies.xiQuant_strategies.BB_spread INFO     Portfolio after SELL: $89387.58
+2015-05-29 12:43:51,673 strategies.xiQuant_strategies.BB_spread INFO     Bullish; ENTERING a LONG position
+2015-05-29 12:43:51,674 strategies.xiQuant_strategies.BB_spread INFO     2012-10-05 00:00:00+00:00: BOUGHT 1255 at $67.06
+2015-05-29 12:43:51,674 strategies.xiQuant_strategies.BB_spread INFO     Portfolio cash after BUY: $5227.28
+2015-05-29 12:43:51,674 strategies.xiQuant_strategies.BB_spread INFO     Stop Loss SELL order of 1255 NFLX shares set at 64.70
+2015-05-29 12:43:51,675 strategies.xiQuant_strategies.BB_spread INFO     2012-10-12 00:00:00+00:00: SOLD 1255 at $64.28
+2015-05-29 12:43:51,675 strategies.xiQuant_strategies.BB_spread INFO     Portfolio after SELL: $85903.07
+2015-05-29 12:43:51,720 strategies.xiQuant_strategies.BB_spread INFO     Bullish; ENTERING a LONG position
+2015-05-29 12:43:51,720 strategies.xiQuant_strategies.BB_spread INFO     2013-07-10 00:00:00+00:00: BOUGHT 329 at $245.55
+2015-05-29 12:43:51,721 strategies.xiQuant_strategies.BB_spread INFO     Portfolio cash after BUY: $5117.12
+2015-05-29 12:43:51,721 strategies.xiQuant_strategies.BB_spread INFO     Stop Loss SELL order of 329 NFLX shares set at 241.21
+2015-05-29 12:43:51,721 strategies.xiQuant_strategies.BB_spread INFO     2013-07-11 00:00:00+00:00: SOLD 329 at $241.21
+2015-05-29 12:43:51,721 strategies.xiQuant_strategies.BB_spread INFO     Portfolio after SELL: $84475.54
+2015-05-29 12:43:51,722 strategies.xiQuant_strategies.BB_spread INFO     Bullish; ENTERING a LONG position
+2015-05-29 12:43:51,722 strategies.xiQuant_strategies.BB_spread INFO     2013-07-15 00:00:00+00:00: BOUGHT 311 at $257.78
+2015-05-29 12:43:51,723 strategies.xiQuant_strategies.BB_spread INFO     Portfolio cash after BUY: $4305.96
+2015-05-29 12:43:51,723 strategies.xiQuant_strategies.BB_spread INFO     Stop Loss SELL order of 311 NFLX shares set at 251.55
+2015-05-29 12:43:51,724 strategies.xiQuant_strategies.BB_spread INFO     2013-07-23 00:00:00+00:00: SOLD 311 at $251.40
+2015-05-29 12:43:51,725 strategies.xiQuant_strategies.BB_spread INFO     Portfolio after SELL: $82491.36
+2015-05-29 12:43:51,729 strategies.xiQuant_strategies.BB_spread INFO     Bullish; ENTERING a LONG position
+2015-05-29 12:43:51,730 strategies.xiQuant_strategies.BB_spread INFO     2013-08-21 00:00:00+00:00: BOUGHT 286 at $272.89
+2015-05-29 12:43:51,730 strategies.xiQuant_strategies.BB_spread INFO     Portfolio cash after BUY: $4444.82
+2015-05-29 12:43:51,730 strategies.xiQuant_strategies.BB_spread INFO     Stop Loss SELL order of 286 NFLX shares set at 268.11
+2015-05-29 12:44:21,882 strategies.xiQuant_strategies.BB_spread INFO     Initial portfolio value: $100000.00
+2015-05-29 12:44:22,008 strategies.xiQuant_strategies.BB_spread INFO     Bullish; ENTERING a LONG position
+2015-05-29 12:44:22,009 strategies.xiQuant_strategies.BB_spread INFO     2014-05-22 00:00:00+00:00: BOUGHT 242 at $390.88
+2015-05-29 12:44:22,009 strategies.xiQuant_strategies.BB_spread INFO     Portfolio cash after BUY: $5407.04
+2015-05-29 12:44:22,009 strategies.xiQuant_strategies.BB_spread INFO     Stop Loss SELL order of 242 NFLX shares set at 382.86
+2015-05-29 12:44:22,009 strategies.xiQuant_strategies.BB_spread INFO     Tightened Stop Loss SELL order of 242 NFLX shares set to 387.25
+2015-05-29 12:44:22,010 strategies.xiQuant_strategies.BB_spread INFO     Tightened Stop Loss SELL order of 242 NFLX shares set to 389.41
+2015-05-29 12:44:22,010 strategies.xiQuant_strategies.BB_spread INFO     Tightened Stop Loss SELL order, due to lower band curving in, of 242 NFLX shares set to 390.83
+2015-05-29 12:44:22,011 strategies.xiQuant_strategies.BB_spread INFO     Tightened Stop Loss SELL order, due to lower band curving in, of 242 NFLX shares set to 393.22
+2015-05-29 12:44:22,011 strategies.xiQuant_strategies.BB_spread INFO     Tightened Stop Loss SELL order, due to lower band curving in, of 242 NFLX shares set to 406.90
+2015-05-29 12:44:22,011 strategies.xiQuant_strategies.BB_spread INFO     Tightened Stop Loss SELL order of 242 NFLX shares set to 411.36
+2015-05-29 12:44:22,012 strategies.xiQuant_strategies.BB_spread INFO     Tightened Stop Loss SELL order, due to lower band curving in, of 242 NFLX shares set to 413.62
+2015-05-29 12:44:22,012 strategies.xiQuant_strategies.BB_spread INFO     Tightened Stop Loss SELL order, due to lower band curving in, of 242 NFLX shares set to 409.22
+2015-05-29 12:44:22,013 strategies.xiQuant_strategies.BB_spread INFO     Tightened Stop Loss SELL order, due to lower band curving in, of 242 NFLX shares set to 414.75
+2015-05-29 12:44:22,013 strategies.xiQuant_strategies.BB_spread INFO     Tightened Stop Loss SELL order, due to lower band curving in, of 242 NFLX shares set to 419.78
+2015-05-29 12:44:22,014 strategies.xiQuant_strategies.BB_spread INFO     Tightened Stop Loss SELL order, due to lower band curving in, of 242 NFLX shares set to 421.53
+2015-05-29 12:44:22,014 strategies.xiQuant_strategies.BB_spread INFO     2014-06-09 00:00:00+00:00: SOLD 242 at $421.53
+2015-05-29 12:44:22,014 strategies.xiQuant_strategies.BB_spread INFO     Portfolio after SELL: $107416.67

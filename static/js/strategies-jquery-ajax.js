@@ -125,9 +125,15 @@ $(document).ready( function() {
               dataType: "json",
               success: function (data) {
                 console.log("Inside Success")
+                console.log(data)
                 //var ticker = "AAPL"
                 displayPortfolioData(data.seriesData, stockticker)
                 displayReturnData(data.cumulativeReturn, stockticker)
+                bbseries = []
+                bbseries[0] = {name: "upper", data: data.upper};
+                bbseries[1] = {name: "middle", data: data.middle};
+                bbseries[2] = {name: "lower", data: data.lower};
+                displayBBData(bbseries)
                 displayInstrumentData(data.instrumentDetails, data.flagData, stockticker)
               },
               // Code to run if the request fails; the raw request and
@@ -171,6 +177,45 @@ $(document).ready( function() {
                   id : 'dataseries'
              }]
           });
+    }
+
+    function displayBBData (data, ticker) {
+
+      console.log("inside displayData")
+      //var flagdata 
+      console.log(data)
+      //console.log(flagdata)
+      $('#container3').highcharts('StockChart', {
+              rangeSelector : {
+                  selected : 5
+              },
+
+             yAxis: {
+                    labels: {
+                        formatter: function () {
+                            return (this.value > 0 ? ' + ' : '') + this.value + '%';
+                        }
+                    },
+                    plotLines: [{
+                        value: 0,
+                        width: 2,
+                        color: 'silver'
+                    }]
+                },
+
+                plotOptions: {
+                    series: {
+                        compare: 'percent'
+                    }
+                },
+
+                tooltip: {
+                    pointFormat: '<span style="color:{series.color}">{series.name}</span>: <b>{point.y}</b> ({point.change}%)<br/>',
+                    valueDecimals: 2
+                },
+
+                series: data
+            });
     }
 
     function displayReturnData (data, ticker) {

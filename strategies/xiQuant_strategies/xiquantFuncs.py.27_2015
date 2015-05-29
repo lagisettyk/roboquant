@@ -1,0 +1,16 @@
+#!/usr/bin/python
+
+import numpy
+
+from pyalgotrade import dataseries
+from pyalgotrade.talibext import indicator
+
+def slope(inpDS, lookbackWin):
+	if lookbackWin > 2:
+		return LINEARREG_SLOPE(inpDS, lookbackWin)
+	else:
+		prevVal = inpDS[-1 * lookbackWin] 
+		currVal = inpDS[-1] 
+		s = numpy.arctan((currVal - prevVal) / 2) * 180 / numpy.pi
+	return s
+

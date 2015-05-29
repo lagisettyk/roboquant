@@ -2,6 +2,8 @@
 
 {% block body_block %}
 
+<!--
+
 <link href="http://getbootstrap.com/examples/signin/signin.css" rel="stylesheet">
 
 <form class="form-signin" role="form" method="post" action=".">
@@ -12,6 +14,69 @@
 <input type="password" class="form-control" placeholder="Password" id="id_password" name="password" type="password" required />
 
         <button class="btn btn-lg btn-primary btn-block" type="submit" value="Submit" />Sign in</button>
-        </form>
+</form> -->
+<div class="container">
+    <div class="xi_login">
+    	<h3 class="xi_authTitle">Login or <a href="#">Sign up</a></h3>
+		<div class="row xi_row-sm-offset-3 xi_socialButtons">
+    	    <div class="col-xs-4 col-sm-2">
+		        <a href="http://www.facebook.com" class="btn btn-lg btn-block xi_btn-facebook">
+			        <i class="fa fa-facebook visible-xs"></i>
+			        <span class="hidden-xs">Facebook</span>
+		        </a>
+	        </div>
+        	<div class="col-xs-4 col-sm-2">
+		        <a href="http://www.twitter.com" class="btn btn-lg btn-block xi_btn-twitter">
+			        <i class="fa fa-twitter visible-xs"></i>
+			        <span class="hidden-xs">Twitter</span>
+		        </a>
+	        </div>	
+        	<div class="col-xs-4 col-sm-2">
+		        <a href="http://www.google.com" class="btn btn-lg btn-block xi_btn-google">
+			        <i class="fa fa-google-plus visible-xs"></i>
+			        <span class="hidden-xs">Google+</span>
+		        </a>
+	        </div>	
+		</div>
 
+		<div class="row xi_row-sm-offset-3 xi_loginOr">
+			<div class="col-xs-12 col-sm-6">
+				<hr class="xi_hrOr">
+				<span class="xi_spanOr">or</span>
+			</div>
+		</div>
+
+		<div class="row xi_row-sm-offset-3">
+			<div class="col-xs-12 col-sm-6">	
+			    <form class="xi_loginForm" action="" autocomplete="off">
+					<div class="input-group">
+						<span class="input-group-addon"><i class="fa fa-user"></i></span>
+						<input type="text" class="form-control" name="username" placeholder="email address">
+					</div>
+					<span class="help-block"></span>
+										
+					<div class="input-group">
+						<span class="input-group-addon"><i class="fa fa-lock"></i></span>
+						<input  type="password" class="form-control" name="password" placeholder="Password">
+					</div>
+                   
+                    <span class="help-block"></span>
+					<button class="btn btn-lg btn-primary btn-block" type="submit">Login</button>
+				</form>
+			</div>
+    	</div>
+		<div class="row xi_row-sm-offset-3">
+			<div class="col-xs-12 col-sm-3">
+				<label class="checkbox">
+				    <input type="checkbox" id="toggle-event" data-toggle="toggle" data-onstyle="warning" data-offstyle="danger" data-style="ios" data-height="15" checked> Remember Me
+					
+				</label>
+			</div>
+			<div class="col-xs-12 col-sm-3">
+				<p class="xi_forgotPwd">
+					<a href="#">Forgot password?</a>
+				</p>
+			</div>
+		</div>	    	
+	</div>
 {% endblock %}

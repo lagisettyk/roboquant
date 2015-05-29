@@ -1,0 +1,38 @@
+#!/usr/bin/python
+
+# Lookback window for computing the slope of BB bands
+BB_SLOPE_LOOKBACK_WINDOW = 2
+BB_SLOPE_LIMIT_FOR_CURVING = 0
+BB_CROC_SLOPE = 20
+# A small wick is defined as not being more than 20% of the candle.
+BB_SMALL_WICK = 20
+# A long wick is defined as being more than 80% of the candle.
+BB_LONG_WICK = 65
+PERCENT_OF_CASH_BALANCE_FOR_ENTRY = 0.95
+
+# For computing the percentage increase from the previous close
+# when the price breaches the band.
+BB_SPREAD_PERCENT_INCREASE_RANGE_1 = 5
+BB_SPREAD_PERCENT_INCREASE_RANGE_2 = 4
+BB_SPREAD_PERCENT_INCREASE_RANGE_3 = 3
+BB_SPREAD_PERCENT_INCREASE_RANGE_4 = 2
+BB_PRICE_RANGE_HIGH_1 = 50
+BB_PRICE_RANGE_HIGH_2 = 100
+BB_PRICE_RANGE_HIGH_3 = 200
+
+# Lookback window for checking if the price breached the same band recently
+BB_BREACH_LOOKBACK_WINDOW = 5
+
+PRICE_DELTA = 0.35
+RESISTANCE_LOOKBACK_WINDOW = 520
+RESISTANCE_RECENT_LOOKBACK_WINDOW = 22
+RESISTANCE_DELTA = 2
+SUPPORT_LOOKBACK_WINDOW = 520
+SUPPORT_RECENT_LOOKBACK_WINDOW = 22
+SUPPORT_DELTA = 2
+VOLUME_LOOKBACK_WINDOW = 2
+CASH_FLOW_LOOKBACK_WINDOW = 3
+
+## Exit Price Related
+BB_BAND_CURVES_IN_PRICE_TIGHTEN_PERCENT = 2.0
+BB_BAND_SECOND_DAY_BELOW = 0.25

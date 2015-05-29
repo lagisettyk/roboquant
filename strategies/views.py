@@ -110,7 +110,7 @@ def hichart_redis(request):
 	if request.method == 'GET':
 		ticker = request.GET['Ticker']
 	
-	highcharts_data = highchart_dataformat(redisConn, ticker+':Adj. Close')
+	highcharts_data = highchart_dataformat(redisConn, ticker+':Adj_Close')
 
     ### This is important to note json.dumps() convert python data structure to JSON form
 	return HttpResponse(json.dumps(highcharts_data), content_type='application/json')
@@ -123,7 +123,8 @@ def backtest(request):
 	import urlparse
 	from django.conf import settings
 	from rq import Queue
-	from algotrade import simple_strategy
+	#from algotrade import simple_strategy
+	from xiQuant_strategies import xiQuantStrategyUtil
 	import time
 	import dateutil.parser
 
@@ -141,19 +142,25 @@ def backtest(request):
 	start_date = dateutil.parser.parse(stdate)
 	end_date = dateutil.parser.parse(enddate)
 
-	print start_date, end_date
+	#print start_date, end_date
 
 	q = Queue(connection=redisConn)  # no args implies the default queue
-	job = q.enqueue(simple_strategy.run_strategy_redis, ticker, int(amount), start_date, end_date)
+	job = q.enqueue(xiQuantStrategyUtil.run_strategy_redis, 20, ticker, int(amount), start_date, end_date)
+	#job = q.enqueue(simple_strategy.run_strategy_redis, ticker, int(amount), start_date, end_date)
 	#job = q.enqueue(simple_strategy.run_strategy_multipleinstruments, int(amount), start_date, end_date)
 	while (job.result is None):
 		time.sleep(1)
+
+	#print "@@@@@$$$$$######", job.result.getPortfolioResult()
 
 	results = {
 		"seriesData":job.result.getPortfolioResult(),
 		"cumulativeReturn":job.result.getCumulativeReturns(), 
 		"instrumentDetails":job.result.getInstrumentDetails(),
-		"flagData": job.result.getTradeDetails() 
+		"flagData": job.result.getTradeDetails(),
+		"upper": job.result.getSeries("upper"), 
+		"middle": job.result.getSeries("middle"),
+		"lower": job.result.getSeries("lower")
 		}
 	
     ### This is important to note json.dumps() convert python data structure to JSON form

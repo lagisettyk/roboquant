@@ -1,0 +1,63 @@
+{"BB_Spread_Call": {"BB_Upper_And_BB_Lower": {
+											"OR": [
+													"BB_Upper_Breach",
+													"BB_Upper_Touch"
+												],
+											"AND": [
+													"BB_Upper_Croc_Open",
+													"BB_Lower_Croc_Open",
+													"BB_First_Croc_Open"
+												]
+										},
+					"Price_Jump": "Price_Jump_Check",
+					"Resistance_Or_Support": "Resistance_Check",
+					"Volume": "Volume_Check",
+					"Cash_Flow": "Cash_Flow_Check",
+					"RSI": {
+							"AND": [
+									"Greater_Than_Oversold",
+									"Pointing_Up"
+								]
+						},
+					"MACD": "No_Divergence",
+					"ADX_And_DMI": {
+									"AND": [
+											"DMI_Plus_Higher",
+											"DMI_Minus_Lower",
+											"ADX_Greater_Than_DMI_Minus",
+											"DMI_Plus_Greater_Than_DMI_Minus"
+										]
+								}
+						},
+"BB_Spread_Put": {"BB_Upper_And_BB_Lower": {
+											"OR": [
+													"BB_Lower_Breach",
+													"BB_Lower_Touch"
+												],
+											"AND": [
+													"BB_Upper_Croc_Open",
+													"BB_Lower_Croc_Open",
+													"BB_First_Croc_Open"
+												]
+										},
+					"Price_Jump": "Price_Jump_Check",
+					"Resistance_Or_Support": "Resistance_Check",
+					"Volume": "Volume_Check",
+					"Cash_Flow": "Cash_Flow_Check",
+					"RSI": {
+							"AND": [
+									"Less_Than_Overbought",
+									"Pointing_Down"
+								]
+						},
+					"MACD": "No_Divergence",
+					"ADX_And_DMI": {
+									"AND": [
+											"DMI_Plus_Higher",
+											"DMI_Minus_Lower",
+											"ADX_Less_Than_DMI_Minus",
+											"DMI_Plus_Less_Than_DMI_Minus"
+										]
+								}
+						}
+				}

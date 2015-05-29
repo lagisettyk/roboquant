@@ -198,9 +198,9 @@ def run_strategy_redis(ticker, amount, stdate, enddate):
 
     Adj_Open_dict = redis_listoflists_to_dict(redis_Adj_Open)
     Adj_High_dict = redis_listoflists_to_dict(redis_Adj_High)
-    Adj_Low_dict = redis_listoflists_to_dict(redis_Adj_Open)
-    Adj_Close_dict = redis_listoflists_to_dict(redis_Adj_Open)
-    Adj_Volume_dict = redis_listoflists_to_dict(redis_Adj_Open)
+    Adj_Low_dict = redis_listoflists_to_dict(redis_Adj_Low)
+    Adj_Close_dict = redis_listoflists_to_dict(redis_Adj_Close)
+    Adj_Volume_dict = redis_listoflists_to_dict(redis_Adj_Volume)
 
     bd = [] ##### initialize bar data.....
     for key in Adj_Close_dict:

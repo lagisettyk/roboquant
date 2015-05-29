@@ -1,0 +1,13 @@
+{"BB_Spread_Call": {
+					"OR": {
+							"Long_Wick": "Half_Wick_Plus_Price_Delta",
+							"Short_Wick": "Wick_Plus_Price_Delta"
+						}
+				},
+"BB_Spread_Put": {
+					"OR": {
+							"Long_Wick": "Half_Wick_Minus_Price_Delta",
+							"Short_Wick": "Wick_Minus_Price_Delta"
+						}
+				}
+		}
