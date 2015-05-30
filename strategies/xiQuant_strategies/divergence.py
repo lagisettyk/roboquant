@@ -1,6 +1,8 @@
 #!/usr/bin/python
 
-def check_dvx(values1, values2):
+import logging
+
+def check_dvx(values1, values2, highsOrLows):
 	assert(len(values1) == len(values2))
 	ret = []
 	for i in range(len(values1)):
@@ -11,12 +13,12 @@ def check_dvx(values1, values2):
 		v2 = values2[i]
 		v2Prev = values2[i-1]
 		if v1 is not None and v1Prev is not None and v2 is not None and v2Prev is not None:
-			if v1 >= v1Prev:
+			if highsOrLows and v1 >= v1Prev:
 				if v2 >= v2Prev:
 					continue
 				else:
 					return True
-			elif v1 < v1Prev:
+			elif not highsOrLows and v1 < v1Prev:
 				if v2 < v2Prev:
 					continue
 				else:
@@ -25,10 +27,10 @@ def check_dvx(values1, values2):
 			return True
 	return False
 
-def dvx_impl(values1, values2, start, end):
+def dvx_impl(values1, values2, start, end, highsOrLows):
 	# Get both set of values.
 	values1 = values1[start:end]
 	values2 = values2[start:end]
 
 	# Check if there's any divergence
-	return check_dvx(values1, values2)
+	return check_dvx(values1, values2, highsOrLows)

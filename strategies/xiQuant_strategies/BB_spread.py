@@ -3,26 +3,25 @@ from pyalgotrade import strategy
 from pyalgotrade import plotter
 from pyalgotrade.tools import yahoofinance
 from pyalgotrade.technical import bollinger
+from pyalgotrade.technical import ma
 #from pyalgotrade.technical import linreg
 from pyalgotrade.stratanalyzer import sharpe
 #import talib
-#from pyalgotrade.talibext import indicator
-from pyalgotrade.technical import ma
+from pyalgotrade.talibext import indicator
 #from pyalgotrade.technical import cross
 from pyalgotrade.technical import rsi
 
 import numpy
-
-import xiquantFuncs
-import xiquantStrategyParams as consts
-
 #import Image
 from matplotlib import pyplot
 
+import logging
 import json
 #import jsonschema
 
-import logging
+import xiquantFuncs
+import xiquantStrategyParams as consts
+import divergence
 
 #########Kiran's additions
 import logging.handlers
@@ -32,6 +31,7 @@ module_dir = os.path.dirname(__file__)  # get current directory
 class BBands(strategy.BacktestingStrategy):
 	def __init__(self, feed, instrument, bBandsPeriod, startPortfolio):
 		strategy.BacktestingStrategy.__init__(self, feed, startPortfolio)
+		self.__feed = feed
 		self.__longPos = None
 		self.__shortPos = None
 		self.__entryDay = None
@@ -50,6 +50,15 @@ class BBands(strategy.BacktestingStrategy):
 		self.__bb_upper = 0
 		self.__bb_period = bBandsPeriod
 		self.__rsi = rsi.RSI(feed[instrument].getPriceDataSeries(), consts.RSI_SETTING)
+		self.__lowPriceDS = feed[instrument].getLowDataSeries()
+		self.__highPriceDS = feed[instrument].getHighDataSeries()
+		self.__emaFast = ma.EMA(self.__priceDS, consts.MACD_FAST_FASTPERIOD)
+		self.__emaSlow = ma.EMA(self.__priceDS, consts.MACD_FAST_SLOWPERIOD)
+		self.__emaSignal = ma.EMA(self.__priceDS, consts.MACD_FAST_SIGNALPERIOD)
+		self.__macd = None
+		self.__adx = None
+		self.__dmiPlus = None
+		self.__dmiMinus = None
 		# Count used to pick up the first day of the croc mouth opening
 		self.__bbFirstCrocDay = 0
 		self.__inpStrategy = None
@@ -58,13 +67,13 @@ class BBands(strategy.BacktestingStrategy):
 		self.__logger = None
 
 	def initLogging(self):
-		logger = logging.getLogger(__name__)
+		logger = logging.getLogger("xiQuant")
 		logger.setLevel(logging.INFO)
 		file_BB_Spread = os.path.join(module_dir, 'BB_Spread.log')
 		### replaced with rotating file handler...
 		handler = logging.handlers.RotatingFileHandler(
               file_BB_Spread, maxBytes=1024 * 1024, backupCount=5)
-		#handler = logging.FileHandler(file_BB_Spread)
+		#handler = logging.FileHandler("BB_Spread.log")
 		handler.setLevel(logging.INFO)
 		formatter = logging.Formatter('%(asctime)s %(name)-12s %(levelname)-8s %(message)s')
 		handler.setFormatter(formatter)
@@ -157,6 +166,16 @@ class BBands(strategy.BacktestingStrategy):
 		upper = self.__bbands.getUpperBand()[-1]
 		if lower is None:
 			return
+
+		if len(self.__priceDS) < consts.MACD_PRICE_DVX_LOOKBACK:
+			return
+		self.__macd = xiquantFuncs.dsToNumpyArray(self.__emaFast, consts.MACD_PRICE_DVX_LOOKBACK) - xiquantFuncs.dsToNumpyArray(self.__emaSlow, consts.MACD_PRICE_DVX_LOOKBACK)
+
+		if len(self.__priceDS) < consts.DMI_SETTING:
+			return
+		self.__adx = indicator.ADX(self.__feed[self.__instrument], consts.ADX_SETTING)
+		self.__dmiPlus = indicator.PLUS_DI(self.__feed[self.__instrument], consts.DMI_SETTING)
+		self.__dmiMinus = indicator.MINUS_DI(self.__feed[self.__instrument], consts.DMI_SETTING)
 
 		self.__bb_lower = lower
 		self.__bb_middle = middle
@@ -392,6 +411,25 @@ class BBands(strategy.BacktestingStrategy):
 		if (self.__rsi[-1] <= consts.RSI_LOWER_LIMIT):
 			return False
 
+		# Check MACD, should show no divergence with the price chart in the lookback window
+		if len(self.__priceDS) < consts.MACD_PRICE_DVX_LOOKBACK:
+			return False
+		highPriceArray = xiquantFuncs.dsToNumpyArray(self.__highPriceDS, consts.MACD_PRICE_DVX_LOOKBACK)
+		macdArray = self.__macd[consts.MACD_PRICE_DVX_LOOKBACK * -1:]
+		#if divergence.dvx_impl(highPriceArray, macdArray, (-1 * consts.MACD_PRICE_DVX_LOOKBACK), -1, consts.MACD_CHECK_HIGHS):
+		#	self.__logger.debug("Divergence in MACD and price highs detected")
+		#	return False
+
+		# Check DMI+ and DMI-
+		if len(self.__dmiPlus) < consts.DMI_SETTING or len(self.__dmiMinus) < consts.DMI_SETTING:
+			return False
+		if (self.__dmiPlus[-1] <= self.__dmiMinus[-1]):
+			# Add the code to give higher priority for investment to cases when both the conditions are satisfied.
+			if (self.__dmiPlus[-1] <= self.__dmiPlus[-2]):
+				return False
+			if (self.__dmiMinus[-1] >= self.__dmiMinus[-2]):
+				return False
+
 		# Add checks for other indicators here
 		############
 		return True
@@ -522,6 +560,25 @@ class BBands(strategy.BacktestingStrategy):
 			return False
 		if (self.__rsi[-1] <= consts.RSI_UPPER_LIMIT):
 			return False
+
+		# Check MACD, should show no divergence with the price chart in the lookback window
+		if len(self.__priceDS) < consts.MACD_PRICE_DVX_LOOKBACK:
+			return False
+		lowPriceArray = xiquantFuncs.dsToNumpyArray(self.__lowPriceDS, consts.MACD_PRICE_DVX_LOOKBACK)
+		macdArray = self.__macd[consts.MACD_PRICE_DVX_LOOKBACK * -1:]
+		#if divergence.dvx_impl(lowPriceArray, macdArray, (-1 * consts.MACD_PRICE_DVX_LOOKBACK), -1, consts.MACD_CHECK_LOWS):
+		#	self.__logger.debug("Divergence in MACD and price lows detected")
+		#	return False
+
+		# Check DMI+ and DMI-
+		if len(self.__dmiPlus) < consts.DMI_SETTING or len(self.__dmiMinus) < consts.DMI_SETTING:
+			return False
+		if (self.__dmiPlus[-1] >= self.__dmiMinus[-1]):
+			# Add the code to give higher priority for investment to cases when both the conditions are satisfied.
+			if (self.__dmiPlus[-1] >= self.__dmiPlus[-2]):
+				return False
+			if (self.__dmiMinus[-1] <= self.__dmiMinus[-2]):
+				return False
 
 		# Add checks for other indicators here
 		############
