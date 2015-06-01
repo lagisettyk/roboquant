@@ -42,11 +42,8 @@ class StrategyResults(object):
         self.__portfolioValues = []
         self.__tradeDetails = []
         self.__instrumentDetails = []
+        self.__AdjPrices = None
         self.__additionalDataSeries = {}
-        #self.__upper = upper
-        #self.__lower = lower
-        #self.__middle = middle
-        #### attach returns analyzer to strategy...
         strat.attachAnalyzer(returnsAnalyzer)
         self.__returnsAnalyzer = returnsAnalyzer
 
@@ -54,8 +51,21 @@ class StrategyResults(object):
         dateTime = bars.getDateTime()
         self.__dateTimes.add(dateTime)
         seconds = mktime(bars.getDateTime().timetuple())
-        
 
+        ### Populate AdjClose Price series of instruments....
+        if self.__AdjPrices is None:
+            self.__AdjPrices = dict.fromkeys(bars.getInstruments()) ### Initialize the dictionary object...
+        for instrument in bars.getInstruments():
+            adj_Close_Series = self.__AdjPrices[instrument]
+            if adj_Close_Series is None:
+                adj_Close_Series = [] ### Initialize the value list...
+            bar_val = bars.getBar(instrument)
+            adjPrice_val = [int(seconds * 1000), bar_val.getAdjClose()]
+            adj_Close_Series.append(adjPrice_val)
+            self.__AdjPrices[instrument] = adj_Close_Series
+
+
+        
         # Feed the portfolio evolution subplot.
         if self.__plotPortfolio:
             #self.__portfolioValues[bars.getDateTime()] = strat.getBroker().getEquity()
@@ -87,6 +97,10 @@ class StrategyResults(object):
                 val = {'x':int(seconds * 1000), 'title': 'S', 'text': 'SOLD:' + str(order.getInstrument()) +' #No:' + str(order.getQuantity())}
                 self.__tradeDetails.append(val)
 
+    def getAdjCloseSeries(self, instrument):
+        return self.__AdjPrices[instrument]
+
+
     def addSeries(self, name, series):
         #### please note need to figure out elegant way of pickling dictionary items...
         self.__additionalDataSeries[name] = series
@@ -96,15 +110,6 @@ class StrategyResults(object):
         dateList = list(self.__dateTimes)
         dateList.sort()
         seq_data = self.__additionalDataSeries[name]
-        '''
-        seq_data = []
-        if name == 'upper':
-            seq_data = self.__upper
-        elif name == 'middle':
-            seq_data = self.__middle
-        else:
-            seq_data = self.__lower
-        '''
         for x in range(len(dateList)):
             dt =  dateList[x]
             sec = mktime(dt.timetuple())
@@ -235,13 +240,17 @@ def run_strategy_redis(bBandsPeriod, instrument, startPortfolio, startdate, endd
     # Attach a returns analyzers to the strategy.
     returnsAnalyzer = returns.Returns()
     results = StrategyResults(strat, returnsAnalyzer) 
-        #strat.getBollingerBands().getUpperBand(), strat.getBollingerBands().getMiddleBand(), strat.getBollingerBands().getLowerBand())
-    strat.run()
+
+    ###Initialize the bands to maxlength of 5000 for 10 years backtest..
+    strat.getBollingerBands().getMiddleBand().setMaxLen(5000)
+    strat.getBollingerBands().getUpperBand().setMaxLen(5000)
+    strat.getBollingerBands().getLowerBand().setMaxLen(5000)
+    
     
     #### Add boilingerbands series....
     results.addSeries("upper", strat.getBollingerBands().getUpperBand())
     results.addSeries("middle", strat.getBollingerBands().getMiddleBand())
     results.addSeries("lower", strat.getBollingerBands().getLowerBand())
-    #print results.getPortfolioResult()
-    #print results.getCumulativeReturns()
+    strat.run()
+    
     return results

@@ -155,12 +155,13 @@ def backtest(request):
 
 	results = {
 		"seriesData":job.result.getPortfolioResult(),
-		"cumulativeReturn":job.result.getCumulativeReturns(), 
-		"instrumentDetails":job.result.getInstrumentDetails(),
+		#"cumulativeReturn":job.result.getCumulativeReturns(), 
+		#"instrumentDetails":job.result.getInstrumentDetails(),
 		"flagData": job.result.getTradeDetails(),
 		"upper": job.result.getSeries("upper"), 
 		"middle": job.result.getSeries("middle"),
-		"lower": job.result.getSeries("lower")
+		"lower": job.result.getSeries("lower"),
+		"price": job.result.getAdjCloseSeries(ticker)
 		}
 	
     ### This is important to note json.dumps() convert python data structure to JSON form
