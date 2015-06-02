@@ -1,30 +1,42 @@
 import pyalgotrade.broker 
 from time import mktime
 from pyalgotrade.barfeed import membf
+from utils import util
 import BB_spread
 
-###########pickling/serialization .....
-#### magic code for serializing instance methods....in python...
-
+import copy_reg
+import types
 def _pickle_method(method):
+    """
+    Author: Steven Bethard (author of argparse)
+    http://bytes.com/topic/python/answers/552476-why-cant-you-pickle-instancemethods
+    """
     func_name = method.im_func.__name__
     obj = method.im_self
     cls = method.im_class
+    cls_name = ''
+    if func_name.startswith('__') and not func_name.endswith('__'):
+        cls_name = cls.__name__.lstrip('_')
+    if cls_name:
+        func_name = '_' + cls_name + func_name
     return _unpickle_method, (func_name, obj, cls)
 
+
 def _unpickle_method(func_name, obj, cls):
+    """
+    Author: Steven Bethard
+    http://bytes.com/topic/python/answers/552476-why-cant-you-pickle-instancemethods
+    """
     for cls in cls.mro():
         try:
             func = cls.__dict__[func_name]
         except KeyError:
             pass
         else:
-            break
-        #return func.__get__(obj, cls)
-import copy_reg
-import types
-copy_reg.pickle(types.MethodType, _pickle_method, _unpickle_method)
+            return func.__get__(obj, cls)
+            #break
 
+copy_reg.pickle(types.MethodType, _pickle_method, _unpickle_method)
 
 
 class StrategyResults(object):
@@ -72,8 +84,6 @@ class StrategyResults(object):
             val = [int(seconds * 1000), strat.getBroker().getEquity()]
             self.__portfolioValues.append(val)
             
-            #print "Datetime, value: ", bars.getDateTime(), strat.getBroker().getEquity()
-
         if self.__plotAllInstruments:
             for instrument in bars.getInstruments():
                 instrument_shares = [int(seconds * 1000), strat.getBroker().getShares(instrument)]
@@ -168,65 +178,34 @@ def redis_listoflists_to_dict(redis_list):
     return dict(zip(list_keys, list_values))
 
 def redis_build_feed(ticker, stdate, enddate):
-
     import datetime
-    import redis
     from time import mktime
-    import urlparse
-    import os
     from pyalgotrade.utils import dt
     from pyalgotrade.bar import BasicBar, Frequency
-
 
     seconds = mktime(stdate.timetuple())
     seconds2 = mktime(enddate.timetuple())
 
-    redis_url = os.environ.get('REDISCLOUD_URL', 'redis://localhost:6379')
-    url = urlparse.urlparse(redis_url)
-    redisConn = redis.StrictRedis(host=url.hostname, port=url.port, password=url.password)
-    redis_Adj_Open = redisConn.zrangebyscore(ticker+':Adj_Open', int(seconds*1000), int(seconds2*1000), 0, -1, True)
-    redis_Adj_High = redisConn.zrangebyscore(ticker+':Adj_High', int(seconds*1000), int(seconds2*1000), 0, -1, True)
-    redis_Adj_Low = redisConn.zrangebyscore(ticker+':Adj_Low', int(seconds*1000), int(seconds2*1000), 0, -1, True)
-    redis_Adj_Close = redisConn.zrangebyscore(ticker+':Adj_Close', int(seconds*1000), int(seconds2*1000), 0, -1, True)
-    redis_Adj_Volume = redisConn.zrangebyscore(ticker+':Adj_Volume', int(seconds*1000), int(seconds2*1000), 0, -1, True)
+    data_dict = {}
+    try:
+        redisConn = util.get_redis_conn()
+        ticker_data = redisConn.zrangebyscore(ticker, int(seconds), int(seconds2), 0, -1, True)
+        data_dict = redis_listoflists_to_dict(ticker_data)
 
-    #### Convert list of lists to dictionary to align keys...
-    #### Please note we need to find better solution in the fuutre...
-    #### Use adj_close as the master list of lists
-    Adj_Open_dict = redis_listoflists_to_dict(redis_Adj_Open)
-    Adj_High_dict = redis_listoflists_to_dict(redis_Adj_High)
-    Adj_Low_dict = redis_listoflists_to_dict(redis_Adj_Low)
-    Adj_Close_dict = redis_listoflists_to_dict(redis_Adj_Close)
-    Adj_Volume_dict = redis_listoflists_to_dict(redis_Adj_Volume)
-    
-
+    except Exception,e: 
+            print str(e)
+            pass
     bd = [] ##### initialize bar data.....
-    for key in Adj_Close_dict:
-        Adj_Close = float(Adj_Close_dict[key])
-        dateTime = dt.timestamp_to_datetime(key/1000)
-
-        if (key in Adj_Open_dict) and (key in Adj_Low_dict) \
-            and (key in Adj_Volume_dict) and (key in Adj_High_dict):
-            Adj_Open = float(Adj_Open_dict[key])
-            Adj_High = float(Adj_High_dict[key])
-            Adj_Low = float(Adj_Low_dict[key])
-            Adj_Volume = float(Adj_Volume_dict[key])
-        else:
-            ##### Any of the missing keys set to adj_close....
-            Adj_Open =  Adj_Close - 0.05
-            Adj_High =  Adj_Close + 0.05
-            Adj_Low  =  Adj_Close  - 0.05
-            Adj_Volume = Adj_Close * 250000 ### Constant volume...
-            #print "$$$$$####@@@@", Adj_Close, Adj_Open, Adj_High, Adj_Low, Adj_Volume, dateTime
-
-        #print key, Adj_Close, Adj_Open, Adj_High, Adj_Low, Adj_Volume, dateTime  
+    for key in data_dict:
+        dateTime = dt.timestamp_to_datetime(key)
+        data = data_dict[key].split("|") ### split pipe delimted values
         bar = BasicBar(dateTime, 
-              Adj_Open , Adj_High, Adj_Low, Adj_Close, Adj_Volume, Adj_Close, Frequency.TRADE)
+            float(data[0]) , float(data[1]), float(data[2]), float(data[3]), float(data[4]), float(data[3]), Frequency.DAY)
         bd.append(bar)
-
     feed = Feed(Frequency.DAY, 1024)
     feed.loadBars(ticker, bd)
     return feed
+
 
 def run_strategy_redis(bBandsPeriod, instrument, startPortfolio, startdate, enddate):
     from pyalgotrade.stratanalyzer import returns
@@ -244,8 +223,7 @@ def run_strategy_redis(bBandsPeriod, instrument, startPortfolio, startdate, endd
     ###Initialize the bands to maxlength of 5000 for 10 years backtest..
     strat.getBollingerBands().getMiddleBand().setMaxLen(5000)
     strat.getBollingerBands().getUpperBand().setMaxLen(5000)
-    strat.getBollingerBands().getLowerBand().setMaxLen(5000)
-    
+    strat.getBollingerBands().getLowerBand().setMaxLen(5000) 
     
     #### Add boilingerbands series....
     results.addSeries("upper", strat.getBollingerBands().getUpperBand())

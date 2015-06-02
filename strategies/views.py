@@ -52,35 +52,6 @@ def hichart_quandl(request):
     ### This is important to note json.dumps() convert python data structure to JSON form
 	return HttpResponse(json.dumps(highcharts_data), content_type='application/json')
 
-'''
-#### Temporary purpose later need to move to models.....
-def populate_redis_datastore(redisConn, tickerList, startdate):
-	import Quandl
-	import json
-
-	for ticker in range(len(tickerList)):
-		if redisConn.zcard(tickerList[ticker]+':Adj. Close') == 0:
-			try:
-				my_data  = Quandl.get(
-					"WIKI/"+ tickerList[ticker], returns="pandas", 
-					column="11", sort_order="asc", authtoken="L5A6rmU9FGvyss9F7Eym",  
-					trim_start = startdate )
-				if not my_data.empty:
-					json_data = json.loads(my_data.to_json()) 
-					json_data_list = list(sorted(json_data['Adj. Close'].items()))
-					for x in range(len(json_data_list)):
-						dl = list(json_data_list[x])
-						### Store data in the sorted sets...
-						redisConn.zadd(tickerList[ticker]+':Adj. Close', dl[0], dl[1])
-					print redisConn.zrange(tickerList[ticker]+':Adj. Close', 0, -1)
-			except Exception,e: 
-				print str(e)
-				pass
-
-		print "populated time series: ", tickerList[ticker]+':Adj. Close'
-		#sleep(0.20) # Sleep in between calls
-'''
-
 def highchart_dataformat(redisConn, sortedset):
 
 	redisTS = redisConn.zrange(sortedset, 0, -1, False, True)
@@ -95,18 +66,10 @@ def hichart_redis(request):
 	import json
 	import urlparse
 	from django.conf import settings
+	from utils import util
 
     # Intialize redis store.....
-	url = urlparse.urlparse(settings.REDIS_URL)
-	print "$$$URL: ", url
-	redisConn = redis.StrictRedis(host=url.hostname, port=url.port, password=url.password)
-	#redisConn = redis.Redis(host=url.hostname, port=url.port, password=url.password)
-
-	####### This code needs to move to initialization of models sections...
-	#tickerList = ["AAPL", "MSFT", "GS"]
-	#populate_redis_datastore(redisConn, tickerList, "2005/01/01")
-	###################################################################
-     
+	redisConn = util.get_redis_conn(settings.REDIS_URL)
 	if request.method == 'GET':
 		ticker = request.GET['Ticker']
 	
@@ -124,14 +87,17 @@ def backtest(request):
 	from django.conf import settings
 	from rq import Queue
 	#from algotrade import simple_strategy
-	from xiQuant_strategies import xiQuantStrategyUtil
+	#from xiQuant_strategies import xiQuantStrategyUtil
 	import time
 	import dateutil.parser
+	from utils import util
+	from xiQuant_strategies import xiQuantStrategyUtil
 
     # Intialize redis store.....
-	url = urlparse.urlparse(settings.REDIS_URL)
-	print "$$$URL: ", url
-	redisConn = redis.StrictRedis(host=url.hostname, port=url.port, password=url.password)
+	#url = urlparse.urlparse(settings.REDIS_URL)
+	#print "$$$URL: ", url
+	#redisConn = redis.StrictRedis(host=url.hostname, port=url.port, password=url.password)
+	redisConn = util.get_redis_conn(settings.REDIS_URL)
 	if request.method == 'GET':
 		ticker = request.GET['Ticker']
 		amount = request.GET['amount']
@@ -142,16 +108,10 @@ def backtest(request):
 	start_date = dateutil.parser.parse(stdate)
 	end_date = dateutil.parser.parse(enddate)
 
-	#print start_date, end_date
-
 	q = Queue(connection=redisConn)  # no args implies the default queue
 	job = q.enqueue(xiQuantStrategyUtil.run_strategy_redis, 20, ticker, int(amount), start_date, end_date)
-	#job = q.enqueue(simple_strategy.run_strategy_redis, ticker, int(amount), start_date, end_date)
-	#job = q.enqueue(simple_strategy.run_strategy_multipleinstruments, int(amount), start_date, end_date)
 	while (job.result is None):
 		time.sleep(1)
-
-	#print "@@@@@$$$$$######", job.result.getPortfolioResult()
 
 	results = {
 		"seriesData":job.result.getPortfolioResult(),
@@ -165,7 +125,6 @@ def backtest(request):
 		}
 	
     ### This is important to note json.dumps() convert python data structure to JSON form
-	#return HttpResponse(json.dumps(job.result), content_type='application/json')
 	return HttpResponse(json.dumps(results), content_type='application/json')
 
 

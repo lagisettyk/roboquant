@@ -1,23 +1,13 @@
-import os
-
-import redis
-import urlparse
+#import redis
 from rq import Worker, Queue, Connection
+from utils import util
 
-import sys
-
+#import sys
 #sys.path.append('/home/parallels/Code/heroku-envbased/roboquant/strategies')
 #print sys.path
 
 listen = ['high', 'default', 'low']
-
-redis_url = os.getenv('REDISCLOUD_URL', 'redis://localhost:6379')
-
-url = urlparse.urlparse(redis_url)
-
-#conn = redis.from_url(redis_url)
-
-conn = redis.StrictRedis(host=url.hostname, port=url.port, password=url.password)
+conn = util.get_redis_conn()
 
 if __name__ == '__main__':
     with Connection(conn):
