@@ -6,27 +6,10 @@ import datetime
 from apscheduler.schedulers.blocking import BlockingScheduler
 from utils import util
 
-#import os
-#import urlparse
-#import sys
 
-#sys.path.append('/home/parallels/Code/heroku-envbased/roboquant/strategies')
-#print sys.path
-#from algotrade import simple_strategy
-#from xiQuant_strategies import xiQuantStrategyUtil
-
-sched = BlockingScheduler()
-
-tickerList = ['AAPL', 'AMZN', 'FDX', 'MA', 'NFLX', 'OCR', 'SPY', 'NXPI', 'CVS', 'UNP', 'GILD', 'VRX', \
-        'ACT', 'GOOGL', 'CF', 'URI', 'CP', 'WHR', 'IWM', 'UNH', 'VIAB',  'FLT', 'ODFL', 'GD', 'XLF', 'ALL', 'V' ]
-
-#tickerList = ['VRX', 'ACT']
-
-def get_redis_conn():
-	return util.get_redis_conn()
+tickerList = util.getTickerList()
 
 '''
-#@sched.scheduled_job('interval', minutes=1)
 def test_simple_strategy():
 	# Tell RQ what Redis connection to use
 	redis_conn = get_redis_conn()
@@ -42,8 +25,14 @@ def test_simple_strategy():
 	print job.result.getSeries("upper")   # => 889
 
 test_simple_strategy()
-
 '''
+
+
+def get_redis_conn():
+	return util.get_redis_conn()
+
+sched = BlockingScheduler()
+
 #@sched.scheduled_job('interval', minutes=45)
 @sched.scheduled_job('date')
 def timed_job():
@@ -54,10 +43,10 @@ def timed_job():
 	q = Queue(connection=redis_conn)  # no args implies the default queue
 	job = q.enqueue(populate_redis_eod_history, "EOD", tickerList)
 	print job.result   # => None
-	time.sleep(60)
+	time.sleep(600)
 	print job.result   # => 889
 
-#@sched.scheduled_job('interval', minutes=1)
+#@sched.scheduled_job('date')
 @sched.scheduled_job('cron', day_of_week='mon-fri', hour=17)
 def scheduled_job():
 	print('This job is run every weekday at 7pm.')

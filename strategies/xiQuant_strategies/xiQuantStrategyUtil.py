@@ -3,6 +3,8 @@ from time import mktime
 from pyalgotrade.barfeed import membf
 from utils import util
 import BB_spread
+import datetime
+
 
 import copy_reg
 import types
@@ -177,7 +179,7 @@ def redis_listoflists_to_dict(redis_list):
     list_values, list_keys = zip(*redis_list)
     return dict(zip(list_keys, list_values))
 
-def redis_build_feed(ticker, stdate, enddate):
+def redis_build_feed_EOD(ticker, stdate, enddate):
     import datetime
     from time import mktime
     from pyalgotrade.utils import dt
@@ -189,12 +191,12 @@ def redis_build_feed(ticker, stdate, enddate):
     data_dict = {}
     try:
         redisConn = util.get_redis_conn()
-        ticker_data = redisConn.zrangebyscore(ticker, int(seconds), int(seconds2), 0, -1, True)
+        ticker_data = redisConn.zrangebyscore(ticker + ":EOD", int(seconds), int(seconds2), 0, -1, True)
         data_dict = redis_listoflists_to_dict(ticker_data)
+    except Exception,e:
+        print str(e)
+        pass
 
-    except Exception,e: 
-            print str(e)
-            pass
     bd = [] ##### initialize bar data.....
     for key in data_dict:
         dateTime = dt.timestamp_to_datetime(key)
@@ -206,12 +208,83 @@ def redis_build_feed(ticker, stdate, enddate):
     feed.loadBars(ticker, bd)
     return feed
 
+def redis_build_sma_3days(ticker, stdate, enddate):
+    import datetime
+    from time import mktime
+    from pyalgotrade.utils import dt
 
+    seconds = mktime(stdate.timetuple())
+    seconds2 = mktime(enddate.timetuple())
+    data_dict = {}
+    try:
+        redisConn = util.get_redis_conn()
+        ticker_data = redisConn.zrangebyscore(ticker + ":EOD", int(seconds), int(seconds2), 0, -1, True)
+        data_dict = redis_listoflists_to_dict(ticker_data)
+    except Exception,e:
+        print str(e)
+        pass
+
+    #### Compute sma_3days 
+    #### Avg(Close_Price * volume) over 3 days...
+    sma_3days = [] ##### initialize bar data.....
+    keys = sorted(data_dict.keys())
+    i = 0 
+    j = 3
+    while j < len(keys):
+        data_point = []
+        Avg = 0
+        timestamp = keys[j-1]
+        avg_list = keys[i:j]
+        for key in avg_list:
+            data = data_dict[key].split("|")
+            Avg += float(data[3]) * float(data[4])
+        data_point.append(timestamp)
+        data_point.append(Avg/3.0)
+        sma_3days.append(data_point)
+        i +=1
+        j +=1
+    return sma_3days
+
+def redis_build_moneyflow(ticker, stdate, enddate):
+    moneyflow = []
+    sma_3days = redis_build_sma_3days(ticker, stdate, enddate)
+    for x in range(len(sma_3days)-1):
+        data_point = []
+        data_point.append(sma_3days[x+1][0])
+        data_point.append(sma_3days[x+1][1] - sma_3days[x][1])
+        moneyflow.append(data_point)
+    return moneyflow
+
+def redis_build_moneyflow_percent(ticker, stdate, enddate):
+    moneyflow = []
+    sma_3days = redis_build_sma_3days(ticker, stdate, enddate)
+    for x in range(len(sma_3days)-1):
+        data_point = []
+        data_point.append(sma_3days[x+1][0])
+        diff = sma_3days[x+1][1] - sma_3days[x][1]
+        data_point.append(diff/sma_3days[x][1] * 100)
+        moneyflow.append(data_point)
+    return moneyflow
+
+def tickersRankByMoneyFlowPercent(date):
+    import collections
+
+    momentum_rank = {}
+    tickerList = util.getTickerList()
+    for x in range(len(tickerList)):
+        moneyflow = redis_build_moneyflow_percent(tickerList[x], (date - datetime.timedelta(days=10)), date)
+        if len(moneyflow) > 1:
+            data_point = moneyflow[len(moneyflow)-1]
+            momentum_rank[data_point[1]] = tickerList[x]
+
+    return collections.OrderedDict(sorted(momentum_rank.items(), reverse=True))
+    
+   
 def run_strategy_redis(bBandsPeriod, instrument, startPortfolio, startdate, enddate):
     from pyalgotrade.stratanalyzer import returns
 
     # Download the bars
-    feed = redis_build_feed(instrument, startdate, enddate)
+    feed = redis_build_feed_EOD(instrument, startdate, enddate)
     #feed = yahoofinance.build_feed([instrument], 2012, 2014, ".")
 
     strat = BB_spread.BBands(feed, instrument, bBandsPeriod, startPortfolio)
