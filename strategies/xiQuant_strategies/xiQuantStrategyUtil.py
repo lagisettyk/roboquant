@@ -191,6 +191,7 @@ def redis_build_feed_EOD(ticker, stdate, enddate):
     data_dict = {}
     try:
         redisConn = util.get_redis_conn()
+        ### added EOD as data source
         ticker_data = redisConn.zrangebyscore(ticker + ":EOD", int(seconds), int(seconds2), 0, -1, True)
         data_dict = redis_listoflists_to_dict(ticker_data)
     except Exception,e:
