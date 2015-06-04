@@ -74,7 +74,9 @@ class StrategyResults(object):
             if adj_Close_Series is None:
                 adj_Close_Series = [] ### Initialize the value list...
             bar_val = bars.getBar(instrument)
-            adjPrice_val = [int(seconds * 1000), bar_val.getAdjClose()]
+            ### This is for displaying OHLC + volume as candle stick in high charts...
+            adjPrice_val = [int(seconds * 1000), bar_val.getOpen(True), bar_val.getHigh(True), \
+                    bar_val.getLow(True), bar_val.getAdjClose(), bar_val.getVolume()]
             adj_Close_Series.append(adjPrice_val)
             self.__AdjPrices[instrument] = adj_Close_Series
 

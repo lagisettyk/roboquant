@@ -213,6 +213,7 @@ $(document).ready( function() {
                 id : 'dataseries3'
                },{
                 name : dataList[3].name,
+                type: 'candlestick',
                 data : dataList[3].data,
                 tooltip: {
                     valueDecimals: 2
@@ -221,7 +222,7 @@ $(document).ready( function() {
                },{
                         type : 'flags',
                         data : dataList[4].data,
-                        onSeries : 'dataseries4',
+                        //onSeries : 'dataseries4',
                         shape : 'squarepin',
                         width : 16
               }]
