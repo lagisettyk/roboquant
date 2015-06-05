@@ -186,6 +186,18 @@ $(document).ready( function() {
       //console.log(dataList[4].name)
       //console.log(dataList[4].data)
       $('#container3').highcharts('StockChart', {
+
+             legend: {
+                    enabled: true,
+                    align: 'right',
+                    backgroundColor: '#FCFFC5',
+                    borderColor: 'black',
+                    borderWidth: 2,
+                    layout: 'vertical',
+                    verticalAlign: 'top',
+                    y: 100,
+                    shadow: true
+              },
               rangeSelector : {
                   selected : 5
               },
@@ -226,6 +238,7 @@ $(document).ready( function() {
                 id : 'dataseries4'
                },{
                         type : 'flags',
+                        name : 'trades',
                         data : dataList[4].data,
                         //onSeries : 'dataseries4',
                         shape : 'squarepin',
@@ -237,6 +250,19 @@ $(document).ready( function() {
 
     function displayEMAData (dataList, ticker) {
       $('#container2').highcharts('StockChart', {
+             
+              legend: {
+                    enabled: true,
+                    align: 'right',
+                    backgroundColor: '#FCFFC5',
+                    borderColor: 'black',
+                    borderWidth: 2,
+                    layout: 'vertical',
+                    verticalAlign: 'top',
+                    y: 100,
+                    shadow: true
+              },
+  
               rangeSelector : {
                   selected : 5
               },
@@ -244,6 +270,20 @@ $(document).ready( function() {
               title : {
                   text : "EMA Data"
               },
+
+              /*plotOptions: {
+                  series: {
+                    events: {
+                        legendItemClick: function(event) {
+                            var visibility = this.visible ? 'visible' : 'hidden';
+                            if (!confirm('The series is currently '+ 
+                                         visibility +'. Do you want to change that?')) {
+                                return false;
+                            }
+                        }
+                    }
+                  }
+              },*/
 
               //series: data,
               series : [{
