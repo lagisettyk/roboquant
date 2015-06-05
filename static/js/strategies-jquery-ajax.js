@@ -136,10 +136,10 @@ $(document).ready( function() {
                 bbseries[4] = {name: "flagData", data: data.flagData};
                 displayBBData(bbseries,stockticker)
                 emaseries = []
-                emaseries[0] = {name: "rsi", data: data.rsi};
-                emaseries[1] = {name: "ema fast", data: data.emafast};
-                emaseries[2] = {name: "ema slow", data: data.emaslow};
-                emaseries[3] = {name: "ema signal", data: data.emasignal};
+                emaseries[0] = {name: "ema fast", data: data.emafast};
+                emaseries[1] = {name: "ema slow", data: data.emaslow};
+                emaseries[2] = {name: "ema signal", data: data.emasignal};
+                emaseries[3] = {name: "rsi", data: data.rsi};
                 displayEMAData(emaseries,stockticker)
                 //displayInstrumentData(data.instrumentDetails, data.flagData, stockticker)
               },
@@ -250,7 +250,7 @@ $(document).ready( function() {
 
     function displayEMAData (dataList, ticker) {
       $('#container2').highcharts('StockChart', {
-             
+     
               legend: {
                     enabled: true,
                     align: 'right',
@@ -267,26 +267,48 @@ $(document).ready( function() {
                   selected : 5
               },
 
+              yAxis: [ { //--- primary yAxis
+                          title: {
+                              text: 'EMA'
+                          },
+                          min: 0,
+                          height: '60%'
+              },{ //--- secondary yAxis
+                             title : {
+                                text : 'RSI'
+                             },
+                              min: 0,
+                              max: 100,
+                              top: '65%',
+                              height: '35%',
+                              offset: 0,
+                             plotLines : [{
+                                      value : 30,
+                                      color : 'red',
+                                      dashStyle : 'shortdash',
+                                      width : 2,
+                                      label : {
+                                          text : 'minimum'
+                                      }
+                                }, {
+                                    value : 70,
+                                    color : 'red',
+                                    dashStyle : 'shortdash',
+                                    width : 2,
+                                    label : {
+                                        text : 'maximum'
+                                    }
+                            }],
+                          opposite: true
+              }],
+
               title : {
                   text : "EMA Data"
               },
 
-              /*plotOptions: {
-                  series: {
-                    events: {
-                        legendItemClick: function(event) {
-                            var visibility = this.visible ? 'visible' : 'hidden';
-                            if (!confirm('The series is currently '+ 
-                                         visibility +'. Do you want to change that?')) {
-                                return false;
-                            }
-                        }
-                    }
-                  }
-              },*/
-
               //series: data,
               series : [{
+                yAxis: 0,
                 name : dataList[0].name,
                 data : dataList[0].data,
                 tooltip: {
@@ -294,6 +316,7 @@ $(document).ready( function() {
                 },
                 id : 'dataseries1'
                },{
+                yAxis: 0,
                 name : dataList[1].name,
                 data : dataList[1].data,
                 tooltip: {
@@ -301,13 +324,15 @@ $(document).ready( function() {
                 },
                 id : 'dataseries2'
                },{
-                name : dataList[2].name,
+                 yAxis: 0,
+                 name : dataList[2].name,
                 data : dataList[2].data,
                 tooltip: {
                     valueDecimals: 2
                 },
                 id : 'dataseries3'
                },{
+                yAxis: 1,
                 name : dataList[3].name,
                 data : dataList[3].data,
                 tooltip: {
