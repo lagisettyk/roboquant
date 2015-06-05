@@ -121,7 +121,11 @@ def backtest(request):
 		"upper": job.result.getSeries("upper"), 
 		"middle": job.result.getSeries("middle"),
 		"lower": job.result.getSeries("lower"),
-		"price": job.result.getAdjCloseSeries(ticker)
+		"price": job.result.getAdjCloseSeries(ticker),
+		"rsi": job.result.getSeries("RSI"),
+		"emafast": job.result.getSeries("EMA Fast"),
+		"emaslow": job.result.getSeries("EMA Slow"),
+		"emasignal": job.result.getSeries("EMA Signal")
 		}
 	
     ### This is important to note json.dumps() convert python data structure to JSON form

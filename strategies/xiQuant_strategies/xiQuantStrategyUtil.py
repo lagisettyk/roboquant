@@ -102,13 +102,13 @@ class StrategyResults(object):
                 #self.getSeries("Buy", BuyMarker).addValue(execInfo.getDateTime(), execInfo.getPrice())
                 print "BUY: ", execInfo.getDateTime(), execInfo.getPrice()
                 seconds = mktime(execInfo.getDateTime().timetuple())
-                val = {'x':int(seconds * 1000), 'title': 'B', 'text': 'Bought: ' + str(order.getInstrument()) +'  #No: ' + str(order.getQuantity())}
+                val = {'x':int(seconds * 1000), 'title': 'B', 'text': 'Bought: ' + str(order.getInstrument()) +'  Shares: ' + str(order.getQuantity()) + " Price " +  str(execInfo.getPrice())}
                 self.__tradeDetails.append(val)
             elif action in [pyalgotrade.broker.Order.Action.SELL, pyalgotrade.broker.Order.Action.SELL_SHORT]:
                 #self.getSeries("Sell", SellMarker).addValue(execInfo.getDateTime(), execInfo.getPrice())
                 print "SELL: ", execInfo.getDateTime(), execInfo.getPrice()
                 seconds = mktime(execInfo.getDateTime().timetuple())
-                val = {'x':int(seconds * 1000), 'title': 'S', 'text': 'SOLD:' + str(order.getInstrument()) +' #No:' + str(order.getQuantity())}
+                val = {'x':int(seconds * 1000), 'title': 'S', 'text': 'SOLD:' + str(order.getInstrument()) +' Shares:' + str(order.getQuantity()) + " Price " +  str(execInfo.getPrice())}
                 self.__tradeDetails.append(val)
 
     def getAdjCloseSeries(self, instrument):
@@ -300,13 +300,20 @@ def run_strategy_redis(bBandsPeriod, instrument, startPortfolio, startdate, endd
     strat.getBollingerBands().getMiddleBand().setMaxLen(5000)
     strat.getBollingerBands().getUpperBand().setMaxLen(5000)
     strat.getBollingerBands().getLowerBand().setMaxLen(5000) 
-    #strat.getMACD().setMaxLen(5000)
+    strat.getRSI().setMaxLen(5000)
+    strat.getEMAFast().setMaxLen(5000)
+    strat.getEMASlow().setMaxLen(5000)
+    strat.getEMASignal().setMaxLen(5000)
     #### Add boilingerbands series....
     strat.run()
 
     results.addSeries("upper", strat.getBollingerBands().getUpperBand())
     results.addSeries("middle", strat.getBollingerBands().getMiddleBand())
     results.addSeries("lower", strat.getBollingerBands().getLowerBand())
+    results.addSeries("RSI", strat.getRSI())
+    results.addSeries("EMA Fast", strat.getEMAFast())
+    results.addSeries("EMA Slow", strat.getEMASlow())
+    results.addSeries("EMA Signal", strat.getEMASignal())
     #results.addSeries("macd", strat.getMACD())
     
     return results

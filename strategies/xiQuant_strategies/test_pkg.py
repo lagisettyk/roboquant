@@ -35,6 +35,6 @@ print results.getPortfolioResult()
 #print results.getInstrumentDetails()
 #print results.getTradeDetails()
 #print results.getCumulativeReturns()
-#print results.getSeries("macd")
+print results.getSeries("EMA Signal")
 
 

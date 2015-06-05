@@ -128,7 +128,6 @@ $(document).ready( function() {
                 //console.log(data)
                 //var ticker = "AAPL"
                 displayPortfolioData(data.seriesData, stockticker)
-                //displayReturnData(data.cumulativeReturn, stockticker)
                 bbseries = []
                 bbseries[0] = {name: "upper", data: data.upper};
                 bbseries[1] = {name: "middle", data: data.middle};
@@ -136,6 +135,12 @@ $(document).ready( function() {
                 bbseries[3] = {name: "price", data: data.price};
                 bbseries[4] = {name: "flagData", data: data.flagData};
                 displayBBData(bbseries,stockticker)
+                emaseries = []
+                emaseries[0] = {name: "rsi", data: data.rsi};
+                emaseries[1] = {name: "ema fast", data: data.emafast};
+                emaseries[2] = {name: "ema slow", data: data.emaslow};
+                emaseries[3] = {name: "ema signal", data: data.emasignal};
+                displayEMAData(emaseries,stockticker)
                 //displayInstrumentData(data.instrumentDetails, data.flagData, stockticker)
               },
               // Code to run if the request fails; the raw request and
@@ -226,6 +231,50 @@ $(document).ready( function() {
                         shape : 'squarepin',
                         width : 16
               }]
+            });
+    }
+
+
+    function displayEMAData (dataList, ticker) {
+      $('#container2').highcharts('StockChart', {
+              rangeSelector : {
+                  selected : 5
+              },
+
+              title : {
+                  text : "EMA Data"
+              },
+
+              //series: data,
+              series : [{
+                name : dataList[0].name,
+                data : dataList[0].data,
+                tooltip: {
+                    valueDecimals: 2
+                },
+                id : 'dataseries1'
+               },{
+                name : dataList[1].name,
+                data : dataList[1].data,
+                tooltip: {
+                    valueDecimals: 2
+                },
+                id : 'dataseries2'
+               },{
+                name : dataList[2].name,
+                data : dataList[2].data,
+                tooltip: {
+                    valueDecimals: 2
+                },
+                id : 'dataseries3'
+               },{
+                name : dataList[3].name,
+                data : dataList[3].data,
+                tooltip: {
+                    valueDecimals: 2
+                },
+                id : 'dataseries4'
+               }]
             });
     }
 
