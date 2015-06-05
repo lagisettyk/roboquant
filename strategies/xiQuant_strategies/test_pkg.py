@@ -27,13 +27,14 @@ print stdate, enddate
 #print results_momentum_list
 
 results = xiQuantStrategyUtil.run_strategy_redis(20, "NFLX", 100000, stdate, enddate)
-#print results.getPortfolioResult()
+print results.getPortfolioResult()
 #print results.getSeries("middle")
 #print results.getSeries("upper")
 #print results.getSeries("lower")
-print results.getAdjCloseSeries("NFLX")
+#print results.getAdjCloseSeries("NFLX")
 #print results.getInstrumentDetails()
 #print results.getTradeDetails()
 #print results.getCumulativeReturns()
+#print results.getSeries("macd")
 
 

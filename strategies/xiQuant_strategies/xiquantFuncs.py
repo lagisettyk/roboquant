@@ -3,7 +3,7 @@
 import numpy
 
 from pyalgotrade import dataseries
-#from pyalgotrade.talibext import indicator ### blocked to remove ta-lib references....
+from pyalgotrade.talibext import indicator
 
 # Returns the last values of a dataseries as a numpy.array, or None if not enough values
 # could be retrieved from the dataseries.
@@ -27,5 +27,12 @@ def slope(inpDS, lookbackWin):
 		prevVal = inpDS[-1 * lookbackWin] 
 		currVal = inpDS[-1] 
 		s = numpy.arctan((currVal - prevVal) / 2) * 180 / numpy.pi
+		#s = float(((currVal - prevVal) / prevVal) * 90)
 	return s
 
+def timestamp_from_datetime(t):
+	# Sample: 2008-12-31 23:06:00
+	# This custom parsing works faster than:
+	# datetime.datetime.strptime(dateTime, "%Y%m%d %H%M%S")
+	timestamp = str(t.year) + str(t.month) + str(t.day) + str(t.hour) + str(t.minute) + str(t.second)
+	return timestamp

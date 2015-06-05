@@ -290,7 +290,7 @@ def run_strategy_redis(bBandsPeriod, instrument, startPortfolio, startdate, endd
     feed = redis_build_feed_EOD(instrument, startdate, enddate)
     #feed = yahoofinance.build_feed([instrument], 2012, 2014, ".")
 
-    strat = BB_spread.BBands(feed, instrument, bBandsPeriod, startPortfolio)
+    strat = BB_spread.BBSpread(feed, instrument, bBandsPeriod, startPortfolio)
 
     # Attach a returns analyzers to the strategy.
     returnsAnalyzer = returns.Returns()
@@ -300,11 +300,13 @@ def run_strategy_redis(bBandsPeriod, instrument, startPortfolio, startdate, endd
     strat.getBollingerBands().getMiddleBand().setMaxLen(5000)
     strat.getBollingerBands().getUpperBand().setMaxLen(5000)
     strat.getBollingerBands().getLowerBand().setMaxLen(5000) 
-    
+    #strat.getMACD().setMaxLen(5000)
     #### Add boilingerbands series....
+    strat.run()
+
     results.addSeries("upper", strat.getBollingerBands().getUpperBand())
     results.addSeries("middle", strat.getBollingerBands().getMiddleBand())
     results.addSeries("lower", strat.getBollingerBands().getLowerBand())
-    strat.run()
+    #results.addSeries("macd", strat.getMACD())
     
     return results

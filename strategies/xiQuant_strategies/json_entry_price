@@ -9,5 +9,15 @@
 							"Long_Wick": "Half_Wick_Minus_Price_Delta",
 							"Short_Wick": "Wick_Minus_Price_Delta"
 						}
+				},
+"BB_SMA_Crossover_Mtm_Call": {
+					"OR": {
+							"Breach": "Close_Plus_Price_Delta"
+						}
+				},
+"BB_SMA_Crossover_Mtm_Put": {
+					"OR": {
+							"Breach": "Close_Minus_Price_Delta"
+						}
 				}
 		}

@@ -3,7 +3,7 @@
 # Lookback window for computing the slope of BB bands
 BB_SLOPE_LOOKBACK_WINDOW = 2
 BB_SLOPE_LIMIT_FOR_CURVING = 0
-BB_CROC_SLOPE = 20
+BB_CROC_SLOPE = 8
 # A small wick is defined as not being more than 20% of the candle.
 BB_SMALL_WICK = 20
 # A long wick is defined as being more than 80% of the candle.
@@ -22,6 +22,14 @@ BB_PRICE_RANGE_HIGH_3 = 200
 
 # Lookback window for checking if the price breached the same band recently
 BB_BREACH_LOOKBACK_WINDOW = 5
+
+# SMA periods
+SMA_100 = 100
+SMA_200 = 200
+SMA_PRICE_DELTA = 2
+SMA_ENTRY_DAY_STOP_PRICE_DELTA = 0.35
+SMA_OTHER_DAY_STOP_PRICE_DELTA = 0.25
+SMA_COMPARE_LOOKBACK = 2
 
 PRICE_DELTA = 0.35
 RESISTANCE_LOOKBACK_WINDOW = 525
@@ -49,10 +57,13 @@ MACD_FAST_FASTPERIOD = 8
 MACD_FAST_SLOWPERIOD = 18
 MACD_FAST_SIGNALPERIOD = 6
 # MACD price divergence check lookback window
-MACD_PRICE_DVX_LOOKBACK = 22
+MACD_PRICE_DVX_LOOKBACK = 30
 MACD_CHECK_HIGHS = True
 MACD_CHECK_LOWS = False
 
 ## Exit Price Related
 BB_BAND_CURVES_IN_PRICE_TIGHTEN_PERCENT = 2.0
-BB_BAND_SECOND_DAY_BELOW = 0.25
+BB_SPREAD_EXIT_PRICE_DELTA_1 = 0.35
+BB_SPREAD_EXIT_PRICE_DELTA_2 = 0.60
+BB_SPREAD_EXIT_PRICE_DELTA_3 = 1.00
+BB_SPREAD_EXIT_PRICE_DELTA_4 = 1.25
