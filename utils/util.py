@@ -15,7 +15,8 @@ def getRelativePath(filename):
 def getTickerList():
 	tickerList = ['AAPL', 'AMZN', 'FDX', 'MA', 'NFLX', 'OCR', 'SPY', 'NXPI', 'CVS', 'UNP', 'GILD', 'VRX', 'ACT', \
 	 'GOOGL', 'CF', 'URI', 'CP', 'WHR', 'IWM', 'UNH', 'VIAB', 'FLT', 'ODFL', 'GD', 'XLF', 'ALL', 'V']
-	 '''
+
+	'''
 	file_tickerlist = getRelativePath('cboesymbol.csv')
 	tickerList = []
 	logger = getLogger()
