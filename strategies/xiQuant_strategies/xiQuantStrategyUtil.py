@@ -57,6 +57,7 @@ class StrategyResults(object):
         self.__tradeDetails = []
         self.__instrumentDetails = []
         self.__AdjPrices = None
+        self.__AdjVolume = None
         self.__additionalDataSeries = {}
         strat.attachAnalyzer(returnsAnalyzer)
         self.__returnsAnalyzer = returnsAnalyzer
@@ -67,19 +68,25 @@ class StrategyResults(object):
         seconds = mktime(bars.getDateTime().timetuple())
 
         ### Populate AdjClose Price series of instruments....
-        if self.__AdjPrices is None:
+        if self.__AdjPrices is None and self.__AdjVolume is None:
             self.__AdjPrices = dict.fromkeys(bars.getInstruments()) ### Initialize the dictionary object...
+            self.__AdjVolume = dict.fromkeys(bars.getInstruments())
         for instrument in bars.getInstruments():
             adj_Close_Series = self.__AdjPrices[instrument]
-            if adj_Close_Series is None:
+            adj_Vol_Series = self.__AdjVolume[instrument]
+            if adj_Close_Series is None and adj_Vol_Series is None:
                 adj_Close_Series = [] ### Initialize the value list...
+                adj_Vol_Series = [] ### Initialize the value list...
             bar_val = bars.getBar(instrument)
             ### This is for displaying OHLC + volume as candle stick in high charts...
-            adjPrice_val = [int(seconds * 1000), bar_val.getOpen(True), bar_val.getHigh(True), \
-                    bar_val.getLow(True), bar_val.getAdjClose(), bar_val.getVolume()]
+            dtInMilliSeconds = int(seconds * 1000)
+            adjPrice_val = [dtInMilliSeconds, bar_val.getOpen(True), bar_val.getHigh(True), \
+                    bar_val.getLow(True), bar_val.getAdjClose()]
             adj_Close_Series.append(adjPrice_val)
             self.__AdjPrices[instrument] = adj_Close_Series
-
+            ### Populate volume series...
+            adj_Vol_Series.append([dtInMilliSeconds, bar_val.getVolume()])
+            self.__AdjVolume[instrument] =  adj_Vol_Series
 
         
         # Feed the portfolio evolution subplot.
@@ -113,6 +120,9 @@ class StrategyResults(object):
 
     def getAdjCloseSeries(self, instrument):
         return self.__AdjPrices[instrument]
+
+    def getAdjVolSeries(self, instrument):
+        return self.__AdjVolume[instrument]
 
 
     def addSeries(self, name, series):

@@ -115,13 +115,12 @@ def backtest(request):
 
 	results = {
 		"seriesData":job.result.getPortfolioResult(),
-		#"cumulativeReturn":job.result.getCumulativeReturns(), 
-		#"instrumentDetails":job.result.getInstrumentDetails(),
 		"flagData": job.result.getTradeDetails(),
 		"upper": job.result.getSeries("upper"), 
 		"middle": job.result.getSeries("middle"),
 		"lower": job.result.getSeries("lower"),
 		"price": job.result.getAdjCloseSeries(ticker),
+		"volume": job.result.getAdjVolSeries(ticker),
 		"rsi": job.result.getSeries("RSI"),
 		"emafast": job.result.getSeries("EMA Fast"),
 		"emaslow": job.result.getSeries("EMA Slow"),

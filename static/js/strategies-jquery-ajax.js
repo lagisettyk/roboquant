@@ -134,6 +134,7 @@ $(document).ready( function() {
                 bbseries[2] = {name: "lower", data: data.lower};
                 bbseries[3] = {name: "price", data: data.price};
                 bbseries[4] = {name: "flagData", data: data.flagData};
+                bbseries[5] = {name: "volume", data: data.volume};
                 displayBBData(bbseries,stockticker)
                 emaseries = []
                 emaseries[0] = {name: "ema fast", data: data.emafast};
@@ -157,6 +158,16 @@ $(document).ready( function() {
               } 
         });
   });
+
+  //var options = { $AutoPlay: true };
+  var options = {
+            $DragOrientation: 0, /// This is too make sure drag even does not trigger slide show...
+            $ArrowNavigatorOptions: {
+                $Class: $JssorArrowNavigator$,
+                $ChanceToShow: 2
+            }
+  };
+  var jssor_slider1 = new $JssorSlider$('slider1_container', options);
  
 
 
@@ -182,10 +193,11 @@ $(document).ready( function() {
           });
     }
 
+    
     function displayBBData (dataList, ticker) {
       //console.log(dataList[4].name)
       //console.log(dataList[4].data)
-      $('#container3').highcharts('StockChart', {
+      $('#slider1_container').highcharts('StockChart', {
 
              legend: {
                     enabled: true,
@@ -203,8 +215,29 @@ $(document).ready( function() {
               },
 
               title : {
-                  text : "Bollinger Bands"
+                  text : "Bollinger Bands",
+                  floating: true,
+                  align: 'left',
+                  x: 75,
+                  y: 70
               },
+
+               yAxis: [ { //--- primary yAxis
+                          title: {
+                              text: 'Price'
+                          },
+                          //min: 0,
+                          height: '60%'
+              },{ //--- secondary yAxis
+                             title : {
+                                text : 'Volume'
+                             },
+                              top: '65%',
+                              height: '35%',
+                              offset: 0,
+                              lineWidth: 2,
+                              opposite: true
+              }],
 
               //series: data,
               series : [{
@@ -243,7 +276,112 @@ $(document).ready( function() {
                         //onSeries : 'dataseries4',
                         shape : 'squarepin',
                         width : 16
-              }]
+              },{
+                yAxis: 1,
+                name : dataList[5].name,
+                type: 'column',
+                data : dataList[5].data,
+                tooltip: {
+                    valueDecimals: 2
+                },
+                id : 'dataseries5'
+               }]
+            });
+    }
+
+
+    function displayBBData (dataList, ticker) {
+      //console.log(dataList[4].name)
+      //console.log(dataList[4].data)
+      $('#container3').highcharts('StockChart', {
+
+             legend: {
+                    enabled: true,
+                    align: 'right',
+                    backgroundColor: '#FCFFC5',
+                    borderColor: 'black',
+                    borderWidth: 2,
+                    layout: 'vertical',
+                    verticalAlign: 'top',
+                    y: 100,
+                    shadow: true
+              },
+              rangeSelector : {
+                  selected : 5
+              },
+
+              title : {
+                  text : "Bollinger Bands",
+                  floating: true,
+                  align: 'left',
+                  x: 75,
+                  y: 70
+              },
+
+               yAxis: [ { //--- primary yAxis
+                          title: {
+                              text: 'Price'
+                          },
+                          //min: 0,
+                          height: '60%'
+              },{ //--- secondary yAxis
+                             title : {
+                                text : 'Volume'
+                             },
+                              top: '65%',
+                              height: '35%',
+                              offset: 0,
+                              lineWidth: 2,
+                              opposite: true
+              }],
+
+              //series: data,
+              series : [{
+                name : dataList[0].name,
+                data : dataList[0].data,
+                tooltip: {
+                    valueDecimals: 2
+                },
+                id : 'dataseries1'
+               },{
+                name : dataList[1].name,
+                data : dataList[1].data,
+                tooltip: {
+                    valueDecimals: 2
+                },
+                id : 'dataseries2'
+               },{
+                name : dataList[2].name,
+                data : dataList[2].data,
+                tooltip: {
+                    valueDecimals: 2
+                },
+                id : 'dataseries3'
+               },{
+                name : dataList[3].name,
+                type: 'candlestick',
+                data : dataList[3].data,
+                tooltip: {
+                    valueDecimals: 2
+                },
+                id : 'dataseries4'
+               },{
+                        type : 'flags',
+                        name : 'trades',
+                        data : dataList[4].data,
+                        //onSeries : 'dataseries4',
+                        shape : 'squarepin',
+                        width : 16
+              },{
+                yAxis: 1,
+                name : dataList[5].name,
+                type: 'column',
+                data : dataList[5].data,
+                tooltip: {
+                    valueDecimals: 2
+                },
+                id : 'dataseries5'
+               }]
             });
     }
 

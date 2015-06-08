@@ -32,9 +32,10 @@ print results.getPortfolioResult()
 #print results.getSeries("upper")
 #print results.getSeries("lower")
 #print results.getAdjCloseSeries("NFLX")
+print results.getAdjVolSeries("NFLX")
 #print results.getInstrumentDetails()
 #print results.getTradeDetails()
 #print results.getCumulativeReturns()
-print results.getSeries("EMA Signal")
+#print results.getSeries("EMA Signal")
 
 

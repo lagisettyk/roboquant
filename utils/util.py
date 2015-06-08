@@ -13,9 +13,8 @@ def getRelativePath(filename):
 	return os.path.join(getCurrentDir(), filename)  # get current directory
 
 def getTickerList():
-	tickerList = ['AAPL', 'AMZN', 'FDX', 'MA', 'NFLX', 'OCR', 'SPY', 'NXPI', 'CVS', 'UNP', 'GILD', 'VRX', 'ACT', \
-	 'GOOGL', 'CF', 'URI', 'CP', 'WHR', 'IWM', 'UNH', 'VIAB', 'FLT', 'ODFL', 'GD', 'XLF', 'ALL', 'V']
-	'''
+	#tickerList = ['AAPL', 'AMZN', 'FDX', 'MA', 'NFLX', 'OCR', 'SPY', 'NXPI', 'CVS', 'UNP', 'GILD', 'VRX', 'ACT', \
+	 #'GOOGL', 'CF', 'URI', 'CP', 'WHR', 'IWM', 'UNH', 'VIAB', 'FLT', 'ODFL', 'GD', 'XLF', 'ALL', 'V']
 	file_tickerlist = getRelativePath('cboesymbol.csv')
 	tickerList = []
 	logger = getLogger()
@@ -24,7 +23,6 @@ def getTickerList():
 		for row in reader:
 			logger.info(row['Stock Symbol'])
 			tickerList.append(row['Stock Symbol'])
-	'''
 	return tickerList
 
 
