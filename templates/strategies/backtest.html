@@ -15,31 +15,28 @@
          <label for="InitialCash">Initial Amount</label>
          <input type="number" class="form-control" id="InitialCash" min="10000" max="2500000">
         </div>
-           <div id="reportrange2" class="btn" style="display: inline-block; background: #fff; cursor: pointer; padding: 5px 10px; border: 1px solid #ccc">
-              <i class="glyphicon glyphicon-calendar fa fa-calendar"></i>
-              <span></span> <b class="caret"></b>
-           </div>
-	   <div id="tickerList" class="btn-group">
+       <div id="reportrange2" class="btn" style="display: inline-block; background: #fff; cursor: pointer; padding: 5px 10px; border: 1px solid #ccc">
+          <i class="glyphicon glyphicon-calendar fa fa-calendar"></i>
+          <span></span> <b class="caret"></b>
+       </div>
+       <div id= "Ticker" class="form-group">
+         <input type="text" class="typeahead" placeholder="Ticker">
+        </div>
+	       <div id="tickerList" class="btn-group">
             <button type="button" id="dLabel" data-toggle="dropdown" class="btn btn-primary dropdown-toggle">PyAlgoTrade Enabled<span class="caret"></span></button>
             <ul class="dropdown-menu" id="showList">
                 <li><a href="#" id="simulate-1">ticker1</a></li>
             </ul>
-            <!--
-            <ul class="dropdown-menu">
-                <li><a href="#" id="simulate-1">AAPL</a></li>
-                <li><a href="#" id="simulate-2">MSFT</a></li>
-                <li><a href="#" id="simulate-3">GS</a></li>
-            </ul>
-            -->
         </div>
      </form>
 	<pre>
 	<!--<div id="content"></div>-->
-  <div id="slider1_container" style="position: relative; top: 0px; left: 0px; width: 900px; height: 600px;">
-      <div u="slides" style="cursor: move; position: absolute; overflow: hidden; left: 10px; top: 0px; width: 875px; height: 600px;">
+  <div id="slider1_container" style="position: relative; top: 0px; left: 0px; width: 900px; height: 900px;">
+      <div u="slides" style="cursor: move; position: absolute; overflow: hidden; left: 10px; top: 0px; width: 875px; height: 900px;">
        <div class="container-fluid" id="container" ></div>
        <div class="container-fluid" id="container3"></div>
        <div class="container-fluid" id="container2"></div>
+       <div class="container-fluid" id="container4"></div>
     </div>
       <!--#region Arrow Navigator Skin Begin -->
       <!-- Help: http://www.jssor.com/development/slider-with-arrow-navigator-jquery.html -->

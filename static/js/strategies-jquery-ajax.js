@@ -50,8 +50,6 @@ $(document).ready( function() {
             $(this).css('color', 'blue');
     });
 
-
-
   function displayRedisData (data, ticker) {
 
       console.log("inside displayData")
@@ -80,46 +78,22 @@ $(document).ready( function() {
   $('#tickerList').on('click', '#dLabel', function(){
     console.log("inside dLabel")
     $('#showList').empty()
-    $('#showList').html('<li><a href="#" id="simulate-1">AAPL</a>'
-                         +'</li><li><a href="#" id="simulate-1">AMZN</a></li>'
-                         +'</li><li><a href="#" id="simulate-1">FDX</a></li>'
-                         +'</li><li><a href="#" id="simulate-1">MA</a></li>'
-                         +'</li><li><a href="#" id="simulate-1">NFLX</a></li>'
-                         +'</li><li><a href="#" id="simulate-1">OCR</a></li>'
-                         +'</li><li><a href="#" id="simulate-1">SPY</a></li>'
-                         +'</li><li><a href="#" id="simulate-1">NXPI</a></li>'
-                         +'</li><li><a href="#" id="simulate-1">CVS</a></li>'
-                         +'</li><li><a href="#" id="simulate-1">UNP</a></li>'
-                         +'</li><li><a href="#" id="simulate-1">GILD</a></li>'
-                         +'</li><li><a href="#" id="simulate-1">VRX</a></li>'
-                         +'</li><li><a href="#" id="simulate-1">ACT</a></li>'
-                         +'</li><li><a href="#" id="simulate-1">GOOGL</a></li>'
-                         +'</li><li><a href="#" id="simulate-1">CF</a></li>'
-                         +'</li><li><a href="#" id="simulate-1">URI</a></li>'
-                         +'</li><li><a href="#" id="simulate-1">CP</a></li>'
-                         +'</li><li><a href="#" id="simulate-1">WHR</a></li>'
-                         +'</li><li><a href="#" id="simulate-1">IWM</a></li>'
-                         +'</li><li><a href="#" id="simulate-1">UNH</a></li>'
-                         +'</li><li><a href="#" id="simulate-1">VIAB</a></li>'
-                         +'</li><li><a href="#" id="simulate-1">FLT</a></li>'
-                         +'</li><li><a href="#" id="simulate-1">ODFL</a></li>'
-                         +'</li><li><a href="#" id="simulate-1">GD</a></li>'
-                         +'</li><li><a href="#" id="simulate-1">XLF</a></li>'
-                         +'</li><li><a href="#" id="simulate-1">ALL</a></li>'
-                         +'</li><li><a href="#" id="simulate-1">V</a></li>'
+    $('#showList').html('<li><a href="#" id="simulate-1">BB_Spread_strategy</a>'
+                         +'</li><li><a href="#" id="simulate-1">SMA_strategy</a></li>'
                         );
   });
 
   $('#tickerList').on('click','#simulate-1',function(){
       var amount = $('#InitialCash').val();
       var drp = $('#reportrange2').data('daterangepicker');
-      //alert("Inside the even #simulate-1")
-      console.log("Selected Option:"+$(this).text())
-      var stockticker = $(this).text()
+      var stkticker = $('input.typeahead.tt-input').val();
+      //alert("Inside the event #simulate-1: " + stkticker);
+      //console.log("Selected Option:"+$(this).text());
+      var stockticker = $(this).text();
       //console.log(drp.startDate);
       //console.log("I am here....$$$$" + amount)
     $.ajax({
-              url: '/strategies/backtest_results/?Ticker='+stockticker+'&amount='+amount+"&stdate="+drp.startDate.toISOString()+"&enddate="+drp.endDate.toISOString(),
+              url: '/strategies/backtest_results/?Ticker='+stkticker+'&amount='+amount+"&stdate="+drp.startDate.toISOString()+"&enddate="+drp.endDate.toISOString(),
               type: 'GET',
               async: true,
               dataType: "json",
@@ -127,21 +101,32 @@ $(document).ready( function() {
                 console.log("Inside Success")
                 //console.log(data)
                 //var ticker = "AAPL"
-                displayPortfolioData(data.seriesData, stockticker)
+                portseries = []
+                portseries[0] = {name: "portfolio value", data: data.seriesData};
+                portseries[1] = {name: "trades", data: data.flagData};
+                displayPortfolioData(portseries, stkticker)
                 bbseries = []
-                bbseries[0] = {name: "upper", data: data.upper};
-                bbseries[1] = {name: "middle", data: data.middle};
-                bbseries[2] = {name: "lower", data: data.lower};
-                bbseries[3] = {name: "price", data: data.price};
-                bbseries[4] = {name: "flagData", data: data.flagData};
-                bbseries[5] = {name: "volume", data: data.volume};
-                displayBBData(bbseries,stockticker)
+                bbseries[0] = {name: "price", data: data.price};
+                bbseries[1] = {name: "upper", data: data.upper};
+                bbseries[2] = {name: "middle", data: data.middle};
+                bbseries[3] = {name: "lower", data: data.lower};
+                bbseries[4] = {name: "rsi", data: data.rsi};
+                bbseries[5] = {name: "macd", data: data.macd};
+                displayBBData(bbseries,stkticker)
+
                 emaseries = []
                 emaseries[0] = {name: "ema fast", data: data.emafast};
                 emaseries[1] = {name: "ema slow", data: data.emaslow};
                 emaseries[2] = {name: "ema signal", data: data.emasignal};
-                emaseries[3] = {name: "rsi", data: data.rsi};
-                displayEMAData(emaseries,stockticker)
+                emaseries[3] = {name: "volume", data: data.volume};
+                displayEMAData(emaseries,stkticker)
+
+                adx_dmi_data = []
+                adx_dmi_data[0] = {name: "price", data: data.price};
+                adx_dmi_data[1] = {name: "adx", data: data.adx};
+                adx_dmi_data[2] = {name: "dmi plus", data: data.dmiplus};
+                adx_dmi_data[3] = {name: "dmi minus", data: data.dmiminus};
+                display_ADX_DMI_Data(adx_dmi_data, stkticker)
                 //displayInstrumentData(data.instrumentDetails, data.flagData, stockticker)
               },
               // Code to run if the request fails; the raw request and
@@ -171,35 +156,10 @@ $(document).ready( function() {
  
 
 
-  function displayPortfolioData (data, ticker) {
+  function displayPortfolioData (dataList, ticker) {
 
       $('#container').highcharts('StockChart', {
-              rangeSelector : {
-                  selected : 5
-              },
-
-              title : {
-                  text : ticker +' portfolio value'
-              },
-
-              series : [{
-                  name : ticker,
-                  data : data,
-                  tooltip: {
-                      valueDecimals: 2
-                  },
-                  id : 'dataseries'
-             }]
-          });
-    }
-
-    
-    function displayBBData (dataList, ticker) {
-      //console.log(dataList[4].name)
-      //console.log(dataList[4].data)
-      $('#slider1_container').highcharts('StockChart', {
-
-             legend: {
+              legend: {
                     enabled: true,
                     align: 'right',
                     backgroundColor: '#FCFFC5',
@@ -214,8 +174,51 @@ $(document).ready( function() {
                   selected : 5
               },
 
+               title : {
+                  text : ticker + ": Portfolio Performance",
+                  floating: true,
+                  align: 'left',
+                  x: 75,
+                  y: 70
+              },
+
+              series : [{
+                  name : dataList[0].name,
+                  data : dataList[0].data,
+                  tooltip: {
+                      valueDecimals: 2
+                  },
+                  id : 'dataseries'
+             },{
+                  type: 'flags',
+                  name : dataList[1].name,
+                  data : dataList[1].data,
+                  tooltip: {
+                      valueDecimals: 2
+                  },
+             }]
+          });
+    }
+
+    function display_ADX_DMI_Data (dataList, ticker) {
+      $('#container4').highcharts('StockChart', {
+             legend: {
+                    enabled: true,
+                    align: 'right',
+                    backgroundColor: '#FCFFC5',
+                    borderColor: 'black',
+                    borderWidth: 2,
+                    layout: 'vertical',
+                    verticalAlign: 'top',
+                    y: 100,
+                    shadow: true
+              },
+              rangeSelector : {
+                  selected : 0
+              },
+
               title : {
-                  text : "Bollinger Bands",
+                  text : ticker + ": ADX & DMI Chart",
                   floating: true,
                   align: 'left',
                   x: 75,
@@ -230,7 +233,7 @@ $(document).ready( function() {
                           height: '60%'
               },{ //--- secondary yAxis
                              title : {
-                                text : 'Volume'
+                                text : 'Level'
                              },
                               top: '65%',
                               height: '35%',
@@ -241,6 +244,7 @@ $(document).ready( function() {
 
               //series: data,
               series : [{
+                type: 'candlestick',
                 name : dataList[0].name,
                 data : dataList[0].data,
                 tooltip: {
@@ -248,6 +252,7 @@ $(document).ready( function() {
                 },
                 id : 'dataseries1'
                },{
+                yAxis: 1,
                 name : dataList[1].name,
                 data : dataList[1].data,
                 tooltip: {
@@ -255,6 +260,7 @@ $(document).ready( function() {
                 },
                 id : 'dataseries2'
                },{
+                yAxis: 1,
                 name : dataList[2].name,
                 data : dataList[2].data,
                 tooltip: {
@@ -262,37 +268,19 @@ $(document).ready( function() {
                 },
                 id : 'dataseries3'
                },{
+                yAxis: 1,
                 name : dataList[3].name,
-                type: 'candlestick',
                 data : dataList[3].data,
                 tooltip: {
                     valueDecimals: 2
                 },
                 id : 'dataseries4'
-               },{
-                        type : 'flags',
-                        name : 'trades',
-                        data : dataList[4].data,
-                        //onSeries : 'dataseries4',
-                        shape : 'squarepin',
-                        width : 16
-              },{
-                yAxis: 1,
-                name : dataList[5].name,
-                type: 'column',
-                data : dataList[5].data,
-                tooltip: {
-                    valueDecimals: 2
-                },
-                id : 'dataseries5'
                }]
             });
     }
 
 
     function displayBBData (dataList, ticker) {
-      //console.log(dataList[4].name)
-      //console.log(dataList[4].data)
       $('#container3').highcharts('StockChart', {
 
              legend: {
@@ -307,11 +295,11 @@ $(document).ready( function() {
                     shadow: true
               },
               rangeSelector : {
-                  selected : 5
+                  selected : 0
               },
 
               title : {
-                  text : "Bollinger Bands",
+                  text : ticker + ": Bollinger Bands, MACD & RSI",
                   floating: true,
                   align: 'left',
                   x: 75,
@@ -322,21 +310,47 @@ $(document).ready( function() {
                           title: {
                               text: 'Price'
                           },
-                          //min: 0,
-                          height: '60%'
+                          height: '45%'
               },{ //--- secondary yAxis
-                             title : {
-                                text : 'Volume'
-                             },
-                              top: '65%',
-                              height: '35%',
-                              offset: 0,
-                              lineWidth: 2,
-                              opposite: true
+                     title : {
+                        text : 'rsi'
+                     },
+                      min: 0,
+                      max: 100,
+                      top: '65%',
+                      height: '35%',
+                      lineWidth: 2,
+                      plotLines : [{
+                              value : 30,
+                              color : 'red',
+                              dashStyle : 'shortdash',
+                              width : 2,
+                              label : {
+                                  text : 'minimum'
+                              }
+                        }, {
+                            value : 70,
+                            color : 'red',
+                            dashStyle : 'shortdash',
+                            width : 2,
+                            label : {
+                                text : 'maximum'
+                            }
+                      }],
+                      opposite: true
+              },{ //--- third yAxis
+                      title: {
+                          text: 'MACD'
+                      },
+                      //min: 0,
+                      top: '45%',
+                      height: '20%',
+                      opposite: true
               }],
 
               //series: data,
               series : [{
+                type: 'candlestick',
                 name : dataList[0].name,
                 data : dataList[0].data,
                 tooltip: {
@@ -359,28 +373,27 @@ $(document).ready( function() {
                 id : 'dataseries3'
                },{
                 name : dataList[3].name,
-                type: 'candlestick',
                 data : dataList[3].data,
                 tooltip: {
                     valueDecimals: 2
                 },
                 id : 'dataseries4'
                },{
-                        type : 'flags',
-                        name : 'trades',
-                        data : dataList[4].data,
-                        //onSeries : 'dataseries4',
-                        shape : 'squarepin',
-                        width : 16
-              },{
                 yAxis: 1,
-                name : dataList[5].name,
-                type: 'column',
-                data : dataList[5].data,
+                name : dataList[4].name,
+                data : dataList[4].data,
                 tooltip: {
                     valueDecimals: 2
                 },
                 id : 'dataseries5'
+               },{
+                yAxis: 2,
+                name : dataList[5].name,
+                data : dataList[5].data,
+                tooltip: {
+                    valueDecimals: 2
+                },
+                id : 'dataseries6'
                }]
             });
     }
@@ -402,46 +415,31 @@ $(document).ready( function() {
               },
   
               rangeSelector : {
-                  selected : 5
+                  selected : 0
               },
 
               yAxis: [ { //--- primary yAxis
                           title: {
                               text: 'EMA'
                           },
-                          min: 0,
                           height: '60%'
               },{ //--- secondary yAxis
-                             title : {
-                                text : 'RSI'
-                             },
-                              min: 0,
-                              max: 100,
-                              top: '65%',
-                              height: '35%',
-                              offset: 0,
-                             plotLines : [{
-                                      value : 30,
-                                      color : 'red',
-                                      dashStyle : 'shortdash',
-                                      width : 2,
-                                      label : {
-                                          text : 'minimum'
-                                      }
-                                }, {
-                                    value : 70,
-                                    color : 'red',
-                                    dashStyle : 'shortdash',
-                                    width : 2,
-                                    label : {
-                                        text : 'maximum'
-                                    }
-                            }],
-                          opposite: true
+                       title : {
+                          text : 'Volume'
+                       },
+                        min: 0,
+                        top: '65%',
+                        height: '35%',
+                        offset: 0,
+                        opposite: true
               }],
 
               title : {
-                  text : "EMA Data"
+                  text : ticker + ": EMA Data",
+                  floating: true,
+                  align: 'left',
+                  x: 75,
+                  y: 70
               },
 
               //series: data,
@@ -471,6 +469,7 @@ $(document).ready( function() {
                 id : 'dataseries3'
                },{
                 yAxis: 1,
+                type: 'column',
                 name : dataList[3].name,
                 data : dataList[3].data,
                 tooltip: {
@@ -691,5 +690,44 @@ $(document).ready( function() {
               } 
         });
     });
+
+
+/// Typeahead realted functionality...........
+var substringMatcher = function(strs) {
+  return function findMatches(q, cb) {
+    var matches, substringRegex;
+ 
+    // an array that will be populated with substring matches
+    matches = [];
+ 
+    // regex used to determine if a string contains the substring `q`
+    substrRegex = new RegExp(q, 'i');
+ 
+    // iterate through the pool of strings and for any string that
+    // contains the substring `q`, add it to the `matches` array
+    $.each(strs, function(i, str) {
+      if (substrRegex.test(str)) {
+        matches.push(str);
+      }
+    });
+ 
+    cb(matches);
+  };
+};
+ 
+var tickers = ['AAPL', 'AMZN', 'FDX', 'MA', 'NFLX', 'OCR', 'SPY', 'NXPI', 'CVS', 'UNP', 'GILD', 'VRX', 'ACT', 
+   'GOOGL', 'CF', 'URI', 'CP', 'WHR', 'IWM', 'UNH', 'VIAB', 'FLT', 'ODFL', 'GD', 'XLF', 'ALL', 'V'];
+ 
+$('#Ticker .typeahead').typeahead({
+  hint: true,
+  highlight: true,
+  minLength: 1
+},
+{
+  name: 'tickers',
+  source: substringMatcher(tickers)
+});
+
+
 
 }); //end of ready function

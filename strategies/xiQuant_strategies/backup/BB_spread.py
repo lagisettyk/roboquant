@@ -108,6 +108,7 @@ class BBSpread(strategy.BacktestingStrategy):
 		jsonExitPrice = open(file_json_exit_price)
 		self.__inpExit = json.load(jsonExitPrice)
 
+
 	def onFinish(self, bars):
 		self.stopLogging()
 		return
@@ -376,7 +377,7 @@ class BBSpread(strategy.BacktestingStrategy):
 		### Change to lookback window specific code.
 		# Check if first breach in the lookback.
 		if self.__inpStrategy["BB_Spread_Call"]["BB_Upper_And_BB_Lower"]["OR"][0] == "BB_Upper_Breach" or self.__inpStrategy["BB_Spread_Call"]["BB_Upper_And_BB_Lower"]["OR"][1] == "BB_Upper_Touch":
-			if self.__priceDS[-2] > self.__bbands.getUpperBand()[-2]:
+			if self.__priceDS[-2] >= self.__bbands.getUpperBand()[-2]:
 				self.__logger.debug("Upper band: %.2f" % self.__bbands.getUpperBand()[-1])
 				self.__logger.debug("Price: %.2f" % self.__priceDS[-1])
 				self.__logger.debug("Previous upper band: %.2f" % self.__bbands.getUpperBand()[-2])
@@ -426,17 +427,11 @@ class BBSpread(strategy.BacktestingStrategy):
 					self.__logger.debug("Third price: %.2f" % consts.BB_PRICE_RANGE_HIGH_3)
 					self.__logger.debug("Third price increase: %.2f" % consts.BB_SPREAD_PERCENT_INCREASE_RANGE_3)
 					return False
-			if prevClosePrice >= consts.BB_PRICE_RANGE_HIGH_3 and prevClosePrice < consts.BB_PRICE_RANGE_HIGH_4:
+			if prevClosePrice >= consts.BB_PRICE_RANGE_HIGH_3:
 				if float(bullishCandleJumpArray[-1] / prevClosePrice) * 100 >= consts.BB_SPREAD_PERCENT_INCREASE_RANGE_4:
 					self.__logger.debug("Bullish candle jump greater than jump range")
-					self.__logger.debug("Third price: %.2f" % consts.BB_PRICE_RANGE_HIGH_4)
-					self.__logger.debug("Third price increase: %.2f" % consts.BB_SPREAD_PERCENT_INCREASE_RANGE_4)
-					return False
-			if prevClosePrice >= consts.BB_PRICE_RANGE_HIGH_4:
-				if float(bullishCandleJumpArray[-1] / prevClosePrice) * 100 >= consts.BB_SPREAD_PERCENT_INCREASE_RANGE_5:
-					self.__logger.debug("Bullish candle jump greater than jump range")
-					self.__logger.debug("Fourth price, greater than: %.2f" % consts.BB_PRICE_RANGE_HIGH_4)
-					self.__logger.debug("Fourth price increase: %.2f" % consts.BB_SPREAD_PERCENT_INCREASE_RANGE_5)
+					self.__logger.debug("Fourth price, greater than: %.2f" % consts.BB_PRICE_RANGE_HIGH_3)
+					self.__logger.debug("Fourth price increase: %.2f" % consts.BB_SPREAD_PERCENT_INCREASE_RANGE_4)
 					return False
 
 		self.__logger.debug("Price Jump check passed.")
@@ -493,10 +488,8 @@ class BBSpread(strategy.BacktestingStrategy):
 			priceJmpRange = float((closePrice * consts.BB_SPREAD_PERCENT_INCREASE_RANGE_2) / 100)
 		if closePrice < consts.BB_PRICE_RANGE_HIGH_3:
 			priceJmpRange = float((closePrice * consts.BB_SPREAD_PERCENT_INCREASE_RANGE_3) / 100)
-		if closePrice < consts.BB_PRICE_RANGE_HIGH_4:
+		if closePrice >= consts.BB_PRICE_RANGE_HIGH_3:
 			priceJmpRange = float((closePrice * consts.BB_SPREAD_PERCENT_INCREASE_RANGE_4) / 100)
-		if closePrice >= consts.BB_PRICE_RANGE_HIGH_4:
-			priceJmpRange = float((closePrice * consts.BB_SPREAD_PERCENT_INCREASE_RANGE_5) / 100)
 
 		priceArrayInHistoricalLookback = xiquantFuncs.dsToNumpyArray(self.__priceDS, consts.RESISTANCE_LOOKBACK_WINDOW)
 		historicalResistanceDeltaArray = priceArrayInHistoricalLookback - recentResistance
@@ -629,7 +622,7 @@ class BBSpread(strategy.BacktestingStrategy):
 		### Change to lookback window specific code.
 		# Check if first breach in the lookback.
 		if self.__inpStrategy["BB_Spread_Put"]["BB_Upper_And_BB_Lower"]["OR"][0] == "BB_Lower_Breach" or self.__inpStrategy["BB_Spread_Put"]["BB_Upper_And_BB_Lower"]["OR"][1] == "BB_Lower_Touch":
-			if self.__priceDS[-2] < self.__bbands.getLowerBand()[-2]:
+			if self.__priceDS[-2] <= self.__bbands.getLowerBand()[-2]:
 				self.__logger.debug("Lower band: %.2f" % self.__bbands.getLowerBand()[-1])
 				self.__logger.debug("Price: %.2f" % self.__priceDS[-1])
 				self.__logger.debug("Previous lower band: %.2f" % self.__bbands.getLowerBand()[-2])
@@ -679,17 +672,11 @@ class BBSpread(strategy.BacktestingStrategy):
 					self.__logger.debug("First price: %.2f" % consts.BB_PRICE_RANGE_HIGH_3)
 					self.__logger.debug("First price increase: %.2f" % consts.BB_SPREAD_PERCENT_INCREASE_RANGE_3)
 					return False
-			if prevClosePrice >= consts.BB_PRICE_RANGE_HIGH_3 and prevClosePrice < consts.BB_PRICE_RANGE_HIGH_4:
+			if prevClosePrice >= consts.BB_PRICE_RANGE_HIGH_3:
 				if float(bearishCandleJumpArray[-1] / prevClosePrice) * 100 >= consts.BB_SPREAD_PERCENT_INCREASE_RANGE_4:
 					self.__logger.debug("Bearish candle jump greater than jump range")
-					self.__logger.debug("First price: %.2f" % consts.BB_PRICE_RANGE_HIGH_4)
-					self.__logger.debug("First price increase: %.2f" % consts.BB_SPREAD_PERCENT_INCREASE_RANGE_4)
-					return False
-			if prevClosePrice >= consts.BB_PRICE_RANGE_HIGH_4:
-				if float(bearishCandleJumpArray[-1] / prevClosePrice) * 100 >= consts.BB_SPREAD_PERCENT_INCREASE_RANGE_5:
-					self.__logger.debug("Bearish candle jump greater than jump range")
-					self.__logger.debug("Fourth price, greater than: %.2f" % consts.BB_PRICE_RANGE_HIGH_4)
-					self.__logger.debug("Fourth price increase: %.2f" % consts.BB_SPREAD_PERCENT_INCREASE_RANGE_5)
+					self.__logger.debug("Fourth price, greater than: %.2f" % consts.BB_PRICE_RANGE_HIGH_3)
+					self.__logger.debug("Fourth price increase: %.2f" % consts.BB_SPREAD_PERCENT_INCREASE_RANGE_4)
 					return False
 
 		self.__logger.debug("Price Jump check passed.")
@@ -746,10 +733,8 @@ class BBSpread(strategy.BacktestingStrategy):
 			priceJmpRange = float((closePrice * consts.BB_SPREAD_PERCENT_INCREASE_RANGE_2) / 100)
 		if closePrice < consts.BB_PRICE_RANGE_HIGH_3:
 			priceJmpRange = float((closePrice * consts.BB_SPREAD_PERCENT_INCREASE_RANGE_3) / 100)
-		if closePrice < consts.BB_PRICE_RANGE_HIGH_4:
+		if closePrice >= consts.BB_PRICE_RANGE_HIGH_3:
 			priceJmpRange = float((closePrice * consts.BB_SPREAD_PERCENT_INCREASE_RANGE_4) / 100)
-		if closePrice >= consts.BB_PRICE_RANGE_HIGH_4:
-			priceJmpRange = float((closePrice * consts.BB_SPREAD_PERCENT_INCREASE_RANGE_5) / 100)
 
 		priceArrayInHistoricalLookback = xiquantFuncs.dsToNumpyArray(self.__priceDS, consts.SUPPORT_LOOKBACK_WINDOW)
 		historicalSupportDeltaArray = priceArrayInHistoricalLookback - recentSupport
@@ -825,17 +810,15 @@ class BBSpread(strategy.BacktestingStrategy):
 
 	def exitLongSignal(self, bar):
 		if len(self.__bbands.getLowerBand()) >= consts.BB_SLOPE_LOOKBACK_WINDOW:
-			lowerBand = self.__bbands.getLowerBand()[-1]
-			prevLowerBand = self.__bbands.getLowerBand()[-2]
-			self.__logger.debug("Prev Lower Band: %.2f" % prevLowerBand)
-			if lowerBand > prevLowerBand:
+			lowerSlope = xiquantFuncs.slope(self.__bbands.getLowerBand(), consts.BB_SLOPE_LOOKBACK_WINDOW)
+			self.__logger.debug("Lower Slope: %d" % lowerSlope)
+			if lowerSlope >= consts.BB_SLOPE_LIMIT_FOR_CURVING:
 				# Reset the first croc mouth opening marker as the mouth is begin to close
 				self.__logger.debug("Reset first croc opening day")
 				self.__bbFirstCrocDay = None
 				self.__bbFirstLowerCrocDay = None
 
 		# Check if we hold a position in this instrument or not
-		##### This is causing the entry and exit orders on the same day to not work. Fix this!
 		if self.__longPos == None:
 			return False
 
@@ -843,25 +826,18 @@ class BBSpread(strategy.BacktestingStrategy):
 		# We don't explicitly exit but based on the indicators we just tighten the stop limit orders.
 		exitPriceDelta = 0
 		closePrice = bar.getAdjClose()
-		if closePrice < consts.BB_SPREAD_EXIT_PRICE_RANGE_HIGH_1:
+		if closePrice < consts.BB_PRICE_RANGE_HIGH_1:
 			exitPriceDelta = consts.BB_SPREAD_EXIT_PRICE_DELTA_1
-		if closePrice < consts.BB_SPREAD_EXIT_PRICE_RANGE_HIGH_2:
+		if closePrice < consts.BB_PRICE_RANGE_HIGH_2:
 			exitPriceDelta = consts.BB_SPREAD_EXIT_PRICE_DELTA_2
-		if closePrice < consts.BB_SPREAD_EXIT_PRICE_RANGE_HIGH_3:
+		if closePrice < consts.BB_PRICE_RANGE_HIGH_3:
 			exitPriceDelta = consts.BB_SPREAD_EXIT_PRICE_DELTA_3
-		if closePrice < consts.BB_SPREAD_EXIT_PRICE_RANGE_HIGH_4:
+		if closePrice >= consts.BB_PRICE_RANGE_HIGH_3:
 			exitPriceDelta = consts.BB_SPREAD_EXIT_PRICE_DELTA_4
-		if closePrice >= consts.BB_SPREAD_EXIT_PRICE_RANGE_HIGH_4:
-			exitPriceDelta = consts.BB_SPREAD_EXIT_PRICE_DELTA_5
 
-		if lowerBand > prevLowerBand:
+		if lowerSlope >= consts.BB_SLOPE_LIMIT_FOR_CURVING:
 			# Tighten the stop loss order
-			if bar.getOpen() <= bar.getClose():
-				# Bullish candle
-				stopPrice = bar.getOpen() - exitPriceDelta
-			else:
-				# Bearish candle
-				stopPrice = bar.getClose() - exitPriceDelta
+			stopPrice = bar.getOpen() - float(exitPriceDelta / 2)
 			# Cancel the exiting stop limit order before placing a new one
 			self.__longPos.cancelExit()
 			self.__longPos.exitStop(stopPrice, True)
@@ -878,17 +854,15 @@ class BBSpread(strategy.BacktestingStrategy):
 		
 	def exitShortSignal(self, bar):
 		if len(self.__bbands.getUpperBand()) >= consts.BB_SLOPE_LOOKBACK_WINDOW:
-			upperBand = self.__bbands.getUpperBand()[-1]
-			prevUpperBand = self.__bbands.getUpperBand()[-2]
-			self.__logger.debug("Prev Upper Band: %.2f" % prevUpperBand)
-			if upperBand < prevUpperBand:
+			upperSlope = xiquantFuncs.slope(self.__bbands.getUpperBand(), consts.BB_SLOPE_LOOKBACK_WINDOW)
+			self.__logger.debug("Upper Slope: %d" % upperSlope)
+			if upperSlope <= consts.BB_SLOPE_LIMIT_FOR_CURVING:
 				# Reset the first croc mouth opening marker as the mouth is begin to close
 				self.__logger.debug("Reset first croc opening day")
 				self.__bbFirstCrocDay = None
 				self.__bbFirstUpperCrocDay = None
 
 		# Check if we hold a position in this instrument or not
-		##### This is causing the entry and exit orders on the same day to not work. Fix this!
 		if self.__shortPos == None:
 			return False
 
@@ -896,25 +870,18 @@ class BBSpread(strategy.BacktestingStrategy):
 		# We don't explicitly exit but based on the indicators we just tighten the stop limit orders.
 		exitPriceDelta = 0
 		closePrice = bar.getAdjClose()
-		if closePrice < consts.BB_SPREAD_EXIT_PRICE_RANGE_HIGH_1:
+		if closePrice < consts.BB_PRICE_RANGE_HIGH_1:
 			exitPriceDelta = consts.BB_SPREAD_EXIT_PRICE_DELTA_1
-		if closePrice < consts.BB_SPREAD_EXIT_PRICE_RANGE_HIGH_2:
+		if closePrice < consts.BB_PRICE_RANGE_HIGH_2:
 			exitPriceDelta = consts.BB_SPREAD_EXIT_PRICE_DELTA_2
-		if closePrice < consts.BB_SPREAD_EXIT_PRICE_RANGE_HIGH_3:
+		if closePrice < consts.BB_PRICE_RANGE_HIGH_3:
 			exitPriceDelta = consts.BB_SPREAD_EXIT_PRICE_DELTA_3
-		if closePrice < consts.BB_SPREAD_EXIT_PRICE_RANGE_HIGH_4:
+		if closePrice >= consts.BB_PRICE_RANGE_HIGH_3:
 			exitPriceDelta = consts.BB_SPREAD_EXIT_PRICE_DELTA_4
-		if closePrice >= consts.BB_SPREAD_EXIT_PRICE_RANGE_HIGH_4:
-			exitPriceDelta = consts.BB_SPREAD_EXIT_PRICE_DELTA_5
 
-		if upperBand < prevUpperBand:
+		if upperSlope <= consts.BB_SLOPE_LIMIT_FOR_CURVING:
 			# Tighten the stop loss order
-			if bar.getOpen() <= bar.getClose():
-				# Bullish candle
-				stopPrice = bar.getClose() + exitPriceDelta
-			else:
-				# Bearish candle
-				stopPrice = bar.getOpen() + exitPriceDelta
+			stopPrice = bar.getOpen() + float(exitPriceDelta / 2)
 			# Cancel the exiting stop limit order before placing a new one
 			self.__shortPos.cancelExit()
 			self.__shortPos.exitStop(stopPrice, True)
@@ -959,7 +926,7 @@ def run_strategy(bBandsPeriod, instrument, startPortfolio, plot=False):
 			Image.open(fileNameRoot + '_2_' + '.png').save(fileNameRoot + '_2_' + '.jpg', 'JPEG')
 
 def main(plot):
-	instruments = ["aapl"]
+	instruments = ["googl"]
 	bBandsPeriod = 20
 	startPortfolio = 1000000
 	for inst in instruments:
