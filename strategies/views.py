@@ -103,13 +103,18 @@ def backtest(request):
 		amount = request.GET['amount']
 		stdate = request.GET['stdate']
 		enddate = request.GET['enddate']
+		strategy = request.GET['strategy']
 
     
 	start_date = dateutil.parser.parse(stdate)
 	end_date = dateutil.parser.parse(enddate)
 
 	q = Queue(connection=redisConn)  # no args implies the default queue
-	job = q.enqueue(xiQuantStrategyUtil.run_strategy_redis, 20, ticker, int(amount), start_date, end_date)
+	if strategy == 'BB_Spread_strategy':
+		job = q.enqueue(xiQuantStrategyUtil.run_strategy_redis, 20, ticker, int(amount), start_date, end_date)
+	else:
+		job = q.enqueue(xiQuantStrategyUtil.run_strategy_TN, 20, ticker, int(amount), start_date, end_date)
+	#job = q.enqueue(xiQuantStrategyUtil.run_strategy_redis, 20, ticker, int(amount), start_date, end_date)
 	while (job.result is None):
 		time.sleep(1)
 

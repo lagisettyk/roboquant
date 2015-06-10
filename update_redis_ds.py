@@ -71,11 +71,17 @@ def populate_redis_eod(redisConn, tickerList, datasource, startdate, enddate):
 			mkt_data  = Quandl.get(
 				datasource +"/" + tickerList[ticker], returns="numpy", sort_order="asc", authtoken="L5A6rmU9FGvyss9F7Eym",  
 				trim_start = startdate, trim_end = enddate)
-
+			
 			if mkt_data.size > 0:
 				for daily_data in mkt_data:
 					redisConn.zadd(tickerList[ticker] +":EOD", mktime(daily_data[0].timetuple()), 
 						str(daily_data[8]) + "|" + str(daily_data[9]) + "|" + str(daily_data[10]) + "|" + str(daily_data[11]) + "|" + str(daily_data[12]))
+			'''
+			if mkt_data.size > 0:
+				for daily_data in mkt_data:
+					redisConn.zadd(tickerList[ticker] +":EOD_UnAdj", mktime(daily_data[0].timetuple()), 
+						str(daily_data[1]) + "|" + str(daily_data[2]) + "|" + str(daily_data[3]) + "|" + str(daily_data[4]) + "|" + str(daily_data[11]) + "|" + str(daily_data[12]))
+			'''	
 				### For now let's block this concept of removing old element...
 				#if popFirstElement:
 				#	redisConn.zremrangebyrank(tickerList[ticker]+":EOD", 0, 0)

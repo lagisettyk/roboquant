@@ -79,7 +79,7 @@ $(document).ready( function() {
     console.log("inside dLabel")
     $('#showList').empty()
     $('#showList').html('<li><a href="#" id="simulate-1">BB_Spread_strategy</a>'
-                         +'</li><li><a href="#" id="simulate-1">SMA_strategy</a></li>'
+                         +'</li><li><a href="#" id="simulate-1">TN_strategy</a></li>'
                         );
   });
 
@@ -89,11 +89,11 @@ $(document).ready( function() {
       var stkticker = $('input.typeahead.tt-input').val();
       //alert("Inside the event #simulate-1: " + stkticker);
       //console.log("Selected Option:"+$(this).text());
-      var stockticker = $(this).text();
+      var strategy = $(this).text();
       //console.log(drp.startDate);
       //console.log("I am here....$$$$" + amount)
     $.ajax({
-              url: '/strategies/backtest_results/?Ticker='+stkticker+'&amount='+amount+"&stdate="+drp.startDate.toISOString()+"&enddate="+drp.endDate.toISOString(),
+              url: '/strategies/backtest_results/?Ticker='+stkticker+'&strategy='+strategy+'&amount='+amount+"&stdate="+drp.startDate.toISOString()+"&enddate="+drp.endDate.toISOString(),
               type: 'GET',
               async: true,
               dataType: "json",

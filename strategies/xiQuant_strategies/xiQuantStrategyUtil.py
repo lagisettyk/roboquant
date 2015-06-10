@@ -227,6 +227,7 @@ def redis_build_feed_EOD(ticker, stdate, enddate):
         redisConn = util.get_redis_conn()
         ### added EOD as data source
         ticker_data = redisConn.zrangebyscore(ticker + ":EOD", int(seconds), int(seconds2), 0, -1, True)
+        #ticker_data = redisConn.zrangebyscore(ticker + ":EOD_UnAdj", int(seconds), int(seconds2), 0, -1, True)
         data_dict = redis_listoflists_to_dict(ticker_data)
     except Exception,e:
         print str(e)
@@ -238,6 +239,7 @@ def redis_build_feed_EOD(ticker, stdate, enddate):
         data = data_dict[key].split("|") ### split pipe delimted values
         bar = BasicBar(dateTime, 
             float(data[0]) , float(data[1]), float(data[2]), float(data[3]), float(data[4]), float(data[3]), Frequency.DAY)
+            #float(data[0]) , float(data[1]), float(data[2]), float(data[3]), float(data[5]), float(data[4]), Frequency.DAY)
         bd.append(bar)
     feed = Feed(Frequency.DAY, 1024)
     feed.loadBars(ticker, bd)
@@ -313,13 +315,86 @@ def tickersRankByMoneyFlowPercent(date):
             momentum_rank[data_point[1]] = tickerList[x]
 
     return collections.OrderedDict(sorted(momentum_rank.items(), reverse=True))
+
+def build_feed_TN(ticker, stdate, enddate):
+    import datetime
+    from time import mktime
+    from pyalgotrade.utils import dt
+    from pyalgotrade.bar import BasicBar, Frequency
+    import csv
+    import dateutil.parser
+
+    '''
+    seconds = mktime(stdate.timetuple())
+    seconds2 = mktime(enddate.timetuple())
+
+    data_dict = {}
+    try:
+        redisConn = util.get_redis_conn()
+        ### added EOD as data source
+        ticker_data = redisConn.zrangebyscore(ticker + ":EOD", int(seconds), int(seconds2), 0, -1, True)
+        #ticker_data = redisConn.zrangebyscore(ticker + ":EOD_UnAdj", int(seconds), int(seconds2), 0, -1, True)
+        data_dict = redis_listoflists_to_dict(ticker_data)
+    except Exception,e:
+        print str(e)
+        pass
+    '''
+
+    bd = [] ##### initialize bar data.....
+    file_TN = util.getRelativePath(ticker+'_TN.csv')
+    with open(file_TN, 'rU') as csvfile:
+        reader = csv.DictReader(csvfile)
+        for row in reader:
+            dateTime = dateutil.parser.parse(row['Date'])
+            bar = BasicBar(dateTime, 
+                float(row['Open']) , float(row['High']), float(row['Low']), float(row['Close']), float(row['Volume']), float(row['Close']), Frequency.DAY)
+            bd.append(bar)
+    feed = Feed(Frequency.DAY, 1024)
+    feed.loadBars(ticker, bd)
+    return feed
     
    
 def run_strategy_redis(bBandsPeriod, instrument, startPortfolio, startdate, enddate):
     from pyalgotrade.stratanalyzer import returns
 
-    # Download the bars
     feed = redis_build_feed_EOD(instrument, startdate, enddate)
+    #feed = build_feed_TN(instrument, startdate, enddate)
+    #feed = yahoofinance.build_feed([instrument], 2012, 2014, ".")
+
+    strat = BB_spread.BBSpread(feed, instrument, bBandsPeriod, startPortfolio)
+
+    # Attach a returns analyzers to the strategy.
+    returnsAnalyzer = returns.Returns()
+    results = StrategyResults(strat, returnsAnalyzer)
+
+    ###Initialize the bands to maxlength of 5000 for 10 years backtest..
+    strat.getBollingerBands().getMiddleBand().setMaxLen(5000)
+    strat.getBollingerBands().getUpperBand().setMaxLen(5000)
+    strat.getBollingerBands().getLowerBand().setMaxLen(5000) 
+    strat.getRSI().setMaxLen(5000)
+    strat.getEMAFast().setMaxLen(5000)
+    strat.getEMASlow().setMaxLen(5000)
+    strat.getEMASignal().setMaxLen(5000)
+    #### Add boilingerbands series....
+    strat.run()
+    #print "################: " , strat.getMACD()
+
+    results.addSeries("upper", strat.getBollingerBands().getUpperBand())
+    results.addSeries("middle", strat.getBollingerBands().getMiddleBand())
+    results.addSeries("lower", strat.getBollingerBands().getLowerBand())
+    results.addSeries("RSI", strat.getRSI())
+    results.addSeries("EMA Fast", strat.getEMAFast())
+    results.addSeries("EMA Slow", strat.getEMASlow())
+    results.addSeries("EMA Signal", strat.getEMASignal())
+    #results.addSeries("macd", strat.getMACD())
+    
+    return results
+
+def run_strategy_TN(bBandsPeriod, instrument, startPortfolio, startdate, enddate):
+    from pyalgotrade.stratanalyzer import returns
+
+    #feed = redis_build_feed_EOD(instrument, startdate, enddate)
+    feed = build_feed_TN(instrument, startdate, enddate)
     #feed = yahoofinance.build_feed([instrument], 2012, 2014, ".")
 
     strat = BB_spread.BBSpread(feed, instrument, bBandsPeriod, startPortfolio)
