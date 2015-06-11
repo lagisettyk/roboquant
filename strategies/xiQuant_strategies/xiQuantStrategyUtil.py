@@ -5,6 +5,8 @@ from pyalgotrade.technical import ma
 from utils import util
 import BB_spread
 import datetime
+import json
+
 
 
 import copy_reg
@@ -85,12 +87,26 @@ class StrategyResults(object):
                 adj_Vol_Series = [] ### Initialize the value list...
             bar_val = bars.getBar(instrument)
             ### This is for displaying OHLC + volume as candle stick in high charts...
+            '''
             adjPrice_val = [dtInMilliSeconds, bar_val.getOpen(True), bar_val.getHigh(True), \
                     bar_val.getLow(True), bar_val.getAdjClose()]
+            '''
+            #### Please note we are already populating them with adjusted values so we do not need to set to true...
+            adjPrice_val = [dtInMilliSeconds, bar_val.getOpen(), bar_val.getHigh(), \
+                    bar_val.getLow(), bar_val.getAdjClose()]
             adj_Close_Series.append(adjPrice_val)
             self.__AdjPrices[instrument] = adj_Close_Series
-            ### Populate volume series...
-            adj_Vol_Series.append([dtInMilliSeconds, bar_val.getVolume()])
+            ### Populate volume series... as points to display in highchart as columns
+            ##### Color green indicates Close higher then open and red indicates lower
+            
+            if bar_val.getAdjClose() >  bar_val.getOpen():
+                color_value = '#009933'
+            else:
+                color_value = '#CC3300' 
+            volume = bar_val.getVolume()
+            volpoint = {'color':color_value, 'x':dtInMilliSeconds, 'y':volume}
+            #adj_Vol_Series.append([dtInMilliSeconds, bar_val.getVolume()])
+            adj_Vol_Series.append(volpoint) 
             self.__AdjVolume[instrument] =  adj_Vol_Series
 
         
@@ -287,7 +303,8 @@ def redis_build_moneyflow(ticker, stdate, enddate):
     sma_3days = redis_build_sma_3days(ticker, stdate, enddate)
     for x in range(len(sma_3days)-1):
         data_point = []
-        data_point.append(sma_3days[x+1][0])
+        seconds = mktime(datetime.datetime.fromtimestamp(sma_3days[x+1][0]).timetuple())
+        data_point.append(int(seconds)*1000) ### datetime in milliseconds...
         data_point.append(sma_3days[x+1][1] - sma_3days[x][1])
         moneyflow.append(data_point)
     return moneyflow
@@ -297,7 +314,8 @@ def redis_build_moneyflow_percent(ticker, stdate, enddate):
     sma_3days = redis_build_sma_3days(ticker, stdate, enddate)
     for x in range(len(sma_3days)-1):
         data_point = []
-        data_point.append(sma_3days[x+1][0])
+        seconds = mktime(datetime.datetime.fromtimestamp(sma_3days[x+1][0]).timetuple())
+        data_point.append(int(seconds)*1000)### datetime in milliseconds...
         diff = sma_3days[x+1][1] - sma_3days[x][1]
         data_point.append(diff/sma_3days[x][1] * 100)
         moneyflow.append(data_point)

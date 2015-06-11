@@ -97,6 +97,11 @@ $(document).ready( function() {
               type: 'GET',
               async: true,
               dataType: "json",
+              beforeSend: function( xhr, status ) {
+               //alert( "Before calling function" );
+               //Indicates progress bar...
+               $("*").css("cursor", "progress");
+              }, 
               success: function (data) {
                 console.log("Inside Success")
                 //console.log(data)
@@ -118,7 +123,9 @@ $(document).ready( function() {
                 emaseries[0] = {name: "ema fast", data: data.emafast};
                 emaseries[1] = {name: "ema slow", data: data.emaslow};
                 emaseries[2] = {name: "ema signal", data: data.emasignal};
-                emaseries[3] = {name: "volume", data: data.volume};
+                emaseries[3] = {name: "cashflow(3days)", data: data.cashflow_3days};
+                emaseries[4] = {name: "volume", data: data.volume};
+                
                 displayEMAData(emaseries,stkticker)
 
                 adx_dmi_data = []
@@ -128,6 +135,7 @@ $(document).ready( function() {
                 adx_dmi_data[3] = {name: "dmi minus", data: data.dmiminus};
                 display_ADX_DMI_Data(adx_dmi_data, stkticker)
                 //displayInstrumentData(data.instrumentDetails, data.flagData, stockticker)
+
               },
               // Code to run if the request fails; the raw request and
       // status codes are passed to the function
@@ -140,6 +148,8 @@ $(document).ready( function() {
               // Code to run regardless of success or failure
               complete: function( xhr, status ) {
                //alert( "The request is complete!" );
+               //Change back cursor to normal...
+               $("*").css("cursor", "default");
               } 
         });
   });
@@ -245,6 +255,7 @@ $(document).ready( function() {
               //series: data,
               series : [{
                 type: 'candlestick',
+                color: '#000000',
                 name : dataList[0].name,
                 data : dataList[0].data,
                 tooltip: {
@@ -253,6 +264,7 @@ $(document).ready( function() {
                 id : 'dataseries1'
                },{
                 yAxis: 1,
+                color: '#000000',
                 name : dataList[1].name,
                 data : dataList[1].data,
                 tooltip: {
@@ -261,6 +273,7 @@ $(document).ready( function() {
                 id : 'dataseries2'
                },{
                 yAxis: 1,
+                color: '#006600',
                 name : dataList[2].name,
                 data : dataList[2].data,
                 tooltip: {
@@ -269,6 +282,7 @@ $(document).ready( function() {
                 id : 'dataseries3'
                },{
                 yAxis: 1,
+                color: '#CC3300',
                 name : dataList[3].name,
                 data : dataList[3].data,
                 tooltip: {
@@ -313,11 +327,11 @@ $(document).ready( function() {
                           height: '45%'
               },{ //--- secondary yAxis
                      title : {
-                        text : 'rsi'
+                        text : 'RSI'
                      },
                       min: 0,
                       max: 100,
-                      top: '65%',
+                      top: '45%',
                       height: '35%',
                       lineWidth: 2,
                       plotLines : [{
@@ -337,13 +351,13 @@ $(document).ready( function() {
                                 text : 'maximum'
                             }
                       }],
-                      opposite: true
-              },{ //--- third yAxis
+                      //opposite: true
+              },{ //--- terinary yAxis
                       title: {
                           text: 'MACD'
                       },
                       //min: 0,
-                      top: '45%',
+                      top: '85%',
                       height: '20%',
                       opposite: true
               }],
@@ -351,6 +365,7 @@ $(document).ready( function() {
               //series: data,
               series : [{
                 type: 'candlestick',
+                color: '#000000',
                 name : dataList[0].name,
                 data : dataList[0].data,
                 tooltip: {
@@ -358,6 +373,7 @@ $(document).ready( function() {
                 },
                 id : 'dataseries1'
                },{
+                color: '#CC00CC',
                 name : dataList[1].name,
                 data : dataList[1].data,
                 tooltip: {
@@ -365,6 +381,7 @@ $(document).ready( function() {
                 },
                 id : 'dataseries2'
                },{
+                color: '#CC0000',
                 name : dataList[2].name,
                 data : dataList[2].data,
                 tooltip: {
@@ -372,6 +389,7 @@ $(document).ready( function() {
                 },
                 id : 'dataseries3'
                },{
+                color: '#CC00CC',
                 name : dataList[3].name,
                 data : dataList[3].data,
                 tooltip: {
@@ -380,6 +398,7 @@ $(document).ready( function() {
                 id : 'dataseries4'
                },{
                 yAxis: 1,
+                color: '#FF9933',
                 name : dataList[4].name,
                 data : dataList[4].data,
                 tooltip: {
@@ -388,6 +407,7 @@ $(document).ready( function() {
                 id : 'dataseries5'
                },{
                 yAxis: 2,
+                color: '#0033CC',
                 name : dataList[5].name,
                 data : dataList[5].data,
                 tooltip: {
@@ -422,13 +442,21 @@ $(document).ready( function() {
                           title: {
                               text: 'EMA'
                           },
-                          height: '60%'
+                          height: '40%'
               },{ //--- secondary yAxis
+                      title: {
+                          text: 'cashflow'
+                      },
+                      //min: 0,
+                      top: '45%',
+                      height: '40%',
+                      opposite: true
+              },{ //--- terinary yAxis
                        title : {
                           text : 'Volume'
                        },
                         min: 0,
-                        top: '65%',
+                        top: '85%',
                         height: '35%',
                         offset: 0,
                         opposite: true
@@ -468,10 +496,20 @@ $(document).ready( function() {
                 },
                 id : 'dataseries3'
                },{
-                yAxis: 1,
+                 yAxis: 1,
+                 color: '#0033CC',
+                 name : dataList[3].name,
+                 data : dataList[3].data,
+                 tooltip: {
+                    valueDecimals: 2
+                 },
+                 id : 'dataseries5'
+               },{
+                yAxis: 2,
                 type: 'column',
-                name : dataList[3].name,
-                data : dataList[3].data,
+                name : dataList[4].name,
+                data : dataList[4].data,
+                turboThreshold: 0, ///Speed up and make sure it supports more points
                 tooltip: {
                     valueDecimals: 2
                 },

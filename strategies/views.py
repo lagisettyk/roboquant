@@ -133,7 +133,8 @@ def backtest(request):
 		"rsi": job.result.getSeries("RSI"),
 		"emafast": job.result.getSeries("EMA Fast"),
 		"emaslow": job.result.getSeries("EMA Slow"),
-		"emasignal": job.result.getSeries("EMA Signal")
+		"emasignal": job.result.getSeries("EMA Signal"),
+		"cashflow_3days": xiQuantStrategyUtil.redis_build_moneyflow(ticker, start_date, end_date)
 		}
 	
     ### This is important to note json.dumps() convert python data structure to JSON form
