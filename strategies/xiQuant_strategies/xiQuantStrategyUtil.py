@@ -261,6 +261,45 @@ def redis_build_feed_EOD(ticker, stdate, enddate):
     feed.loadBars(ticker, bd)
     return feed
 
+def redis_build_volume_sma_ndays(ticker, nDays, stdate, enddate):
+    import datetime
+    from time import mktime
+    from pyalgotrade.utils import dt
+
+    seconds = mktime(stdate.timetuple())
+    seconds2 = mktime(enddate.timetuple())
+    data_dict = {}
+    try:
+        redisConn = util.get_redis_conn()
+        ticker_data = redisConn.zrangebyscore(ticker + ":EOD", int(seconds), int(seconds2), 0, -1, True)
+        data_dict = redis_listoflists_to_dict(ticker_data)
+    except Exception,e:
+        print str(e)
+        pass
+
+    #### Compute sma_ndays 
+    #### Avg(Close_Price * volume) over n days...
+    sma_ndays = [] ##### initialize bar data.....
+    keys = sorted(data_dict.keys())
+    i = 0 
+    j = nDays
+    while j < len(keys):
+        data_point = []
+        Avg = 0
+        timestamp = keys[j-1]
+        avg_list = keys[i:j]
+        for key in avg_list:
+            data = data_dict[key].split("|")
+            Avg += float(float(data[4]))
+
+        seconds = mktime(datetime.datetime.fromtimestamp(timestamp).timetuple())
+        data_point.append(int(seconds)*1000)
+        data_point.append(Avg/nDays)
+        sma_ndays.append(data_point)
+        i +=1
+        j +=1
+    return sma_ndays
+
 def redis_build_sma_3days(ticker, stdate, enddate):
     import datetime
     from time import mktime
@@ -303,6 +342,13 @@ def redis_build_moneyflow(ticker, stdate, enddate):
     sma_3days = redis_build_sma_3days(ticker, stdate, enddate)
     for x in range(len(sma_3days)-1):
         data_point = []
+        ### Add first data point null that way cashflow can align with other charts...
+        if x==0:
+            firstDay = []
+            sec_fd = mktime(datetime.datetime.fromtimestamp(sma_3days[0][0]).timetuple())
+            firstDay.append(int(sec_fd)*1000)
+            firstDay.append(None)
+            moneyflow.append(firstDay)
         seconds = mktime(datetime.datetime.fromtimestamp(sma_3days[x+1][0]).timetuple())
         data_point.append(int(seconds)*1000) ### datetime in milliseconds...
         data_point.append(sma_3days[x+1][1] - sma_3days[x][1])
@@ -314,6 +360,14 @@ def redis_build_moneyflow_percent(ticker, stdate, enddate):
     sma_3days = redis_build_sma_3days(ticker, stdate, enddate)
     for x in range(len(sma_3days)-1):
         data_point = []
+        ### Add first data point null that way cashflow can align with other charts...
+        if x==0:
+            firstDay = []
+            sec_fd = seconds = mktime(datetime.datetime.fromtimestamp(sma_3days[0][0]).timetuple())
+            firstDay.append(int(sec_fd)*1000)
+            firstDay.append(None)
+            moneyflow.append(firstDay)
+
         seconds = mktime(datetime.datetime.fromtimestamp(sma_3days[x+1][0]).timetuple())
         data_point.append(int(seconds)*1000)### datetime in milliseconds...
         diff = sma_3days[x+1][1] - sma_3days[x][1]

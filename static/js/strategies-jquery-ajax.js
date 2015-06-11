@@ -120,11 +120,13 @@ $(document).ready( function() {
                 displayBBData(bbseries,stkticker)
 
                 emaseries = []
-                emaseries[0] = {name: "ema fast", data: data.emafast};
-                emaseries[1] = {name: "ema slow", data: data.emaslow};
-                emaseries[2] = {name: "ema signal", data: data.emasignal};
-                emaseries[3] = {name: "cashflow(3days)", data: data.cashflow_3days};
-                emaseries[4] = {name: "volume", data: data.volume};
+                emaseries[0] = {name: "price", data: data.price};
+                emaseries[1] = {name: "ema fast", data: data.emafast};
+                emaseries[2] = {name: "ema slow", data: data.emaslow};
+                emaseries[3] = {name: "ema signal", data: data.emasignal};
+                emaseries[4] = {name: "cashflow(3days)", data: data.cashflow_3days};
+                emaseries[5] = {name: "volume", data: data.volume};
+                emaseries[6] = {name: "vol MA 5 days", data: data.volsma5days};
                 
                 displayEMAData(emaseries,stkticker)
 
@@ -183,8 +185,8 @@ $(document).ready( function() {
               rangeSelector : {
                   selected : 5
               },
-
-               title : {
+              
+              title : {
                   text : ticker + ": Portfolio Performance",
                   floating: true,
                   align: 'left',
@@ -195,6 +197,7 @@ $(document).ready( function() {
               series : [{
                   name : dataList[0].name,
                   data : dataList[0].data,
+                  turboThreshold: 0, ///Speed up and make sure it supports more points
                   tooltip: {
                       valueDecimals: 2
                   },
@@ -203,6 +206,7 @@ $(document).ready( function() {
                   type: 'flags',
                   name : dataList[1].name,
                   data : dataList[1].data,
+                  turboThreshold: 0, ///Speed up and make sure it supports more points
                   tooltip: {
                       valueDecimals: 2
                   },
@@ -258,6 +262,7 @@ $(document).ready( function() {
                 color: '#000000',
                 name : dataList[0].name,
                 data : dataList[0].data,
+                turboThreshold: 0, ///Speed up and make sure it supports more points
                 tooltip: {
                     valueDecimals: 2
                 },
@@ -267,6 +272,7 @@ $(document).ready( function() {
                 color: '#000000',
                 name : dataList[1].name,
                 data : dataList[1].data,
+                turboThreshold: 0, ///Speed up and make sure it supports more points
                 tooltip: {
                     valueDecimals: 2
                 },
@@ -276,6 +282,7 @@ $(document).ready( function() {
                 color: '#006600',
                 name : dataList[2].name,
                 data : dataList[2].data,
+                turboThreshold: 0, ///Speed up and make sure it supports more points
                 tooltip: {
                     valueDecimals: 2
                 },
@@ -285,6 +292,7 @@ $(document).ready( function() {
                 color: '#CC3300',
                 name : dataList[3].name,
                 data : dataList[3].data,
+                turboThreshold: 0, ///Speed up and make sure it supports more points
                 tooltip: {
                     valueDecimals: 2
                 },
@@ -368,6 +376,7 @@ $(document).ready( function() {
                 color: '#000000',
                 name : dataList[0].name,
                 data : dataList[0].data,
+                turboThreshold: 0, ///Speed up and make sure it supports more points
                 tooltip: {
                     valueDecimals: 2
                 },
@@ -376,6 +385,7 @@ $(document).ready( function() {
                 color: '#CC00CC',
                 name : dataList[1].name,
                 data : dataList[1].data,
+                turboThreshold: 0, ///Speed up and make sure it supports more points
                 tooltip: {
                     valueDecimals: 2
                 },
@@ -384,6 +394,7 @@ $(document).ready( function() {
                 color: '#CC0000',
                 name : dataList[2].name,
                 data : dataList[2].data,
+                turboThreshold: 0, ///Speed up and make sure it supports more points
                 tooltip: {
                     valueDecimals: 2
                 },
@@ -401,6 +412,7 @@ $(document).ready( function() {
                 color: '#FF9933',
                 name : dataList[4].name,
                 data : dataList[4].data,
+                turboThreshold: 0, ///Speed up and make sure it supports more points
                 tooltip: {
                     valueDecimals: 2
                 },
@@ -410,6 +422,7 @@ $(document).ready( function() {
                 color: '#0033CC',
                 name : dataList[5].name,
                 data : dataList[5].data,
+                turboThreshold: 0, ///Speed up and make sure it supports more points
                 tooltip: {
                     valueDecimals: 2
                 },
@@ -472,9 +485,12 @@ $(document).ready( function() {
 
               //series: data,
               series : [{
+                type: 'candlestick',
+                color: '#000000',
                 yAxis: 0,
                 name : dataList[0].name,
                 data : dataList[0].data,
+                turboThreshold: 0, ///Speed up and make sure it supports more points
                 tooltip: {
                     valueDecimals: 2
                 },
@@ -483,14 +499,25 @@ $(document).ready( function() {
                 yAxis: 0,
                 name : dataList[1].name,
                 data : dataList[1].data,
+                turboThreshold: 0, ///Speed up and make sure it supports more points
+                tooltip: {
+                    valueDecimals: 2
+                },
+                id : 'dataseries1'
+               },{
+                yAxis: 0,
+                name : dataList[2].name,
+                data : dataList[2].data,
+                turboThreshold: 0, ///Speed up and make sure it supports more points
                 tooltip: {
                     valueDecimals: 2
                 },
                 id : 'dataseries2'
                },{
-                 yAxis: 0,
-                 name : dataList[2].name,
-                data : dataList[2].data,
+                yAxis: 0,
+                name : dataList[3].name,
+                data : dataList[3].data,
+                turboThreshold: 0, ///Speed up and make sure it supports more points
                 tooltip: {
                     valueDecimals: 2
                 },
@@ -498,8 +525,9 @@ $(document).ready( function() {
                },{
                  yAxis: 1,
                  color: '#0033CC',
-                 name : dataList[3].name,
-                 data : dataList[3].data,
+                 name : dataList[4].name,
+                 data : dataList[4].data,
+                 turboThreshold: 0, ///Speed up and make sure it supports more points
                  tooltip: {
                     valueDecimals: 2
                  },
@@ -507,8 +535,18 @@ $(document).ready( function() {
                },{
                 yAxis: 2,
                 type: 'column',
-                name : dataList[4].name,
-                data : dataList[4].data,
+                name : dataList[5].name,
+                data : dataList[5].data,
+                turboThreshold: 0, ///Speed up and make sure it supports more points
+                tooltip: {
+                    valueDecimals: 2
+                },
+                id : 'dataseries4'
+               },{
+                yAxis: 2,
+                color: '#000000',
+                name : dataList[6].name,
+                data : dataList[6].data,
                 turboThreshold: 0, ///Speed up and make sure it supports more points
                 tooltip: {
                     valueDecimals: 2
