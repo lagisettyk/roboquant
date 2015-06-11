@@ -66,8 +66,8 @@ print stdate, enddate
 #results_sma_3days = xiQuantStrategyUtil.redis_build_sma_3days("NFLX", stdate, enddate)
 #print results_sma_3days
 
-results_moneyflow = xiQuantStrategyUtil.redis_build_moneyflow_percent("NFLX", stdate, enddate)
-print results_moneyflow
+#results_moneyflow = xiQuantStrategyUtil.redis_build_moneyflow_percent("NFLX", stdate, enddate)
+#print results_moneyflow
 
 #results_moneyflow_percent = xiQuantStrategyUtil.redis_build_moneyflow_percent("NFLX", stdate, enddate)
 #print results_moneyflow_percent
@@ -75,8 +75,8 @@ print results_moneyflow
 #results_momentum_list = xiQuantStrategyUtil.tickersRankByMoneyFlowPercent(enddate)
 #print results_momentum_list
 
-#results = xiQuantStrategyUtil.run_strategy_TN(20, "AAPL", 100000, stdate, enddate)
-#print results.getPortfolioResult()
+results = xiQuantStrategyUtil.run_strategy_redis(20, "AAPL", 100000, stdate, enddate)
+print results.getPortfolioResult()
 #print results.getMACD()
 #print results.getADX()
 #print results.getDMIPlus()
