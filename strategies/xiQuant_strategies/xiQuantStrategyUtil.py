@@ -134,15 +134,25 @@ class StrategyResults(object):
             execInfo = orderEvent.getEventInfo()
             if action in [pyalgotrade.broker.Order.Action.BUY, pyalgotrade.broker.Order.Action.BUY_TO_COVER]:
                 #self.getSeries("Buy", BuyMarker).addValue(execInfo.getDateTime(), execInfo.getPrice())
-                print "BUY: ", execInfo.getDateTime(), execInfo.getPrice()
+                #print "BUY: ", execInfo.getDateTime(), execInfo.getPrice()
                 seconds = mktime(execInfo.getDateTime().timetuple())
-                val = {'x':int(seconds * 1000), 'title': 'B', 'text': 'Bought: ' + str(order.getInstrument()) +'  Shares: ' + str(order.getQuantity()) + " Price " +  str(execInfo.getPrice())}
+                if action == pyalgotrade.broker.Order.Action.BUY:
+                    val = {'x':int(seconds * 1000), 'title': 'B', 'text': 'Bought: ' + str(order.getInstrument()) +'  Shares: ' + str(order.getQuantity()) + " Price " +  str(execInfo.getPrice())}
+                else:
+                    val = {'x':int(seconds * 1000), 'title': 'CB', 'text': 'Cover Buy: ' + str(order.getInstrument()) +'  Shares: ' + str(order.getQuantity()) + " Price " +  str(execInfo.getPrice())}
+
+                #val = {'x':int(seconds * 1000), 'title': 'B', 'text': 'Bought: ' + str(order.getInstrument()) +'  Shares: ' + str(order.getQuantity()) + " Price " +  str(execInfo.getPrice())}
                 self.__tradeDetails.append(val)
             elif action in [pyalgotrade.broker.Order.Action.SELL, pyalgotrade.broker.Order.Action.SELL_SHORT]:
                 #self.getSeries("Sell", SellMarker).addValue(execInfo.getDateTime(), execInfo.getPrice())
-                print "SELL: ", execInfo.getDateTime(), execInfo.getPrice()
+                #print "SELL: ", execInfo.getDateTime(), execInfo.getPrice()
                 seconds = mktime(execInfo.getDateTime().timetuple())
-                val = {'x':int(seconds * 1000), 'title': 'S', 'text': 'SOLD:' + str(order.getInstrument()) +' Shares:' + str(order.getQuantity()) + " Price " +  str(execInfo.getPrice())}
+                if action == pyalgotrade.broker.Order.Action.SELL:
+                    val = {'x':int(seconds * 1000), 'title': 'S', 'text': 'SOLD:' + str(order.getInstrument()) +' Shares:' + str(order.getQuantity()) + " Price " +  str(execInfo.getPrice())}
+                else:
+                    val = {'x':int(seconds * 1000), 'title': 'SS', 'text': 'Short SELL:' + str(order.getInstrument()) +' Shares:' + str(order.getQuantity()) + " Price " +  str(execInfo.getPrice())}
+
+                #val = {'x':int(seconds * 1000), 'title': 'S', 'text': 'SOLD:' + str(order.getInstrument()) +' Shares:' + str(order.getQuantity()) + " Price " +  str(execInfo.getPrice())}
                 self.__tradeDetails.append(val)
 
     def getAdjCloseSeries(self, instrument):
