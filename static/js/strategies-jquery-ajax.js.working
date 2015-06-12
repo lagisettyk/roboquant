@@ -87,7 +87,11 @@ $(document).ready( function() {
       var amount = $('#InitialCash').val();
       var drp = $('#reportrange2').data('daterangepicker');
       var stkticker = $('input.typeahead.tt-input').val();
+      //alert("Inside the event #simulate-1: " + stkticker);
+      //console.log("Selected Option:"+$(this).text());
       var strategy = $(this).text();
+      //console.log(drp.startDate);
+      //console.log("I am here....$$$$" + amount)
     $.ajax({
               url: '/strategies/backtest_results/?Ticker='+stkticker+'&strategy='+strategy+'&amount='+amount+"&stdate="+drp.startDate.toISOString()+"&enddate="+drp.endDate.toISOString(),
               type: 'GET',
@@ -100,11 +104,12 @@ $(document).ready( function() {
               }, 
               success: function (data) {
                 console.log("Inside Success")
+                //console.log(data)
+                //var ticker = "AAPL"
                 portseries = []
                 portseries[0] = {name: "portfolio value", data: data.seriesData};
                 portseries[1] = {name: "trades", data: data.flagData};
                 displayPortfolioData(portseries, stkticker)
-
                 bbseries = []
                 bbseries[0] = {name: "price", data: data.price};
                 bbseries[1] = {name: "upper", data: data.upper};
@@ -122,6 +127,7 @@ $(document).ready( function() {
                 emaseries[4] = {name: "cashflow(3days)", data: data.cashflow_3days};
                 emaseries[5] = {name: "volume", data: data.volume};
                 emaseries[6] = {name: "vol MA 5 days", data: data.volsma5days};
+                
                 displayEMAData(emaseries,stkticker)
 
                 adx_dmi_data = []
@@ -130,7 +136,8 @@ $(document).ready( function() {
                 adx_dmi_data[2] = {name: "dmi plus", data: data.dmiplus};
                 adx_dmi_data[3] = {name: "dmi minus", data: data.dmiminus};
                 display_ADX_DMI_Data(adx_dmi_data, stkticker)
-                
+                //displayInstrumentData(data.instrumentDetails, data.flagData, stockticker)
+
               },
               // Code to run if the request fails; the raw request and
       // status codes are passed to the function
@@ -149,7 +156,7 @@ $(document).ready( function() {
         });
   });
 
-  
+  //var options = { $AutoPlay: true };
   var options = {
             $DragOrientation: 0, /// This is too make sure drag even does not trigger slide show...
             $ArrowNavigatorOptions: {
@@ -158,49 +165,12 @@ $(document).ready( function() {
             }
   };
   var jssor_slider1 = new $JssorSlider$('slider1_container', options);
+ 
 
-  var chart1;
-  var chart2;
-  var chart3
-  var chart4;
-  //var insideChart1 = false;
-  //var insideChart2 = false;
-  //var insideChart3 = false;
-  //var insideChart4 = false;
-  
+
   function displayPortfolioData (dataList, ticker) {
-    insideChart1 = true;
-    chart1 = new Highcharts.StockChart({
-      //$('#container').highcharts('StockChart', {
-              chart: {
-                        renderTo: $('#container')[0]
-                      },
-              xAxis: {
-                events: {
-                             afterSetExtremes: function() {
-                              //alert( "Inside the event box....");
-                              if (!this.chart.options.chart.isZoomed) {
-                                    var xMin = this.chart.xAxis[0].min;
-                                    var xMax = this.chart.xAxis[0].max;
-                                   
-                                   ///Make sure to avoid recursive loop set them to true...
-                                     chart2.options.chart.isZoomed = true;
-                                     chart3.options.chart.isZoomed = true;
-                                     chart4.options.chart.isZoomed = true;
 
-                                    chart2.xAxis[0].setExtremes(xMin, xMax, true);
-                                    chart3.xAxis[0].setExtremes(xMin, xMax, true);
-                                    chart4.xAxis[0].setExtremes(xMin, xMax, true);
-
-                                    ///Make sure to set back to false... able to listen events
-                                     chart2.options.chart.isZoomed = false;
-                                     chart3.options.chart.isZoomed = false;
-                                     chart4.options.chart.isZoomed = false;
-                                    alert( "Inside the event box...." + xMin + " " + xMax);                                    
-                                }
-                             }
-                        }
-              },
+      $('#container').highcharts('StockChart', {
               legend: {
                     enabled: true,
                     align: 'right',
@@ -215,6 +185,7 @@ $(document).ready( function() {
               rangeSelector : {
                   selected : 5
               },
+              
               title : {
                   text : ticker + ": Portfolio Performance",
                   floating: true,
@@ -222,6 +193,7 @@ $(document).ready( function() {
                   x: 75,
                   y: 70
               },
+
               series : [{
                   name : dataList[0].name,
                   data : dataList[0].data,
@@ -243,34 +215,7 @@ $(document).ready( function() {
     }
 
     function display_ADX_DMI_Data (dataList, ticker) {
-    chart4 = new Highcharts.StockChart({
-             chart: {
-                        renderTo: $('#container4')[0]
-              },
-             xAxis: {
-                events: {
-                             afterSetExtremes: function() {
-                              //alert( "Inside the event box....");
-                              if (!this.chart.options.chart.isZoomed) {
-                                    var xMin = this.chart.xAxis[0].min;
-                                    var xMax = this.chart.xAxis[0].max;
-                                  
-                                     chart2.options.chart.isZoomed = true;
-                                     chart3.options.chart.isZoomed = true;
-                                     chart1.options.chart.isZoomed = true;
-
-                                    chart2.xAxis[0].setExtremes(xMin, xMax, true);
-                                    chart3.xAxis[0].setExtremes(xMin, xMax, true);
-                                    chart1.xAxis[0].setExtremes(xMin, xMax, true);
-                                    //alert( "Inside the event box...." + xMin + " " + xMax);
-
-                                     chart2.options.chart.isZoomed = false;
-                                     chart3.options.chart.isZoomed = false;
-                                     chart1.options.chart.isZoomed = false;                                    
-                                }
-                             }
-                        }
-             },
+      $('#container4').highcharts('StockChart', {
              legend: {
                     enabled: true,
                     align: 'right',
@@ -358,34 +303,7 @@ $(document).ready( function() {
 
 
     function displayBBData (dataList, ticker) {
-      chart3 = new Highcharts.StockChart({
-             chart: {
-                        renderTo: $('#container3')[0]
-              },
-             xAxis: {
-                events: {
-                             afterSetExtremes: function() {
-                              //alert( "Inside the event box....");
-                              if (!this.chart.options.chart.isZoomed) {
-                                    var xMin = this.chart.xAxis[0].min;
-                                    var xMax = this.chart.xAxis[0].max;
-                                    
-                                     chart2.options.chart.isZoomed = true;
-                                     chart1.options.chart.isZoomed = true;
-                                     chart4.options.chart.isZoomed = true;
-
-                                    chart2.xAxis[0].setExtremes(xMin, xMax, true);
-                                    chart1.xAxis[0].setExtremes(xMin, xMax, true);
-                                    chart4.xAxis[0].setExtremes(xMin, xMax, true);
-                                    //alert( "Inside the event box...." + xMin + " " + xMax); 
-
-                                     chart2.options.chart.isZoomed = false;
-                                     chart1.options.chart.isZoomed = false;
-                                     chart4.options.chart.isZoomed = false;                                   
-                                }
-                             }
-                        }
-             },
+      $('#container3').highcharts('StockChart', {
 
              legend: {
                     enabled: true,
@@ -515,35 +433,7 @@ $(document).ready( function() {
 
 
     function displayEMAData (dataList, ticker) {
-    chart2 = new Highcharts.StockChart({
-             chart: {
-                        renderTo: $('#container2')[0]
-              },
-              xAxis: {
-                events: {
-                             afterSetExtremes: function() {
-                              //alert( "Inside the event box....");
-                              if (!this.chart.options.chart.isZoomed) {
-                                    var xMin = this.chart.xAxis[0].min;
-                                    var xMax = this.chart.xAxis[0].max;
-                                    //var zmRange = computeTickInterval(xMin, xMax);
-
-                                     chart3.options.chart.isZoomed = true;
-                                     chart1.options.chart.isZoomed = true;
-                                     chart4.options.chart.isZoomed = true;
-
-                                    chart3.xAxis[0].setExtremes(xMin, xMax, true);
-                                    chart1.xAxis[0].setExtremes(xMin, xMax, true);
-                                    chart4.xAxis[0].setExtremes(xMin, xMax, true);
-                                    //alert( "Inside the event box...." + xMin + " " + xMax); 
-
-                                     chart3.options.chart.isZoomed = false;
-                                     chart1.options.chart.isZoomed = false;
-                                     chart4.options.chart.isZoomed = false;                                   
-                                }
-                             }
-                        }
-              },
+      $('#container2').highcharts('StockChart', {
      
               legend: {
                     enabled: true,
@@ -560,6 +450,7 @@ $(document).ready( function() {
               rangeSelector : {
                   selected : 0
               },
+
               yAxis: [ { //--- primary yAxis
                           title: {
                               text: 'EMA'
@@ -606,10 +497,8 @@ $(document).ready( function() {
                 id : 'dataseries1'
                },{
                 yAxis: 0,
-                color: '#0000FF',
                 name : dataList[1].name,
                 data : dataList[1].data,
-                lineWidth: 4,
                 turboThreshold: 0, ///Speed up and make sure it supports more points
                 tooltip: {
                     valueDecimals: 2
@@ -617,10 +506,8 @@ $(document).ready( function() {
                 id : 'dataseries1'
                },{
                 yAxis: 0,
-                color: '#008000',
                 name : dataList[2].name,
                 data : dataList[2].data,
-                lineWidth: 4,
                 turboThreshold: 0, ///Speed up and make sure it supports more points
                 tooltip: {
                     valueDecimals: 2
@@ -628,10 +515,8 @@ $(document).ready( function() {
                 id : 'dataseries2'
                },{
                 yAxis: 0,
-                color: '#FF00FF',
                 name : dataList[3].name,
                 data : dataList[3].data,
-                lineWidth: 4,
                 turboThreshold: 0, ///Speed up and make sure it supports more points
                 tooltip: {
                     valueDecimals: 2
@@ -642,7 +527,6 @@ $(document).ready( function() {
                  color: '#0033CC',
                  name : dataList[4].name,
                  data : dataList[4].data,
-                 lineWidth: 4,
                  turboThreshold: 0, ///Speed up and make sure it supports more points
                  tooltip: {
                     valueDecimals: 2
@@ -672,7 +556,59 @@ $(document).ready( function() {
             });
     }
 
-    
+    function displayReturnData (data, ticker) {
+
+      //console.log("inside displayData")
+      //var flagdata 
+      //console.log(data)
+      //console.log(flagdata)
+      $('#container3').highcharts('StockChart', {
+              rangeSelector : {
+                  selected : 5
+              },
+
+              title : {
+                  text : ticker +' cumulative returns'
+              },
+
+              series : [{
+                  name : ticker,
+                  data : data,
+                  tooltip: {
+                      valueDecimals: 2
+                  },
+                  id : 'dataseries'
+             }]
+          });
+    }
+
+    function displayInstrumentData (data, flagdata, ticker) {
+      $('#container2').highcharts('StockChart', {
+              rangeSelector : {
+                  selected : 5
+              },
+
+              title : {
+                  text : ticker +' positions'
+              },
+
+              series : [{
+                  name : ticker,
+                  data : data,
+                  tooltip: {
+                      valueDecimals: 2
+                  },
+                  id : 'dataseries'
+               // the event marker flags
+            }, {
+                type : 'flags',
+                data : flagdata,
+                onSeries : 'dataseries',
+                shape : 'circlepin',
+                width : 16
+            }]
+          });
+    }
 
   $('#action-1').click(function () {
     $.ajax({
