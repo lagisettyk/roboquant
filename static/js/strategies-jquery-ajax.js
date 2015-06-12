@@ -196,7 +196,7 @@ $(document).ready( function() {
                                      chart2.options.chart.isZoomed = false;
                                      chart3.options.chart.isZoomed = false;
                                      chart4.options.chart.isZoomed = false;
-                                    alert( "Inside the event box...." + xMin + " " + xMax);                                    
+                                    //alert( "Inside the event box...." + xMin + " " + xMax);                                    
                                 }
                              }
                         }
@@ -571,14 +571,14 @@ $(document).ready( function() {
                       },
                       //min: 0,
                       top: '45%',
-                      height: '40%',
+                      height: '20%',
                       opposite: true
               },{ //--- terinary yAxis
                        title : {
                           text : 'Volume'
                        },
                         min: 0,
-                        top: '85%',
+                        top: '65%',
                         height: '35%',
                         offset: 0,
                         opposite: true
