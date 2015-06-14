@@ -35,6 +35,7 @@ import logging.handlers
 import os
 module_dir = os.path.dirname(__file__)  # get current directory
 
+
 class BBSpread(strategy.BacktestingStrategy):
 	def __init__(self, feed, instrument, bBandsPeriod, startPortfolio):
 		strategy.BacktestingStrategy.__init__(self, feed, startPortfolio)
@@ -110,7 +111,6 @@ class BBSpread(strategy.BacktestingStrategy):
 		self.__logger.debug("Load the input JSON exit price file.")
 		file_json_exit_price = os.path.join(module_dir, 'json_exit_price')
 		jsonExitPrice = open(file_json_exit_price)
-		self.__inpExit = json.load(jsonExitPrice)
 
 	def onFinish(self, bars):
 		self.stopLogging()
@@ -280,7 +280,20 @@ class BBSpread(strategy.BacktestingStrategy):
 						self.__logger.debug("LONG on %d shares" % abs(self.__longPos.getShares()))
 					self.__entryDay = xiquantFuncs.timestamp_from_datetime(self.__priceDS.getDateTimes()[-1])
 					self.__logger.debug("Entry Day is : %s" % self.__entryDay)
-					stopPrice = bar.getOpen() - consts.BB_STOP_LOSS_PRICE_DELTA
+					stopPriceDelta = 0
+					closePrice = bar.getClose()
+					if closePrice < consts.BB_SPREAD_EXIT_PRICE_RANGE_HIGH_1:
+						stopPriceDelta = consts.BB_SPREAD_EXIT_PRICE_DELTA_1
+					if closePrice < consts.BB_SPREAD_EXIT_PRICE_RANGE_HIGH_2:
+						stopPriceDelta = consts.BB_SPREAD_EXIT_PRICE_DELTA_2
+					if closePrice < consts.BB_SPREAD_EXIT_PRICE_RANGE_HIGH_3:
+						stopPriceDelta = consts.BB_SPREAD_EXIT_PRICE_DELTA_3
+					if closePrice < consts.BB_SPREAD_EXIT_PRICE_RANGE_HIGH_4:
+						stopPriceDelta = consts.BB_SPREAD_EXIT_PRICE_DELTA_4
+					if closePrice >= consts.BB_SPREAD_EXIT_PRICE_RANGE_HIGH_4:
+						stopPriceDelta = consts.BB_SPREAD_EXIT_PRICE_DELTA_5
+
+					stopPrice = bar.getOpen() - stopPriceDelta
 					self.__entryDayStopPrice = stopPrice
 			elif self.enterShortSignal(bar):
 				# Bearish; enter a short position.
@@ -318,7 +331,20 @@ class BBSpread(strategy.BacktestingStrategy):
 					self.__entryDay = xiquantFuncs.timestamp_from_datetime(self.__priceDS.getDateTimes()[-1])
 					self.__logger.debug("Entry Day is : %s" % self.__entryDay)
 					# Enter a stop limit order to exit here
-					stopPrice = bar.getOpen() + consts.BB_STOP_LOSS_PRICE_DELTA
+					stopPriceDelta = 0
+					closePrice = bar.getClose()
+					if closePrice < consts.BB_SPREAD_EXIT_PRICE_RANGE_HIGH_1:
+						stopPriceDelta = consts.BB_SPREAD_EXIT_PRICE_DELTA_1
+					if closePrice < consts.BB_SPREAD_EXIT_PRICE_RANGE_HIGH_2:
+						stopPriceDelta = consts.BB_SPREAD_EXIT_PRICE_DELTA_2
+					if closePrice < consts.BB_SPREAD_EXIT_PRICE_RANGE_HIGH_3:
+						stopPriceDelta = consts.BB_SPREAD_EXIT_PRICE_DELTA_3
+					if closePrice < consts.BB_SPREAD_EXIT_PRICE_RANGE_HIGH_4:
+						stopPriceDelta = consts.BB_SPREAD_EXIT_PRICE_DELTA_4
+					if closePrice >= consts.BB_SPREAD_EXIT_PRICE_RANGE_HIGH_4:
+						stopPriceDelta = consts.BB_SPREAD_EXIT_PRICE_DELTA_5
+
+					stopPrice = bar.getOpen() + stopPriceDelta
 					self.__entryDayStopPrice = stopPrice
 
 	def enterLongSignal(self, bar):
@@ -451,19 +477,22 @@ class BBSpread(strategy.BacktestingStrategy):
 		self.__logger.debug("Price Jump check passed.")
 
 		# Check volume 
-		if (len(self.__volumeDS) < consts.VOLUME_LOOKBACK_WINDOW): 
-			self.__logger.debug("Not enough entries for volume lookback")
+		if (len(self.__volumeDS) < consts.VOLUME_LOOKBACK_WINDOW) or (len(self.__volumeDS) < consts.VOLUME_AVG_WINDOW):
+			self.__logger.debug("Not enough entries for volume lookback or for computing average volume")
 			self.__logger.debug("Volume lookback: %d" % consts.VOLUME_LOOKBACK_WINDOW)
+			self.__logger.debug("Avg volume lookback: %d" % consts.VOLUME_AVG_WINDOW)
 			self.__logger.debug("Number of volume entries: %d" % len(self.__volumeDS))
 			return False 
 		volumeArrayInLookback = xiquantFuncs.dsToNumpyArray(self.__volumeDS, consts.VOLUME_LOOKBACK_WINDOW)
+		volumeArrayInAvgLookback = xiquantFuncs.dsToNumpyArray(self.__volumeDS, consts.VOLUME_AVG_WINDOW)
 		if volumeArrayInLookback[-1] != volumeArrayInLookback.max():
 			self.__logger.debug("Volume: %.2f" % volumeArrayInLookback[-1])
 			self.__logger.debug("Max volume in lookback: %.2f" % volumeArrayInLookback.max())
 			self.__logger.debug("Volume not greater in lookback.")
 			if volumeArrayInLookback[-2] >= 0 or volumeArrayInLookback[-1] <= 0:
-				##### Add the check to compare if the volume is near/at/above the average volument line
-				return False 
+				avgVolume = volumeArrayInAvgLookback.sum() / consts.VOLUME_AVG_WINDOW
+				if volumeArrayInLookback[-1] < avgVolume and float((avgVolume - volumeArrayInLookback[-1]) / avgVolume * 100) > consts.VOLUME_DELTA:
+					return False 
 		self.__logger.debug("Volume check passed.")
 
 		# Check cash flow 
@@ -564,9 +593,6 @@ class BBSpread(strategy.BacktestingStrategy):
 			self.__logger.debug("DMI setting: %d" % consts.DMI_PERIOD)
 			self.__logger.debug("Number of DMI entries: %d" % len(self.__dmiPlus))
 			return False
-		if self.__dmiPlus[-1] <= self.__dmiMinus[-1]:
-			self.__logger.debug("DMI+ not greater than DMI-.")
-			return False
 		# Add the code to give higher priority for investment to cases when both the conditions are satisfied.
 		if (self.__dmiPlus[-1] <= self.__dmiPlus[-2]):
 			self.__logger.debug("DMI Plus not pointing up.")
@@ -574,7 +600,7 @@ class BBSpread(strategy.BacktestingStrategy):
 		if (self.__dmiMinus[-1] >= self.__dmiMinus[-2]):
 			self.__logger.debug("DMI Minus not pointing down.")
 			return False
-		self.__logger.debug("ADX/DMI check passed.")
+		self.__logger.debug("DMI check passed.")
 
 		# Add checks for other indicators here
 		############
@@ -711,19 +737,22 @@ class BBSpread(strategy.BacktestingStrategy):
 		self.__logger.debug("Price Jump check passed.")
 
 		# Check volume 
-		if (len(self.__volumeDS) < consts.VOLUME_LOOKBACK_WINDOW): 
+		if (len(self.__volumeDS) < consts.VOLUME_LOOKBACK_WINDOW) or (len(self.__volumeDS) < consts.VOLUME_AVG_WINDOW):
 			self.__logger.debug("Not enough entries for volume lookback")
 			self.__logger.debug("Volume lookback: %d" % consts.VOLUME_LOOKBACK_WINDOW)
+			self.__logger.debug("Avg volume lookback: %d" % consts.VOLUME_AVG_WINDOW)
 			self.__logger.debug("Number of volume entries: %d" % len(self.__volumeDS))
 			return False 
 		volumeArrayInLookback = xiquantFuncs.dsToNumpyArray(self.__volumeDS, consts.VOLUME_LOOKBACK_WINDOW)
+		volumeArrayInAvgLookback = xiquantFuncs.dsToNumpyArray(self.__volumeDS, consts.VOLUME_AVG_WINDOW)
 		if volumeArrayInLookback[-1] != volumeArrayInLookback.max():
 			self.__logger.debug("Volume: %.2f" % volumeArrayInLookback[-1])
 			self.__logger.debug("Max volume in lookback: %.2f" % volumeArrayInLookback.max())
 			self.__logger.debug("Volume check failed.")
 			if volumeArrayInLookback[-2] <= 0 or volumeArrayInLookback[-1] >= 0:
-				##### Add the check to compare if the volume is near/at/above the average volument line
-				return False 
+				avgVolume = volumeArrayInAvgLookback.sum() / consts.VOLUME_AVG_WINDOW
+				if volumeArrayInLookback[-1] < avgVolume and float((avgVolume - volumeArrayInLookback[-1]) / avgVolume * 100) > consts.VOLUME_DELTA:
+					return False 
 
 		self.__logger.debug("Volume check passed.")
 		# Check cash flow 
@@ -824,9 +853,6 @@ class BBSpread(strategy.BacktestingStrategy):
 			self.__logger.debug("DMI setting: %d" % consts.DMI_PERIOD)
 			self.__logger.debug("Number of DMI entries: %d" % len(self.__dmiPlus))
 			return False
-		if self.__dmiMinus[-1] <= self.__dmiPlus[-1]:
-			self.__logger.debug("DMI- not greater than DMI-.")
-			return False
 		# Add the code to give higher priority for investment to cases when both the conditions are satisfied.
 		if (self.__dmiPlus[-1] >= self.__dmiPlus[-2]):
 			self.__logger.debug("DMI Plus not pointing down.")
@@ -834,7 +860,7 @@ class BBSpread(strategy.BacktestingStrategy):
 		if (self.__dmiMinus[-1] <= self.__dmiMinus[-2]):
 			self.__logger.debug("DMI Minus not pointing up.")
 			return False
-		self.__logger.debug("ADX/DMI check passed.")
+		self.__logger.debug("DMI check passed.")
 
 		# Add checks for other indicators here
 		############
@@ -870,6 +896,10 @@ class BBSpread(strategy.BacktestingStrategy):
 			exitPriceDelta = consts.BB_SPREAD_EXIT_PRICE_DELTA_4
 		if closePrice >= consts.BB_SPREAD_EXIT_PRICE_RANGE_HIGH_4:
 			exitPriceDelta = consts.BB_SPREAD_EXIT_PRICE_DELTA_5
+
+		# Since we are tightening the stop losses, a factor needs to be applied to
+		# the stop loss price deltas.
+		exitPriceDelta = float(exitPriceDelta * consts.BB_SPREAD_EXIT_TIGHTEN_PRICE_FACTOR)
 
 		if lowerBand > prevLowerBand:
 			# Tighten the stop loss order
@@ -924,6 +954,10 @@ class BBSpread(strategy.BacktestingStrategy):
 		if closePrice >= consts.BB_SPREAD_EXIT_PRICE_RANGE_HIGH_4:
 			exitPriceDelta = consts.BB_SPREAD_EXIT_PRICE_DELTA_5
 
+		# Since we are tightening the stop losses, a factor needs to be applied to
+		# the stop loss price deltas.
+		exitPriceDelta = float(exitPriceDelta * consts.BB_SPREAD_EXIT_TIGHTEN_PRICE_FACTOR)
+
 		if upperBand < prevUpperBand:
 			# Tighten the stop loss order
 			if bar.getOpen() <= bar.getClose():
@@ -976,7 +1010,7 @@ def run_strategy(bBandsPeriod, instrument, startPortfolio, plot=False):
 			Image.open(fileNameRoot + '_2_' + '.png').save(fileNameRoot + '_2_' + '.jpg', 'JPEG')
 
 def main(plot):
-	instruments = ["aapl"]
+	instruments = ["fdx"]
 	bBandsPeriod = 20
 	startPortfolio = 1000000
 	for inst in instruments:

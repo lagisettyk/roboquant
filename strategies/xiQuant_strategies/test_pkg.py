@@ -78,7 +78,7 @@ print stdate, enddate
 #results_momentum_list = xiQuantStrategyUtil.tickersRankByMoneyFlowPercent(enddate)
 #print results_momentum_list
 
-results = xiQuantStrategyUtil.run_strategy_TN(20, "AAPL", 100000, stdate, enddate)
+results = xiQuantStrategyUtil.run_strategy_TN(20, "GOOGL", 100000, stdate, enddate)
 print results.getPortfolioResult()
 #print results.getMACD()
 #print results.getADX()
