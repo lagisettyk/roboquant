@@ -52,7 +52,7 @@ def redis_build_CSV_EOD(ticker, stdate, enddate):
 
 
 import dateutil.parser
-stdate = dateutil.parser.parse('2009-01-01T08:00:00.000Z')
+stdate = dateutil.parser.parse('2005-06-15T08:00:00.000Z')
 #stdate = dateutil.parser.parse('2014-12-23T08:00:00.000Z')
 enddate = dateutil.parser.parse('2015-06-05T08:00:00.000Z')
 
@@ -78,7 +78,7 @@ print stdate, enddate
 #results_momentum_list = xiQuantStrategyUtil.tickersRankByMoneyFlowPercent(enddate)
 #print results_momentum_list
 
-results = xiQuantStrategyUtil.run_strategy_redis(20, "AAPL", 100000, stdate, enddate)
+results = xiQuantStrategyUtil.run_strategy_TN(20, "AAPL", 100000, stdate, enddate)
 print results.getPortfolioResult()
 #print results.getMACD()
 #print results.getADX()
