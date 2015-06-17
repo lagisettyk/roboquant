@@ -97,12 +97,12 @@ class BBSpread(strategy.BacktestingStrategy):
 
 	def initLogging(self):
 		logger = logging.getLogger("xiQuant")
-		logger.setLevel(logging.INFO)
+		logger.setLevel(logging.DEBUG)
 		logFileName = "BB_Spread_" + self.__instrument + ".log"
 		handler = logging.handlers.RotatingFileHandler(
               logFileName, maxBytes=1024 * 1024, backupCount=5)
 		#handler = logging.FileHandler(logFileName)
-		handler.setLevel(logging.INFO)
+		handler.setLevel(logging.DEBUG)
 		formatter = logging.Formatter('%(asctime)s %(name)-12s %(levelname)-8s %(message)s')
 		handler.setFormatter(formatter)
 		logger.addHandler(handler)
@@ -146,7 +146,6 @@ class BBSpread(strategy.BacktestingStrategy):
 		jsonExitPrice = open(file_json_exit_price)
 		self.__ordersFile = open(consts.ORDERS_FILE, 'w')
 
-
 	def onFinish(self, bars):
 		self.stopLogging()
 		self.__ordersFile.close()
@@ -157,21 +156,21 @@ class BBSpread(strategy.BacktestingStrategy):
 		t = self.__priceDS.getDateTimes()[-1]
 		if self.__longPos == position:
 			self.__logger.info("%s: BOUGHT %d at $%.2f" % (execInfo.getDateTime(), execInfo.getQuantity(), execInfo.getPrice()))
-			self.__ordersFile.write("%s,%s,%s,%s,Buy,%.2f,%d\n" % (str(t.year), str(t.month), str(t.day), self.__instrument, execInfo.getPrice(), execInfo.getQuantity()))
+			self.__ordersFile.write("%s,%s,%s,%s,Buy,%.2f\n" % (str(t.year), str(t.month), str(t.day), self.__instrument, execInfo.getPrice()))
 			self.__logger.info("Portfolio cash after BUY: $%.2f" % self.getBroker().getCash())
 		elif self.__shortPos == position:
 			self.__logger.info("%s: SOLD %d at $%.2f" % (execInfo.getDateTime(), execInfo.getQuantity(), execInfo.getPrice()))
-			self.__ordersFile.write("%s,%s,%s,%s,Sell,%.2f,%d\n" % (str(t.year), str(t.month), str(t.day), self.__instrument, execInfo.getPrice(), execInfo.getQuantity()))
+			self.__ordersFile.write("%s,%s,%s,%s,Sell,%.2f\n" % (str(t.year), str(t.month), str(t.day), self.__instrument, execInfo.getPrice()))
 			self.__logger.info("Portfolio cash after SELL: $%.2f" % self.getBroker().getCash())
 
 		# Enter a stop loss order for the entry day
 		if self.__longPos == position:
 			self.__longPos.exitStop(self.__entryDayStopPrice, True)
-			self.__ordersFile.write("%s,%s,%s,%s,Stop-Sell,%.2f,%d\n" % (str(t.year), str(t.month), str(t.day), self.__instrument, self.__entryDayStopPrice, self.__longPos.getShares()))
+			self.__ordersFile.write("%s,%s,%s,%s,Stop-Sell,%.2f\n" % (str(t.year), str(t.month), str(t.day), self.__instrument, self.__entryDayStopPrice))
 			self.__logger.info("%s: Stop Loss SELL order of %d %s shares set at %.2f" % (self.getCurrentDateTime(), self.__longPos.getShares(), self.__instrument, self.__entryDayStopPrice))
 		elif self.__shortPos == position: 
 			self.__shortPos.exitStop(self.__entryDayStopPrice, True)
-			self.__ordersFile.write("%s,%s,%s,%s,Stop-Buy,%.2f,%d\n" % (str(t.year), str(t.month), str(t.day), self.__instrument, self.__entryDayStopPrice, self.__shortPos.getShares()))
+			self.__ordersFile.write("%s,%s,%s,%s,Stop-Buy,%.2f\n" % (str(t.year), str(t.month), str(t.day), self.__instrument, self.__entryDayStopPrice))
 			self.__logger.info("%s: Stop Loss BUY order of %d %s shares set at %.2f" % (self.getCurrentDateTime(), self.__shortPos.getShares(), self.__instrument, self.__entryDayStopPrice))
 
 	def onEnterCanceled(self, position):
@@ -192,12 +191,12 @@ class BBSpread(strategy.BacktestingStrategy):
 		t = self.__priceDS.getDateTimes()[-1]
 		if self.__longPos == position: 
 			self.__logger.info("%s: SOLD %d at $%.2f" % (execInfo.getDateTime(), execInfo.getQuantity(), execInfo.getPrice()))
-			self.__ordersFile.write("%s,%s,%s,%s,Sell,%.2f,%d\n" % (str(t.year), str(t.month), str(t.day), self.__instrument, execInfo.getPrice(), execInfo.getQuantity()))
+			self.__ordersFile.write("%s,%s,%s,%s,Sell,%.2f\n" % (str(t.year), str(t.month), str(t.day), self.__instrument, execInfo.getPrice()))
 			self.__logger.info("Portfolio after SELL: $%.2f" % self.getBroker().getCash())
 			self.__longPos = None 
 		elif self.__shortPos == position: 
 			self.__logger.info("%s: COVER BUY %d at $%.2f" % (execInfo.getDateTime(), execInfo.getQuantity(), execInfo.getPrice()))
-			self.__ordersFile.write("%s,%s,%s,%s,Cover-Buy,%.2f,%d\n" % (str(t.year), str(t.month), str(t.day), self.__instrument, execInfo.getPrice(), execInfo.getQuantity()))
+			self.__ordersFile.write("%s,%s,%s,%s,Cover-Buy,%.2f\n" % (str(t.year), str(t.month), str(t.day), self.__instrument, execInfo.getPrice()))
 			self.__logger.info("Portfolio after COVER BUY: $%.2f" % self.getBroker().getCash())
 			self.__shortPos = None 
 		else: 
@@ -310,9 +309,8 @@ class BBSpread(strategy.BacktestingStrategy):
 		self.__logger.debug("%s: Low Price: $%.2f" % (bar.getDateTime(), bar.getLow()))
 		sharesToBuy = 0
 	
-		###### This needs to be fixed because we never explicitly exit from a position,
-		###### we do so by setting the stop loss orders and let the market force us
-		##### out of a position.
+		# The following explicit exit on market order occurs ONLY on the earnings day otherwise
+		# we always let the market kick us out of a position with the stop loss orders.
 		if self.exitLongSignal(bar):
 			if not self.__longPos.exitActive():
 				self.__longPos.exitMarket()
@@ -434,6 +432,12 @@ class BBSpread(strategy.BacktestingStrategy):
 					self.__entryDayStopPrice = stopPrice
 
 	def enterLongSignal(self, bar):
+		# Check if tomorrow is the earnings announcement, as we don't trade on the day after the earnings
+		# announcement. If the earnings are announced before the market open or during, we don't trade on
+		# that day. If the earnings are announced after the close of market, we don't trade the next day.
+		if xiquantFuncs.isEarnings(self.__instrument, bar.getDateTime(), True):
+			return False
+
 		# For any instrument, we trade on the same side of the market, so check the market sentiment first
 		if self.isBearish():
 			self.__logger.debug("The market is Bearish so we will not try to go long.")
@@ -449,14 +453,16 @@ class BBSpread(strategy.BacktestingStrategy):
 				upperSlope = xiquantFuncs.slope(self.__bbands.getUpperBand(), consts.BB_SLOPE_LOOKBACK_WINDOW)
 				self.__logger.debug("Upper Slope: %d" % upperSlope)
 		
-			if lowerSlope <= -1 * consts.BB_CROC_SLOPE:
+			#if lowerSlope <= -1 * consts.BB_CROC_SLOPE:
+			if self.__bbands.getLowerBand()[-1] < self.__bbands.getLowerBand()[-2] and xiquantFuncs.crocMouthCheck(self.__bbands.getLowerBand()[-1], self.__bbands.getLowerBand()[-2]):
 				if (self.__bbFirstLowerCrocDay != None) and (self.__bbFirstLowerCrocDay != xiquantFuncs.timestamp_from_datetime(self.__priceDS.getDateTimes()[-1])):
 					self.__logger.debug("Not the first day of lower band croc mouth opening")
 				else:
 					self.__logger.debug("First day of lower band croc mouth opening")
 					self.__bbFirstLowerCrocDay = xiquantFuncs.timestamp_from_datetime(self.__priceDS.getDateTimes()[-1])
 		
-			if upperSlope >= consts.BB_CROC_SLOPE:
+			#if upperSlope >= consts.BB_CROC_SLOPE:
+			if self.__bbands.getUpperBand()[-1] > self.__bbands.getUpperBand()[-2] and xiquantFuncs.crocMouthCheck(self.__bbands.getUpperBand()[-1], self.__bbands.getUpperBand()[-2]):
 				if (self.__bbFirstUpperCrocDay != None) and (self.__bbFirstUpperCrocDay != xiquantFuncs.timestamp_from_datetime(self.__priceDS.getDateTimes()[-1])):
 					self.__logger.debug("Not the first day of upper band croc mouth opening")
 					return False
@@ -464,7 +470,8 @@ class BBSpread(strategy.BacktestingStrategy):
 					self.__logger.debug("First day of upper band croc mouth opening")
 					self.__bbFirstUpperCrocDay = xiquantFuncs.timestamp_from_datetime(self.__priceDS.getDateTimes()[-1])
 
-			if upperSlope < consts.BB_CROC_SLOPE or lowerSlope > -1 * consts.BB_CROC_SLOPE:
+			#if upperSlope < consts.BB_CROC_SLOPE or lowerSlope > -1 * consts.BB_CROC_SLOPE:
+			if self.__bbands.getLowerBand()[-1] >= self.__bbands.getLowerBand()[-2] or self.__bbands.getUpperBand()[-1] <= self.__bbands.getUpperBand()[-2] or xiquantFuncs.crocMouthCheck(self.__bbands.getUpperBand()[-1], self.__bbands.getUpperBand()[-2]) == False or xiquantFuncs.crocMouthCheck(self.__bbands.getLowerBand()[-1], self.__bbands.getLowerBand()[-2])== False:
 				return False
 
 		# This should be the first day of the Bands opening as croc mouth.
@@ -711,6 +718,12 @@ class BBSpread(strategy.BacktestingStrategy):
 		return True
 
 	def enterShortSignal(self, bar):
+		# Check if tomorrow is the earnings announcement, as we don't trade on the day after the earnings
+		# announcement. If the earnings are announced before the market open or during, we don't trade on
+		# that day. If the earnings are announced after the close of market, we don't trade the next day.
+		if xiquantFuncs.isEarnings(self.__instrument, bar.getDateTime(), True):
+			return False
+
 		# For any instrument, we trade on the same side of the market, so check the market sentiment first
 		if self.isBullish():
 			self.__logger.debug("The market is Bullish so we will not try to go short.")
@@ -727,14 +740,16 @@ class BBSpread(strategy.BacktestingStrategy):
 				upperSlope = xiquantFuncs.slope(self.__bbands.getUpperBand(), consts.BB_SLOPE_LOOKBACK_WINDOW)
 				self.__logger.debug("Upper Slope: %d" % upperSlope)
 		
-			if upperSlope >= consts.BB_CROC_SLOPE:
+			#if upperSlope >= consts.BB_CROC_SLOPE:
+			if self.__bbands.getUpperBand()[-1] > self.__bbands.getUpperBand()[-2] and xiquantFuncs.crocMouthCheck(self.__bbands.getUpperBand()[-1], self.__bbands.getUpperBand()[-2]):
 				if (self.__bbFirstUpperCrocDay != None) and (self.__bbFirstUpperCrocDay != xiquantFuncs.timestamp_from_datetime(self.__priceDS.getDateTimes()[-1])):
 					self.__logger.debug("Not the first day of upper band croc mouth opening")
 				else:
 					self.__logger.debug("First day of upper band croc mouth opening")
 					self.__bbFirstUpperCrocDay = xiquantFuncs.timestamp_from_datetime(self.__priceDS.getDateTimes()[-1])
 		
-			if lowerSlope <= -1 * consts.BB_CROC_SLOPE:
+			#if lowerSlope <= -1 * consts.BB_CROC_SLOPE:
+			if self.__bbands.getLowerBand()[-1] < self.__bbands.getLowerBand()[-2] and xiquantFuncs.crocMouthCheck(self.__bbands.getLowerBand()[-1], self.__bbands.getLowerBand()[-2]):
 				if (self.__bbFirstLowerCrocDay != None) and (self.__bbFirstLowerCrocDay != xiquantFuncs.timestamp_from_datetime(self.__priceDS.getDateTimes()[-1])):
 					self.__logger.debug("Not the first day of lower band croc mouth opening")
 					return False
@@ -742,7 +757,8 @@ class BBSpread(strategy.BacktestingStrategy):
 					self.__logger.debug("First day of lower band croc mouth opening")
 					self.__bbFirstLowerCrocDay = xiquantFuncs.timestamp_from_datetime(self.__priceDS.getDateTimes()[-1])
 		
-			if  upperSlope < consts.BB_CROC_SLOPE or lowerSlope > -1 * consts.BB_CROC_SLOPE:
+			#if  upperSlope < consts.BB_CROC_SLOPE or lowerSlope > -1 * consts.BB_CROC_SLOPE:
+			if self.__bbands.getLowerBand()[-1] >= self.__bbands.getLowerBand()[-2] or self.__bbands.getUpperBand()[-1] <= self.__bbands.getUpperBand()[-2] or xiquantFuncs.crocMouthCheck(self.__bbands.getUpperBand()[-1], self.__bbands.getUpperBand()[-2]) == False or xiquantFuncs.crocMouthCheck(self.__bbands.getLowerBand()[-1], self.__bbands.getLowerBand()[-2]) == False:
 				return False
 
 		# This should be the first day of the Bands opening as croc mouth.
@@ -1003,9 +1019,14 @@ class BBSpread(strategy.BacktestingStrategy):
 		# Check if we hold a position in this instrument or not
 		if self.__longPos == None:
 				return False
-
 		self.__logger.debug("We hold a position in %s" % self.__instrument)
+
 		# We don't explicitly exit but based on the indicators we just tighten the stop limit orders.
+		# The only exception to that rule is the earnings date -- we exit at the market open if earnings
+		# will be announced after the close of market or before the open of, or during, the next day.
+		if xiquantFuncs.isEarnings(self.__instrument, bar.getDateTime(), True):
+			return True
+
 		# Set the stop loss order if the profit is at least consts.PROFIT_LOCK
 		pnlPerShare = float(self.__longPos.getPnL()/self.__longPos.getShares())
 		if pnlPerShare >= consts.PROFIT_LOCK:
@@ -1013,7 +1034,7 @@ class BBSpread(strategy.BacktestingStrategy):
 			self.__longPos.cancelExit()
 			self.__longPos.exitStop(stopPrice, True)
 			t = bar.getDateTime()
-			self.__ordersFile.write("%s,%s,%s,%s,Stop-Sell,%.2f,%d\n" % (str(t.year), str(t.month), str(t.day), self.__instrument, stopPrice, self.__longPos.getShares()))
+			self.__ordersFile.write("%s,%s,%s,%s,Stop-Sell,%.2f\n" % (str(t.year), str(t.month), str(t.day), self.__instrument, stopPrice))
 			self.__logger.info("%s: New Stop Loss SELL order to lock profit, of %d %s shares set to %.2f" % (self.getCurrentDateTime(), self.__longPos.getShares(), self.__instrument, stopPrice))
 
 		exitPriceDelta = 0
@@ -1045,7 +1066,7 @@ class BBSpread(strategy.BacktestingStrategy):
 			self.__longPos.cancelExit()
 			self.__longPos.exitStop(stopPrice, True)
 			t = bar.getDateTime()
-			self.__ordersFile.write("%s,%s,%s,%s,Tightened-Stop-Sell,%.2f,%d\n" % (str(t.year), str(t.month), str(t.day), self.__instrument, stopPrice, self.__longPos.getShares()))
+			self.__ordersFile.write("%s,%s,%s,%s,Tightened-Stop-Sell,%.2f\n" % (str(t.year), str(t.month), str(t.day), self.__instrument, stopPrice))
 			self.__logger.info("%s: Tightened Stop Loss SELL order, due to lower band curving in, of %d %s shares set to %.2f" % (self.getCurrentDateTime(), self.__longPos.getShares(), self.__instrument, stopPrice))
 			return False
 
@@ -1071,8 +1092,14 @@ class BBSpread(strategy.BacktestingStrategy):
 		# Check if we hold a position in this instrument or not
 		if self.__shortPos == None:
 			return False
-
 		self.__logger.debug("We hold a position in %s" % self.__instrument)
+
+		# We don't explicitly exit but based on the indicators we just tighten the stop limit orders.
+		# The only exception to that rule is the earnings date -- we exit at the market open if earnings
+		# will be announced after the close of market or before the open of, or during, the next day.
+		if xiquantFuncs.isEarnings(self.__instrument, bar.getDateTime(), True):
+			return True
+
 		# We don't explicitly exit but based on the indicators we just tighten the stop limit orders.
 		# Set the stop loss order if the profit is at least consts.PROFIT_LOCK
 		pnlPerShare = float(self.__shortPos.getPnL()/self.__shortPos.getShares())
@@ -1081,7 +1108,7 @@ class BBSpread(strategy.BacktestingStrategy):
 			self.__shortPos.cancelExit()
 			self.__shortPos.exitStop(stopPrice, True)
 			t = bar.getDateTime()
-			self.__ordersFile.write("%s,%s,%s,%s,Stop-Buy,%.2f,%d\n" % (str(t.year), str(t.month), str(t.day), self.__instrument, stopPrice, self.__shortPos.getShares()))
+			self.__ordersFile.write("%s,%s,%s,%s,Stop-Buy,%.2f\n" % (str(t.year), str(t.month), str(t.day), self.__instrument, stopPrice))
 			self.__logger.info("%s: New Stop Loss BUY order to lock profit, of %d %s shares set to %.2f" % (self.getCurrentDateTime(), self.__shortPos.getShares(), self.__instrument, stopPrice))
 
 		exitPriceDelta = 0
@@ -1113,7 +1140,7 @@ class BBSpread(strategy.BacktestingStrategy):
 			self.__shortPos.cancelExit()
 			self.__shortPos.exitStop(stopPrice, True)
 			t = bar.getDateTime()
-			self.__ordersFile.write("%s,%s,%s,%s,Tightened-Stop-Buy,%.2f,%d\n" % (str(t.year), str(t.month), str(t.day), self.__instrument, stopPrice, self.__shortPos.getShares()))
+			self.__ordersFile.write("%s,%s,%s,%s,Tightened-Stop-Buy,%.2f\n" % (str(t.year), str(t.month), str(t.day), self.__instrument, stopPrice))
 			self.__logger.info("%s: Tightened Stop Loss BUY order, due to upper band curving in, of %d %s shares set to %.2f" % (self.getCurrentDateTime(), self.__shortPos.getShares(), self.__instrument, stopPrice))
 			return False
 

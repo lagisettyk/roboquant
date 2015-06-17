@@ -432,11 +432,47 @@ def add_feeds_TN(feed, ticker, stdate, enddate):
         reader = csv.DictReader(csvfile)
         for row in reader:
             dateTime = dateutil.parser.parse(row['Date'])
-            bar = BasicBar(dateTime, 
+            ### Let's only populate the dates passed in the feed...
+            if dateTime.date() <= enddate.date() and dateTime.date() >= stdate.date() :
+                bar = BasicBar(dateTime, 
                 float(row['Open']) , float(row['High']), float(row['Low']), float(row['Close']), float(row['Volume']), float(row['Close']), Frequency.DAY)
-            bd.append(bar)
+                bd.append(bar)
     feed.loadBars(ticker, bd)
     return feed
+
+def getEarningsCal(instrument):
+    import csv
+    import dateutil.parser
+
+
+    cal = []
+    file_cal = util.getRelativePath('earnings_cal.csv')
+    with open(file_cal, 'rU') as csvfile:
+        reader = csv.DictReader(csvfile)
+        for row in reader:
+            symbol = row['Ticker']
+            if symbol == instrument :
+                if row['Flag'] == 'A':
+                    ### Add additional day ...
+                    if dateutil.parser.parse(row['Cal_Date']).date().weekday == 4:
+                        dateTime = dateutil.parser.parse(row['Cal_Date']) + datetime.timedelta(days=2)
+                    else:
+                        dateTime = dateutil.parser.parse(row['Cal_Date']) + datetime.timedelta(days=1)
+                else:
+                    dateTime =  dateutil.parser.parse(row['Cal_Date'])
+
+                cal.append(dateTime.date())
+    return cal
+
+def isEarnings(instrument, dateTime, tomorrow=False):
+    cal = getEarningsCal(instrument)
+    if dateTime.date().weekday() == 4 :
+        dateTime = dateTime + datetime.timedelta(days=2)
+    else:
+        dateTime = dateTime + datetime.timedelta(days=1)
+    return dateTime.date() in cal
+
+
     
    
 def run_strategy_redis(bBandsPeriod, instrument, startPortfolio, startdate, enddate):

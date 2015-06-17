@@ -52,15 +52,19 @@ def redis_build_CSV_EOD(ticker, stdate, enddate):
 
 
 import dateutil.parser
-stdate = dateutil.parser.parse('2005-06-15T08:00:00.000Z')
-#stdate = dateutil.parser.parse('2014-12-23T08:00:00.000Z')
+#stdate = dateutil.parser.parse('2005-06-15')
+stdate = dateutil.parser.parse('2005-12-01T08:00:00.000Z')
 enddate = dateutil.parser.parse('2014-12-31T08:00:00.000Z')
+#enddate = dateutil.parser.parse('2014-12-31')
 #datetime.datetime.combine(datetime.date(2011, 01, 01), datetime.time(10, 23)) ### example for combining date and time...
 
 
 #redis_build_CSV_EOD("FDX", stdate, enddate)
 
 print stdate, enddate
+
+#dateTime = dateutil.parser.parse('2011-04-20T08:00:00.000Z')
+#print "$$$Calender: ", xiQuantStrategyUtil.isEarnings("AAPL", dateTime, False)
 
 
 
@@ -80,8 +84,8 @@ print stdate, enddate
 #results_momentum_list = xiQuantStrategyUtil.tickersRankByMoneyFlowPercent(enddate)
 #print results_momentum_list
 
-#results = xiQuantStrategyUtil.run_strategy_TN(20, "MA", 100000, stdate, enddate)
-results = xiQuantStrategyUtil.run_strategy_redis(20, "MA", 100000, stdate, enddate)
+results = xiQuantStrategyUtil.run_strategy_TN(20, "NFLX", 100000, stdate, enddate)
+#results = xiQuantStrategyUtil.run_strategy_redis(20, "MA", 100000, stdate, enddate)
 #print results.getPortfolioResult()
 #print results.getMACD()
 #print results.getADX()
@@ -90,10 +94,10 @@ results = xiQuantStrategyUtil.run_strategy_redis(20, "MA", 100000, stdate, endda
 #print results.getSeries("middle")
 #print results.getSeries("upper")
 #print results.getSeries("lower")
-print results.getAdjCloseSeries("MA")
+#print results.getAdjCloseSeries("NFLX")
 #print results.getAdjVolSeries("NFLX")
 #print results.getInstrumentDetails()
-#print results.getTradeDetails()
+print results.getTradeDetails()
 #print results.getCumulativeReturns()
 #print results.getSeries("EMA Signal")
 
