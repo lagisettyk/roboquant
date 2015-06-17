@@ -48,7 +48,7 @@ class StrategyResults(object):
     """Class responsible for extracting results of a strategy execution.
     """
 
-    def __init__(self, strat, returnsAnalyzer, plotAllInstruments=True, plotBuySell=True, plotPortfolio=True):
+    def __init__(self, strat, instList, returnsAnalyzer, plotAllInstruments=True, plotBuySell=True, plotPortfolio=True):
         self.__dateTimes = set()
 
         self.__plotAllInstruments = plotAllInstruments
@@ -56,6 +56,7 @@ class StrategyResults(object):
         self.__plotPortfolio = plotPortfolio
         strat.getBarsProcessedEvent().subscribe(self.__onBarsProcessed)
         strat.getBroker().getOrderUpdatedEvent().subscribe(self.__onOrderEvent)
+        self.__instLit = instList
         self.__portfolioValues = []
         self.__tradeDetails = []
         self.__instrumentDetails = []
@@ -68,6 +69,8 @@ class StrategyResults(object):
         self.__additionalDataSeries = {}
         strat.attachAnalyzer(returnsAnalyzer)
         self.__returnsAnalyzer = returnsAnalyzer
+        self.__AdjPrices = dict.fromkeys(instList) ### Initialize the dictionary object...
+        self.__AdjVolume = dict.fromkeys(instList)
 
     def __onBarsProcessed(self, strat, bars):
         dateTime = bars.getDateTime()
@@ -76,39 +79,40 @@ class StrategyResults(object):
         dtInMilliSeconds = int(seconds * 1000)
     
         ### Populate AdjClose Price series of instruments....
-        if self.__AdjPrices is None and self.__AdjVolume is None:
-            self.__AdjPrices = dict.fromkeys(bars.getInstruments()) ### Initialize the dictionary object...
-            self.__AdjVolume = dict.fromkeys(bars.getInstruments())
-        for instrument in bars.getInstruments():
-            adj_Close_Series = self.__AdjPrices[instrument]
-            adj_Vol_Series = self.__AdjVolume[instrument]
-            if adj_Close_Series is None and adj_Vol_Series is None:
-                adj_Close_Series = [] ### Initialize the value list...
-                adj_Vol_Series = [] ### Initialize the value list...
-            bar_val = bars.getBar(instrument)
-            ### This is for displaying OHLC + volume as candle stick in high charts...
-            '''
-            adjPrice_val = [dtInMilliSeconds, bar_val.getOpen(True), bar_val.getHigh(True), \
-                    bar_val.getLow(True), bar_val.getAdjClose()]
-            '''
-            #### Please note we are already populating them with adjusted values so we do not need to set to true...
-            adjPrice_val = [dtInMilliSeconds, bar_val.getOpen(), bar_val.getHigh(), \
-                    bar_val.getLow(), bar_val.getAdjClose()]
-            adj_Close_Series.append(adjPrice_val)
-            self.__AdjPrices[instrument] = adj_Close_Series
-            ### Populate volume series... as points to display in highchart as columns
-            ##### Color green indicates Close higher then open and red indicates lower
-            
-            if bar_val.getAdjClose() >  bar_val.getOpen():
-                color_value = '#009933'
-            else:
-                color_value = '#CC3300' 
-            volume = bar_val.getVolume()
-            volpoint = {'color':color_value, 'x':dtInMilliSeconds, 'y':volume}
-            #adj_Vol_Series.append([dtInMilliSeconds, bar_val.getVolume()])
-            adj_Vol_Series.append(volpoint) 
-            self.__AdjVolume[instrument] =  adj_Vol_Series
+        #if self.__AdjPrices is None and self.__AdjVolume is None:
+         #   self.__AdjPrices = dict.fromkeys(bars.getInstruments()) ### Initialize the dictionary object...
+         #   self.__AdjVolume = dict.fromkeys(bars.getInstruments())
 
+
+        for instrument in bars.getInstruments():
+            #### try block to make sure we handle instruments mis-alignment..
+            try :
+                adj_Close_Series = self.__AdjPrices[instrument]
+                adj_Vol_Series = self.__AdjVolume[instrument]
+                if adj_Close_Series is None and adj_Vol_Series is None:
+                    adj_Close_Series = [] ### Initialize the value list...
+                    adj_Vol_Series = [] ### Initialize the value list...
+                bar_val = bars.getBar(instrument)
+               
+                #### Please note we are already populating them with adjusted values so we do not need to set to true...
+                adjPrice_val = [dtInMilliSeconds, bar_val.getOpen(), bar_val.getHigh(), \
+                        bar_val.getLow(), bar_val.getAdjClose()]
+                adj_Close_Series.append(adjPrice_val)
+                self.__AdjPrices[instrument] = adj_Close_Series
+                ### Populate volume series... as points to display in highchart as columns
+                ##### Color green indicates Close higher then open and red indicates lower
+                
+                if bar_val.getAdjClose() >  bar_val.getOpen():
+                    color_value = '#009933'
+                else:
+                    color_value = '#CC3300' 
+                volume = bar_val.getVolume()
+                volpoint = {'color':color_value, 'x':dtInMilliSeconds, 'y':volume}
+                #adj_Vol_Series.append([dtInMilliSeconds, bar_val.getVolume()])
+                adj_Vol_Series.append(volpoint) 
+                self.__AdjVolume[instrument] =  adj_Vol_Series
+            except :
+                pass
         
         # Plot portfolio value and all other signals...
         if self.__plotPortfolio:
@@ -240,6 +244,14 @@ def redis_listoflists_to_dict(redis_list):
     return dict(zip(list_keys, list_values))
 
 def redis_build_feed_EOD(ticker, stdate, enddate):
+    from pyalgotrade.bar import BasicBar, Frequency
+
+    feed = Feed(Frequency.DAY, 1024)
+    return add_feeds_EOD_redis(feed, ticker, stdate, enddate)
+
+
+
+def add_feeds_EOD_redis( feed, ticker, stdate, enddate):
     import datetime
     from time import mktime
     from pyalgotrade.utils import dt
@@ -267,7 +279,7 @@ def redis_build_feed_EOD(ticker, stdate, enddate):
             float(data[0]) , float(data[1]), float(data[2]), float(data[3]), float(data[4]), float(data[3]), Frequency.DAY)
             #float(data[0]) , float(data[1]), float(data[2]), float(data[3]), float(data[5]), float(data[4]), Frequency.DAY)
         bd.append(bar)
-    feed = Feed(Frequency.DAY, 1024)
+    #feed = Feed(Frequency.DAY, 1024)
     feed.loadBars(ticker, bd)
     return feed
 
@@ -399,6 +411,13 @@ def tickersRankByMoneyFlowPercent(date):
     return collections.OrderedDict(sorted(momentum_rank.items(), reverse=True))
 
 def build_feed_TN(ticker, stdate, enddate):
+    from pyalgotrade.bar import BasicBar, Frequency
+
+    feed = Feed(Frequency.DAY, 1024)
+    return add_feeds_TN(feed, ticker, stdate, enddate)
+
+
+def add_feeds_TN(feed, ticker, stdate, enddate):
     import datetime
     from time import mktime
     from pyalgotrade.utils import dt
@@ -406,21 +425,6 @@ def build_feed_TN(ticker, stdate, enddate):
     import csv
     import dateutil.parser
 
-    '''
-    seconds = mktime(stdate.timetuple())
-    seconds2 = mktime(enddate.timetuple())
-
-    data_dict = {}
-    try:
-        redisConn = util.get_redis_conn()
-        ### added EOD as data source
-        ticker_data = redisConn.zrangebyscore(ticker + ":EOD", int(seconds), int(seconds2), 0, -1, True)
-        #ticker_data = redisConn.zrangebyscore(ticker + ":EOD_UnAdj", int(seconds), int(seconds2), 0, -1, True)
-        data_dict = redis_listoflists_to_dict(ticker_data)
-    except Exception,e:
-        print str(e)
-        pass
-    '''
 
     bd = [] ##### initialize bar data.....
     file_TN = util.getRelativePath(ticker+'_TN.csv')
@@ -431,7 +435,6 @@ def build_feed_TN(ticker, stdate, enddate):
             bar = BasicBar(dateTime, 
                 float(row['Open']) , float(row['High']), float(row['Low']), float(row['Close']), float(row['Volume']), float(row['Close']), Frequency.DAY)
             bd.append(bar)
-    feed = Feed(Frequency.DAY, 1024)
     feed.loadBars(ticker, bd)
     return feed
     
@@ -443,11 +446,17 @@ def run_strategy_redis(bBandsPeriod, instrument, startPortfolio, startdate, endd
     #feed = build_feed_TN(instrument, startdate, enddate)
     #feed = yahoofinance.build_feed([instrument], 2012, 2014, ".")
 
+    # Add the SPY bars, which are used to determine if the market is Bullish or Bearish
+    # on a particular day.
+    feed = add_feeds_EOD_redis(feed, 'SPY', startdate, enddate)
+
     strat = BB_spread.BBSpread(feed, instrument, bBandsPeriod, startPortfolio)
+
+    instList = [instrument, 'SPY']
 
     # Attach a returns analyzers to the strategy.
     returnsAnalyzer = returns.Returns()
-    results = StrategyResults(strat, returnsAnalyzer)
+    results = StrategyResults(strat, instList, returnsAnalyzer)
 
     ###Initialize the bands to maxlength of 5000 for 10 years backtest..
     strat.getBollingerBands().getMiddleBand().setMaxLen(5000)
@@ -479,11 +488,17 @@ def run_strategy_TN(bBandsPeriod, instrument, startPortfolio, startdate, enddate
     feed = build_feed_TN(instrument, startdate, enddate)
     #feed = yahoofinance.build_feed([instrument], 2012, 2014, ".")
 
+    # Add the SPY bars, which are used to determine if the market is Bullish or Bearish
+    # on a particular day.
+    feed = add_feeds_TN(feed, 'SPY', startdate, enddate)
+
     strat = BB_spread.BBSpread(feed, instrument, bBandsPeriod, startPortfolio)
+
+    instList = [instrument, 'SPY']
 
     # Attach a returns analyzers to the strategy.
     returnsAnalyzer = returns.Returns()
-    results = StrategyResults(strat, returnsAnalyzer)
+    results = StrategyResults(strat, instList, returnsAnalyzer)
 
     ###Initialize the bands to maxlength of 5000 for 10 years backtest..
     strat.getBollingerBands().getMiddleBand().setMaxLen(5000)
