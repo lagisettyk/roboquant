@@ -97,12 +97,12 @@ class BBSpread(strategy.BacktestingStrategy):
 
 	def initLogging(self):
 		logger = logging.getLogger("xiQuant")
-		logger.setLevel(logging.DEBUG)
+		logger.setLevel(logging.INFO)
 		logFileName = "BB_Spread_" + self.__instrument + ".log"
 		handler = logging.handlers.RotatingFileHandler(
               logFileName, maxBytes=1024 * 1024, backupCount=5)
 		#handler = logging.FileHandler(logFileName)
-		handler.setLevel(logging.DEBUG)
+		handler.setLevel(logging.INFO)
 		formatter = logging.Formatter('%(asctime)s %(name)-12s %(levelname)-8s %(message)s')
 		handler.setFormatter(formatter)
 		logger.addHandler(handler)
