@@ -166,6 +166,8 @@ def backtestPortfolio(request):
 	start_date = dateutil.parser.parse(stdate)
 	end_date = dateutil.parser.parse(enddate)
 
+	print start_date, end_date
+
 	tickerList = util.getTickerList()
 
 	redisConn = util.get_redis_conn(settings.REDIS_URL)
