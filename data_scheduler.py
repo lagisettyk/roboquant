@@ -13,7 +13,7 @@ import dateutil.parser
 
 #from xiQuant_strategies import xiQuantStrategyUtil
 
-tickerList = util.getTickerList()
+tickerList = util.getTickerListWithSPY()
 
 '''
 def test_parallel_strategy():

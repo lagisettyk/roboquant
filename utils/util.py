@@ -13,11 +13,18 @@ def getCurrentDir():
 def getRelativePath(filename):
 	return os.path.join(getCurrentDir(), filename)  # get current directory
 
+def getTickerListWithSPY():
+	tickerList = ['AAPL', 'AMZN', 'FDX', 'MA', 'NFLX', 'OCR', 'GD','NXPI', 'CVS', 'UNP', 'GILD', 'VRX', 'ACT', 'XLF','GOOGL', 'CF', 'URI', 'CP', 'WHR', 'IWM', 'UNH', 'VIAB', 'FLT', \
+	 'ODFL', 'ALL', 'V', 'SPY']
+
+	retrun tickerList
+
 def getTickerList():
 
 	#tickerList = ['AAPL', 'NFLX', 'GOOGL', 'FDX']
 	tickerList = ['AAPL', 'AMZN', 'FDX', 'MA', 'NFLX', 'OCR', 'GD','NXPI', 'CVS', 'UNP', 'GILD', 'VRX', 'ACT', 'XLF','GOOGL', 'CF', 'URI', 'CP', 'WHR', 'IWM', 'UNH', 'VIAB', 'FLT', \
 	 'ODFL', 'ALL', 'V']
+
 
 	'''
 	file_tickerlist = getRelativePath('cboesymbol.csv')
