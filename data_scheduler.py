@@ -7,13 +7,11 @@ from apscheduler.schedulers.blocking import BlockingScheduler
 from utils import util
 import dateutil.parser
 
-import sys
-sys.path.append('/home/parallels/Code/heroku-envbased/roboquant/strategies')
+#import sys
+#sys.path.append('/home/parallels/Code/heroku-envbased/roboquant/strategies')
 #print sys.path
 
-from xiQuant_strategies import xiQuantStrategyUtil
-
-
+#from xiQuant_strategies import xiQuantStrategyUtil
 
 tickerList = util.getTickerList()
 
@@ -107,7 +105,6 @@ test_parallel_strategy()
 #process_Options_History()
 
 '''
-
 
 def get_redis_conn():
 	return util.get_redis_conn()
