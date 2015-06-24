@@ -17,7 +17,7 @@ def getTickerListWithSPY():
 	tickerList = ['AAPL', 'AMZN', 'FDX', 'MA', 'NFLX', 'OCR', 'GD','NXPI', 'CVS', 'UNP', 'GILD', 'VRX', 'ACT', 'XLF','GOOGL', 'CF', 'URI', 'CP', 'WHR', 'IWM', 'UNH', 'VIAB', 'FLT', \
 	 'ODFL', 'ALL', 'V', 'SPY']
 
-	retrun tickerList
+	return tickerList
 
 def getTickerList():
 
