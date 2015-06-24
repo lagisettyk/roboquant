@@ -204,6 +204,8 @@ def backtestPortfolio(request):
 	while (jobPortfolio.result is None):
 		time.sleep(1)
 
+	print  "Successfully processed portfolio results..."
+
 	results = {
 		"seriesData":jobPortfolio.result.getPortfolioResult(),
 		"flagData": jobPortfolio.result.getTradeDetails(),
