@@ -28,6 +28,11 @@ def display_backtest(request):
 	context_dict = {'backtestmessage': "display_backtest"}
 	return render(request, 'strategies/backtest.html', context_dict)
 
+def display_portfolio(request):
+	print ">>>>> entered display_backtest"
+	context_dict = {'backtestmessage': "display_portfolio"}
+	return render(request, 'strategies/backtestPortfolio.html', context_dict)
+
 
 def hichart_quandl(request):
 	from Quandl import Quandl
@@ -86,8 +91,6 @@ def backtest(request):
 	import urlparse
 	from django.conf import settings
 	from rq import Queue
-	#from algotrade import simple_strategy
-	#from xiQuant_strategies import xiQuantStrategyUtil
 	import time
 	import dateutil.parser
 	from utils import util
@@ -140,6 +143,76 @@ def backtest(request):
 	
     ### This is important to note json.dumps() convert python data structure to JSON form
 	return HttpResponse(json.dumps(results), content_type='application/json')
+
+def backtestPortfolio(request):
+	import redis
+	import json
+	import urlparse
+	from django.conf import settings
+	from rq import Queue
+	import time
+	import dateutil.parser
+	from utils import util
+	from xiQuant_strategies import xiQuantStrategyUtil
+	import shutil
+
+	if request.method == 'GET':
+		#ticker = request.GET['Ticker']
+		amount = request.GET['amount']
+		stdate = request.GET['stdate']
+		enddate = request.GET['enddate']
+		strategy = request.GET['strategy']
+
+	start_date = dateutil.parser.parse(stdate)
+	end_date = dateutil.parser.parse(enddate)
+
+	tickerList = util.getTickerList()
+
+	redisConn = util.get_redis_conn(settings.REDIS_URL)
+	q = Queue(connection=redisConn)  # no args implies the default queue
+
+	jobList = []
+	for ticker in tickerList:
+		jobList.append(q.enqueue(xiQuantStrategyUtil.run_strategy_redis, 20, ticker, int(amount), start_date, end_date))
+
+	#### Wait in loop until all of them are successfull
+	jobID = 1
+	for job in jobList:
+		print "Currently processing job id: ", jobID
+		while (job.result is None):
+			time.sleep(1)
+		jobID +=1
+
+	########### Merge files to create master file #############
+	# First clean up master file for each run so that no duplicates but later we should do in memory
+	curDir = util.getCurrentDir()
+	dest = curDir+"/orders/"+'MasterOrder.csv'
+	with open(dest, 'w') as fdest:
+		pass
+
+	for ticker in tickerList:
+		src = curDir+"/orders/"+'orders_'+ticker+".csv"
+		with open(src, 'rb') as fsrc:
+			with open(dest, 'a') as fdest:
+				shutil.copyfileobj(fsrc, fdest, 50000)
+				print "Copied file: ", src
+	print  "Successfully merged files...."
+
+	############### Run the master order for computing portfolio#########
+	jobPortfolio = q.enqueue(xiQuantStrategyUtil.run_master_strategy,int(amount), dest)
+
+	while (jobPortfolio.result is None):
+		time.sleep(1)
+
+	results = {
+		"seriesData":jobPortfolio.result.getPortfolioResult(),
+		"flagData": jobPortfolio.result.getTradeDetails(),
+		"cumulativereturns": jobPortfolio.result.getCumulativeReturns()
+	}
+
+	### This is important to note json.dumps() convert python data structure to JSON form
+	return HttpResponse(json.dumps(results), content_type='application/json')
+
 
 
 	

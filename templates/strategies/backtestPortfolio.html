@@ -4,11 +4,11 @@
 
 {% load bootstrap_toolkit %}
 
-{% block title %}Stock simulation{% endblock %}
+{% block title %}Simulate Paper Portfolio{% endblock %}
 
 {% block body_block %}
 	<div class="page-header">
-		<h3>Simulate Stock Portfolio</h3>
+		<h3>Simulate Paper Portfolio</h3>
 	</div>
     <form class="form-inline"> 
         <div class="form-group">
@@ -19,24 +19,19 @@
           <i class="glyphicon glyphicon-calendar fa fa-calendar"></i>
           <span></span> <b class="caret"></b>
        </div>
-       <div id= "Ticker" class="form-group">
-         <input type="text" class="typeahead" placeholder="Ticker">
-        </div>
-	       <div id="tickerList" class="btn-group">
-            <button type="button" id="dLabel" data-toggle="dropdown" class="btn btn-primary dropdown-toggle">PyAlgoTrade Enabled<span class="caret"></span></button>
-            <ul class="dropdown-menu" id="showList">
-                <li><a href="#" id="simulate-1">ticker1</a></li>
-            </ul>
-        </div>
+       <div id="strategyList" class="btn-group">
+          <button type="button" id="dLabel" data-toggle="dropdown" class="btn btn-primary dropdown-toggle">PyAlgoTrade Enabled<span class="caret"></span></button>
+          <ul class="dropdown-menu" id="showList">
+              <li><a href="#" id="port_simulate">strategy</a></li>
+          </ul>
+      </div>
      </form>
 	<pre>
 	<!--<div id="content"></div>-->
       <div id="slider1_container" style="position: relative; top: 0px; left: 0px; width: 1200px; height: 600px;">
           <div u="slides" style="cursor: move; position: absolute; overflow: hidden; left: 10px; top: 0px; width: 1175px; height: 600px;">
-             <div class="container-fluid" id="container" ></div>
-             <div class="container-fluid" id="container3"></div>
-             <div class="container-fluid" id="container2"></div>
-             <div class="container-fluid" id="container4"></div>
+             <div class="container-fluid" id="port_container" ></div>
+             <div class="container-fluid" id="port_container2"></div>
           </div>
           <!--#region Arrow Navigator Skin Begin -->
           <!-- Help: http://www.jssor.com/development/slider-with-arrow-navigator-jquery.html -->

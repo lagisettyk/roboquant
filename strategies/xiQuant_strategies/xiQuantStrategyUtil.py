@@ -4,8 +4,14 @@ from pyalgotrade.barfeed import membf
 from pyalgotrade.technical import ma
 from utils import util
 import BB_spread
+import Orders_exec
 import datetime
 import json
+import csv
+import dateutil.parser
+import os
+from pyalgotrade.stratanalyzer import returns
+from pyalgotrade import dataseries
 
 
 
@@ -48,12 +54,13 @@ class StrategyResults(object):
     """Class responsible for extracting results of a strategy execution.
     """
 
-    def __init__(self, strat, instList, returnsAnalyzer, plotAllInstruments=True, plotBuySell=True, plotPortfolio=True):
+    def __init__(self, strat, instList, returnsAnalyzer, plotAllInstruments=True, plotBuySell=True, plotPortfolio=True, plotSignals=False):
         self.__dateTimes = set()
 
         self.__plotAllInstruments = plotAllInstruments
         self.__plotBuySell = plotBuySell
         self.__plotPortfolio = plotPortfolio
+        self.__plotSignals = plotSignals
         strat.getBarsProcessedEvent().subscribe(self.__onBarsProcessed)
         strat.getBroker().getOrderUpdatedEvent().subscribe(self.__onOrderEvent)
         self.__instLit = instList
@@ -117,6 +124,8 @@ class StrategyResults(object):
         # Plot portfolio value and all other signals...
         if self.__plotPortfolio:
             self.__portfolioValues.append([dtInMilliSeconds, strat.getBroker().getEquity()])
+
+        if self.__plotSignals:
             if strat.getMACD() is not None:
                 self.__MACD.append([dtInMilliSeconds, strat.getMACD()[-1]])
             if strat.getADX() is not None:
@@ -238,6 +247,16 @@ class Feed(membf.BarFeed):
 
     def loadBars(self, instrument, bars):
         self.addBarsFromSequence(instrument, bars)
+
+class Returns(returns.Returns):
+     def __init__(self):
+        #returns.Returns.__init__(self)
+        self.__netReturns = dataseries.SequenceDataSeries()
+        self.__netReturns.setMaxLen(5000)
+        self.__cumReturns = dataseries.SequenceDataSeries()
+        self.__cumReturns.setMaxLen(5000)
+       
+       
 
 def redis_listoflists_to_dict(redis_list):
     list_values, list_keys = zip(*redis_list)
@@ -473,10 +492,56 @@ def isEarnings(instrument, dateTime, tomorrow=False):
     return dateTime.date() in cal
 
 
+def processOptionsFile(inputfile, outputfile):
+    header = True
+    keyList = [] ### we need only option row per ticker per type...
+    #with open('L3_options_20131101.csv', 'rU') as fin:
+    with open(inputfile, 'rU') as fin:
+        with open(outputfile, 'w') as fout :
+            reader = csv.DictReader(fin)
+            for row in reader:
+                #### Apply above stated rules to filter the rows...
+                data_date = dateutil.parser.parse(row[' DataDate'])
+                exp_date =  dateutil.parser.parse(row['Expiration'])
+                intrinsicVal = float(row['UnderlyingPrice']) - float(row['Strike'])
+                key = row['UnderlyingSymbol'] + row['Type']
+                fieldnames = ['UnderlyingSymbol',   'UnderlyingPrice',  'Flags',    'OptionSymbol', 'Type',\
+                                'Expiration', 'DataDate', 'Strike', 'Last', 'Bid', 'Ask', 'Volume', 'OpenInterest', 'T1OpenInterest', \
+                                    'IVMean',   'IVBid',    'IVAsk', 'Delta', 'Gamma',  'Theta', 'Vega', 'AKA']
+                ### Populate delta flag....
+                Delta = False
+                if row['Type'] == 'call' and float(row ['Delta']) >= 0.70:
+                    Delta = True
+                elif row['Type'] == 'put' and float(row ['Delta']) >= -0.70:
+                    Delta = True
+
+                #and abs(float(row ['Delta'])) >= 0.70
+
+                if  (exp_date - data_date).days >= 30 and intrinsicVal > 0 and Delta and (0.10 <= float(row['Ask']) - float(row['Bid']) <= 0.35) and float(row['OpenInterest']) >= 100 and key not in keyList :
+                    
+                    
+                    if os.stat(outputfile).st_size == 0 and header:
+                        writer = csv.DictWriter(fout, fieldnames=fieldnames)
+                        writer.writeheader()
+                        header = False
+                    else:
+                        writer = csv.DictWriter(fout, fieldnames=fieldnames)
+
+                    writer.writerow(
+                            {'UnderlyingSymbol': row['UnderlyingSymbol'], 'UnderlyingPrice': row['UnderlyingPrice'], 
+                            'Flags': row['Flags'],  'OptionSymbol': row['OptionSymbol'], 'Type':row['Type'], 'Expiration': row['Expiration'], 
+                            'DataDate': row[' DataDate'], 'Strike': row['Strike'], 'Last': row['Last'], 'Bid': row['Bid'], 'Ask': row['Ask'], 
+                            'Volume': row['Volume'], 'OpenInterest': row['OpenInterest'], 'T1OpenInterest': row['T1OpenInterest'], 'IVMean': row['IVMean'], 
+                            'IVBid': row['IVBid'], 'IVAsk': row['IVAsk'], 'Delta': row['Delta'], 'Gamma': row['Gamma'], 'Theta': row['Theta'], 
+                            'Vega': row['Vega'], 'AKA': row['AKA'] }
+                    )
+                    keyList.append(key) ### to track specific ticker option has been populated...
+    return "Successfully processed"
+
+
     
    
 def run_strategy_redis(bBandsPeriod, instrument, startPortfolio, startdate, enddate):
-    from pyalgotrade.stratanalyzer import returns
 
     feed = redis_build_feed_EOD(instrument, startdate, enddate)
     #feed = build_feed_TN(instrument, startdate, enddate)
@@ -486,13 +551,16 @@ def run_strategy_redis(bBandsPeriod, instrument, startPortfolio, startdate, endd
     # on a particular day.
     feed = add_feeds_EOD_redis(feed, 'SPY', startdate, enddate)
 
-    strat = BB_spread.BBSpread(feed, instrument, bBandsPeriod, startPortfolio)
+    ###Get earnings calendar
+    calList = getEarningsCal(instrument)
+
+    strat = BB_spread.BBSpread(feed, instrument, bBandsPeriod, calList, startPortfolio)
 
     instList = [instrument, 'SPY']
 
     # Attach a returns analyzers to the strategy.
-    returnsAnalyzer = returns.Returns()
-    results = StrategyResults(strat, instList, returnsAnalyzer)
+    returnsAnalyzer = Returns()
+    results = StrategyResults(strat, instList, returnsAnalyzer, plotSignals=True)
 
     ###Initialize the bands to maxlength of 5000 for 10 years backtest..
     strat.getBollingerBands().getMiddleBand().setMaxLen(5000)
@@ -518,7 +586,6 @@ def run_strategy_redis(bBandsPeriod, instrument, startPortfolio, startdate, endd
     return results
 
 def run_strategy_TN(bBandsPeriod, instrument, startPortfolio, startdate, enddate):
-    from pyalgotrade.stratanalyzer import returns
 
     #feed = redis_build_feed_EOD(instrument, startdate, enddate)
     feed = build_feed_TN(instrument, startdate, enddate)
@@ -528,13 +595,16 @@ def run_strategy_TN(bBandsPeriod, instrument, startPortfolio, startdate, enddate
     # on a particular day.
     feed = add_feeds_TN(feed, 'SPY', startdate, enddate)
 
-    strat = BB_spread.BBSpread(feed, instrument, bBandsPeriod, startPortfolio)
+    ###Get earnings calendar
+    calList = getEarningsCal(instrument)
+
+    strat = BB_spread.BBSpread(feed, instrument, bBandsPeriod, calList, startPortfolio)
 
     instList = [instrument, 'SPY']
 
     # Attach a returns analyzers to the strategy.
-    returnsAnalyzer = returns.Returns()
-    results = StrategyResults(strat, instList, returnsAnalyzer)
+    returnsAnalyzer = Returns()
+    results = StrategyResults(strat, instList, returnsAnalyzer, plotSignals=True)
 
     ###Initialize the bands to maxlength of 5000 for 10 years backtest..
     strat.getBollingerBands().getMiddleBand().setMaxLen(5000)
@@ -558,3 +628,34 @@ def run_strategy_TN(bBandsPeriod, instrument, startPortfolio, startdate, enddate
     #results.addSeries("macd", strat.getMACD())
     
     return results
+
+def run_master_strategy(initialcash, masterFile):
+
+    ordersFile = Orders_exec.OrdersFile(masterFile)
+    startdate = datetime.datetime.fromtimestamp(ordersFile.getFirstDate())
+    enddate = datetime.datetime.fromtimestamp(ordersFile.getLastDate())
+    print startdate, enddate
+
+    #### Instruments in the order file...
+    instList = ordersFile.getInstruments()
+   
+    feed = None
+    #### Provide bars for all the instruments in the strategy...
+    for instrument in ordersFile.getInstruments():
+        if feed is None:
+            feed = redis_build_feed_EOD(instrument, startdate, enddate)
+        else:
+            feed = add_feeds_EOD_redis(feed, instrument, startdate, enddate)
+
+        
+    useAdjustedClose = True
+    myStrategy = Orders_exec.MyStrategy(feed, initialcash, ordersFile, useAdjustedClose)
+
+    returnsAnalyzer = Returns()
+    results = StrategyResults( myStrategy, instList, returnsAnalyzer)
+
+    myStrategy.run()
+
+    return results
+
+    

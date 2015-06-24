@@ -5,6 +5,10 @@ import numpy
 from pyalgotrade import dataseries
 from pyalgotrade.talibext import indicator
 import xiquantStrategyParams as consts
+import datetime
+
+####Added by kiran...
+import pytz
 
 # Returns the last values of a dataseries as a numpy.array, or None if not enough values
 # could be retrieved from the dataseries.
@@ -27,7 +31,7 @@ def slope(inpDS, lookbackWin):
 	else:
 		prevVal = inpDS[-1 * lookbackWin] 
 		currVal = inpDS[-1] 
-		s = numpy.arctan((currVal - prevVal) / 2) * 180 / numpy.pi
+		s = numpy.arctan((currVal - prevVal) / lookbackWin) * 180 / numpy.pi
 		#s = float(((currVal - prevVal) / prevVal) * 90)
 	return s
 
@@ -57,5 +61,18 @@ def timestamp_from_datetime(t):
 	timestamp = str(t.year) + str(t.month) + str(t.day) + str(t.hour) + str(t.minute) + str(t.second)
 	return timestamp
 
-def isEarnings(instrument, dateTime, tomorrow=False):
-	return False
+def secondsSinceEpoch(dt):
+	epoch = datetime.datetime.utcfromtimestamp(0)
+	#delta = dt - epoch
+	delta = dt.replace(tzinfo=None) - epoch
+	return int(delta.total_seconds())
+
+def getEarningsCalendar(instrument, startPeriod, endPeriod):
+	return []
+
+def isEarnings(earningsCalList, dateTime):
+	if dateTime.date().weekday() == 4: # If the analysis day is a Friday
+		dateTime = dateTime + datetime.timedelta(days=2)
+	else:
+		dateTime = dateTime + datetime.timedelta(days=1)
+	return dateTime.date() in earningsCalList

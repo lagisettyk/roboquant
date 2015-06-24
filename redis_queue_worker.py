@@ -2,8 +2,8 @@
 from rq import Worker, Queue, Connection
 from utils import util
 
-#import sys
-#sys.path.append('/home/parallels/Code/heroku-envbased/roboquant/strategies')
+import sys
+sys.path.append('/home/parallels/Code/heroku-envbased/roboquant/strategies')
 #print sys.path
 
 listen = ['high', 'default', 'low']

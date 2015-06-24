@@ -38,12 +38,13 @@
                         <li><a href="{% url 'account_email' %}">Profile</a></li>
                         <li><a href="{% url 'account_logout' %}?next=/strategies/">Log Out</a>
                         <li><a href="{% url 'display_backtest' %}">Backtesting</a></li>
+                        <li><a href="{% url 'display_portfolio' %}">PortfolioSimulation</a></li>
                         </li>
                     {% else %}
                          <li><a href="{% url 'account_login' %}">Log In</a></li>    
                     {% endif %}
-                        <li><a href="{% url 'display_matplotlib' %}">Demo-Charts</a></li>
-                        <li><a href="{% url 'display_hichart' %}">Demo-HiStock</a></li>
+                        <!--<li><a href="{% url 'display_matplotlib' %}">Demo-Charts</a></li>
+                        <li><a href="{% url 'display_hichart' %}">Demo-HiStock</a></li>-->
                         <li><a href="{% url 'about' %}">About</a></li>
 
               </ul>

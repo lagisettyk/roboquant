@@ -73,8 +73,194 @@ $(document).ready( function() {
           });
   }
 
+  $('#strategyList').on('click', '#dLabel', function(){
+    console.log("inside dLabel")
+    $('#showList').empty()
+    $('#showList').html('<li><a href="#" id="port_simulate">BB_Spread_strategy</a>'
+                         //+'</li><li><a href="#" id="port_simulate">TN_strategy</a></li>'
+                        );
+  });
+
+  $('#strategyList').on('click','#port_simulate',function(){
+      var amount = $('#InitialCash').val();
+      var drp = $('#reportrange2').data('daterangepicker');
+      var strategy = $(this).text();
+      //alert( "Initializing Portfolio simulation..." );
+      $.ajax({
+              url: '/strategies/backtest_portfolio/?strategy='+strategy+'&amount='+amount+"&stdate="+drp.startDate.toISOString()+"&enddate="+drp.endDate.toISOString(),
+              type: 'GET',
+              async: true,
+              dataType: "json",
+              beforeSend: function( xhr, status ) {
+                       //alert( "Before calling function" );
+                       //Indicates progress bar...
+                       $("*").css("cursor", "progress");
+              }, 
+              success: function (data) {
+                console.log("Inside Success")
+                portseries = []
+                portseries[0] = {name: "portfolio value", data: data.seriesData};
+                portseries[1] = {name: "trades", data: data.flagData};
+                portseries[2] = {name: "trades", data: data.cumulativereturns};
+                displayPortfolioSimulation(portseries)
+                
+              },
+              // Code to run if the request fails; the raw request and
+              // status codes are passed to the function
+              error: function( xhr, status, errorThrown ) {
+                    alert( "Sorry, there was a problem!" );
+                    console.log( "Error: " + errorThrown );
+                    console.log( "Status: " + status );
+                    console.dir( xhr );
+              },
+              // Code to run regardless of success or failure
+              complete: function( xhr, status ) {
+               //alert( "The request is complete!" );
+               //Change back cursor to normal...
+               $("*").css("cursor", "default");
+              } 
+        });
+  });
+
+  function displayPortfolioSimulation (dataList) {
+    //insideChart1 = true;
+    var chart1 = new Highcharts.StockChart({
+     chart: {
+                        renderTo: $('#port_container')[0]
+                      },
+              /*xAxis: {
+                events: {
+                             afterSetExtremes: function() {
+                              //alert( "Inside the event box....");
+                              if (!this.chart.options.chart.isZoomed) {
+                                    var xMin = this.chart.xAxis[0].min;
+                                    var xMax = this.chart.xAxis[0].max;
+                                   
+                                   ///Make sure to avoid recursive loop set them to true...
+                                     chart2.options.chart.isZoomed = true;
+                                     chart3.options.chart.isZoomed = true;
+                                     chart4.options.chart.isZoomed = true;
+
+                                    chart2.xAxis[0].setExtremes(xMin, xMax, true);
+                                    chart3.xAxis[0].setExtremes(xMin, xMax, true);
+                                    chart4.xAxis[0].setExtremes(xMin, xMax, true);
+
+                                    ///Make sure to set back to false... able to listen events
+                                     chart2.options.chart.isZoomed = false;
+                                     chart3.options.chart.isZoomed = false;
+                                     chart4.options.chart.isZoomed = false;
+                                    //alert( "Inside the event box...." + xMin + " " + xMax);                                    
+                                }
+                             }
+                        }
+              },*/
+              legend: {
+                    enabled: true,
+                    align: 'right',
+                    backgroundColor: '#FCFFC5',
+                    borderColor: 'black',
+                    borderWidth: 2,
+                    layout: 'vertical',
+                    verticalAlign: 'top',
+                    y: 100,
+                    shadow: true
+              },
+              rangeSelector : {
+                  selected : 5
+              },
+              title : {
+                  text :" Portfolio Performance",
+                  floating: true,
+                  align: 'left',
+                  x: 75,
+                  y: 70
+              },
+              series : [{
+                  name : dataList[0].name,
+                  data : dataList[0].data,
+                  turboThreshold: 0, ///Speed up and make sure it supports more points
+                  tooltip: {
+                      valueDecimals: 2
+                  },
+                  id : 'dataseries'
+             },{
+                  type: 'flags',
+                  name : dataList[1].name,
+                  data : dataList[1].data,
+                  turboThreshold: 0, ///Speed up and make sure it supports more points
+                  tooltip: {
+                      valueDecimals: 2
+                  },
+             }]
+         });
+
+   var chart2 = new Highcharts.StockChart({
+     chart: {
+                        renderTo: $('#port_container2')[0]
+                      },
+              /*xAxis: {
+                events: {
+                             afterSetExtremes: function() {
+                              //alert( "Inside the event box....");
+                              if (!this.chart.options.chart.isZoomed) {
+                                    var xMin = this.chart.xAxis[0].min;
+                                    var xMax = this.chart.xAxis[0].max;
+                                   
+                                   ///Make sure to avoid recursive loop set them to true...
+                                     chart2.options.chart.isZoomed = true;
+                                     chart3.options.chart.isZoomed = true;
+                                     chart4.options.chart.isZoomed = true;
+
+                                    chart2.xAxis[0].setExtremes(xMin, xMax, true);
+                                    chart3.xAxis[0].setExtremes(xMin, xMax, true);
+                                    chart4.xAxis[0].setExtremes(xMin, xMax, true);
+
+                                    ///Make sure to set back to false... able to listen events
+                                     chart2.options.chart.isZoomed = false;
+                                     chart3.options.chart.isZoomed = false;
+                                     chart4.options.chart.isZoomed = false;
+                                    //alert( "Inside the event box...." + xMin + " " + xMax);                                    
+                                }
+                             }
+                        }
+              },*/
+              legend: {
+                    enabled: true,
+                    align: 'right',
+                    backgroundColor: '#FCFFC5',
+                    borderColor: 'black',
+                    borderWidth: 2,
+                    layout: 'vertical',
+                    verticalAlign: 'top',
+                    y: 100,
+                    shadow: true
+              },
+              rangeSelector : {
+                  selected : 5
+              },
+              title : {
+                  text :" Portfolio Cumulative Returns",
+                  floating: true,
+                  align: 'left',
+                  x: 75,
+                  y: 70
+              },
+              series : [{
+                  name : dataList[2].name,
+                  data : dataList[2].data,
+                  turboThreshold: 0, ///Speed up and make sure it supports more points
+                  tooltip: {
+                      valueDecimals: 2
+                  },
+                  id : 'dataseries'
+             }]
+         });
+
+  }
+
+
   
-  //##### to do.. Need to get dynamic list from dJango vieww
+  
   $('#tickerList').on('click', '#dLabel', function(){
     console.log("inside dLabel")
     $('#showList').empty()
@@ -163,11 +349,7 @@ $(document).ready( function() {
   var chart2;
   var chart3
   var chart4;
-  //var insideChart1 = false;
-  //var insideChart2 = false;
-  //var insideChart3 = false;
-  //var insideChart4 = false;
-  
+
   function displayPortfolioData (dataList, ticker) {
     insideChart1 = true;
     chart1 = new Highcharts.StockChart({

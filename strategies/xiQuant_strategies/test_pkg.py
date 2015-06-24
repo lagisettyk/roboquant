@@ -53,7 +53,7 @@ def redis_build_CSV_EOD(ticker, stdate, enddate):
 
 import dateutil.parser
 #stdate = dateutil.parser.parse('2005-06-15')
-stdate = dateutil.parser.parse('2005-12-01T08:00:00.000Z')
+stdate = dateutil.parser.parse('2005-06-30T08:00:00.000Z')
 enddate = dateutil.parser.parse('2014-12-31T08:00:00.000Z')
 #enddate = dateutil.parser.parse('2014-12-31')
 #datetime.datetime.combine(datetime.date(2011, 01, 01), datetime.time(10, 23)) ### example for combining date and time...
@@ -84,7 +84,7 @@ print stdate, enddate
 #results_momentum_list = xiQuantStrategyUtil.tickersRankByMoneyFlowPercent(enddate)
 #print results_momentum_list
 
-results = xiQuantStrategyUtil.run_strategy_TN(20, "NFLX", 100000, stdate, enddate)
+#results = xiQuantStrategyUtil.run_strategy_TN(20, "NFLX", 100000, stdate, enddate)
 #results = xiQuantStrategyUtil.run_strategy_redis(20, "MA", 100000, stdate, enddate)
 #print results.getPortfolioResult()
 #print results.getMACD()
@@ -97,8 +97,12 @@ results = xiQuantStrategyUtil.run_strategy_TN(20, "NFLX", 100000, stdate, enddat
 #print results.getAdjCloseSeries("NFLX")
 #print results.getAdjVolSeries("NFLX")
 #print results.getInstrumentDetails()
-print results.getTradeDetails()
+#print results.getTradeDetails()
 #print results.getCumulativeReturns()
 #print results.getSeries("EMA Signal")
+
+port_results = xiQuantStrategyUtil.run_master_strategy(100000, 'MasterOrder.csv')
+print port_results.getPortfolioResult()
+print port_results.getCumulativeReturns() #### to do how to populate more than 3 years
 
 

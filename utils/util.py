@@ -5,6 +5,7 @@ import urlparse
 import logging
 import logging.handlers
 import csv
+import dateutil.parser
 
 def getCurrentDir():
 	return os.path.dirname(__file__)  # get current directory
@@ -14,9 +15,9 @@ def getRelativePath(filename):
 
 def getTickerList():
 
-	#tickerList = ['AAPL', 'NFLX']
-	tickerList = ['AAPL', 'AMZN', 'FDX', 'MA', 'NFLX', 'OCR', 'SPY', 'NXPI', 'CVS', 'UNP', 'GILD', 'VRX', 'ACT', \
-	 'GOOGL', 'CF', 'URI', 'CP', 'WHR', 'IWM', 'UNH', 'VIAB', 'FLT', 'ODFL', 'GD', 'XLF', 'ALL', 'V']
+	#tickerList = ['AAPL', 'NFLX', 'GOOGL', 'FDX']
+	tickerList = ['AAPL', 'AMZN', 'FDX', 'MA', 'NFLX', 'OCR', 'GD','NXPI', 'CVS', 'UNP', 'GILD', 'VRX', 'ACT', 'XLF','GOOGL', 'CF', 'URI', 'CP', 'WHR', 'IWM', 'UNH', 'VIAB', 'FLT', \
+	 'ODFL', 'ALL', 'V']
 
 	'''
 	file_tickerlist = getRelativePath('cboesymbol.csv')
@@ -55,4 +56,7 @@ def getLogger(name='default.log'):
 	logger.addHandler(console)
 
 	return logger
+
+
+
 	
