@@ -16,14 +16,18 @@ import xiquantFuncs
 import xiquantStrategyParams as consts
 
 class OrdersFile:
-	def __init__(self, ordersFile):
+	def __init__(self, ordersFile, fakecsv=False):
 		self.__orders = {}
 		self.__firstDate = 0
 		self.__lastDate = 0
 		self.__instruments = []
 
 		# Load orders from the file.
-		reader = csv.DictReader(open(ordersFile, "r"), fieldnames=["timeSinceEpoch", "symbol", "action", "stopPrice"])
+		if fakecsv:
+			reader = csv.DictReader(ordersFile, fieldnames=["timeSinceEpoch", "symbol", "action", "stopPrice"])
+		else:
+			reader = csv.DictReader(open(ordersFile, "r"), fieldnames=["timeSinceEpoch", "symbol", "action", "stopPrice"])
+
 		for row in reader:
 			timeSinceEpoch = int(row["timeSinceEpoch"])
 			ordersList = self.__orders.setdefault(timeSinceEpoch, [])

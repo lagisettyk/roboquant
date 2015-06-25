@@ -7,6 +7,7 @@ from time import mktime
 import xiQuantStrategyUtil
 from pyalgotrade.technical import ma
 from utils import util
+import csv
 
 
 def redis_build_CSV_EOD(ticker, stdate, enddate):
@@ -50,7 +51,6 @@ def redis_build_CSV_EOD(ticker, stdate, enddate):
     	a = csv.writer(fp, delimiter=',')
     	a.writerows(bd)
 
-
 import dateutil.parser
 #stdate = dateutil.parser.parse('2005-06-15')
 stdate = dateutil.parser.parse('2005-06-30T08:00:00.000Z')
@@ -84,9 +84,32 @@ print stdate, enddate
 #results_momentum_list = xiQuantStrategyUtil.tickersRankByMoneyFlowPercent(enddate)
 #print results_momentum_list
 
-#results = xiQuantStrategyUtil.run_strategy_TN(20, "NFLX", 100000, stdate, enddate)
-#results = xiQuantStrategyUtil.run_strategy_redis(20, "MA", 100000, stdate, enddate)
-#print results.getPortfolioResult()
+#results = xiQuantStrategyUtil.run_strategy_TN(20, "V", 100000, stdate, enddate)
+results = xiQuantStrategyUtil.run_strategy_redis(20, "NFLX", 100000, stdate, enddate)
+print results.getPortfolioResult()
+orders = results.getOrders()
+dataRows = []
+for key, value in orders.iteritems():
+    row = []
+    row.append(key)
+    row.append(value[0][0])
+    row.append(value[0][1])
+    row.append(value[0][2])
+    dataRows.append(row)
+
+fake_csv = util.make_fake_csv(dataRows)
+port_results = xiQuantStrategyUtil.run_master_strategy(100000, fake_csv)
+print port_results.getPortfolioResult()
+#print port_results.getCumulativeReturns() #### to do how to populate more than 3 years
+
+'''
+#### read fake_csv as csv file....
+reader = csv.DictReader(fake_csv, fieldnames=["timeSinceEpoch", "symbol", "action", "stopPrice"])
+for row in reader:
+    print row
+'''
+
+
 #print results.getMACD()
 #print results.getADX()
 #print results.getDMIPlus()
@@ -101,8 +124,6 @@ print stdate, enddate
 #print results.getCumulativeReturns()
 #print results.getSeries("EMA Signal")
 
-port_results = xiQuantStrategyUtil.run_master_strategy(100000, 'MasterOrder.csv')
-print port_results.getPortfolioResult()
-#print port_results.getCumulativeReturns() #### to do how to populate more than 3 years
+
 
 

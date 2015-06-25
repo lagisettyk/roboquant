@@ -6,6 +6,16 @@ import logging
 import logging.handlers
 import csv
 import dateutil.parser
+import StringIO
+
+
+def make_fake_csv(data):
+    """Returns a populdated fake csv file object """
+    fake_csv = StringIO.StringIO()
+    fake_writer = csv.writer(fake_csv, delimiter=',')
+    fake_writer.writerows(data) ########## data is nothing but list of lists....
+    fake_csv.seek(0)
+    return fake_csv
 
 def getCurrentDir():
 	return os.path.dirname(__file__)  # get current directory
@@ -22,9 +32,11 @@ def getTickerListWithSPY():
 def getTickerList():
 
 	#tickerList = ['AAPL', 'NFLX', 'GOOGL', 'FDX']
-	#tickerList = ['AAPL', 'AMZN', 'FDX', 'MA', 'NFLX', 'OCR', 'GD','NXPI', 'CVS', 'UNP', 'GILD', 'VRX', 'ACT', 'XLF','GOOGL', 'CF', 'URI', 'CP', 'WHR', 'IWM', 'UNH', 'VIAB', 'FLT', \
-	 #'ODFL', 'ALL', 'V']
 
+	tickerList = ['AAPL', 'AMZN', 'FDX', 'MA', 'NFLX', 'OCR', 'GD','NXPI', 'CVS', 'UNP', 'GILD', 'VRX', 'ACT', 'XLF','GOOGL', 'CF', 'URI', 'CP', 'WHR', 'IWM', 'UNH', 'VIAB', 'FLT', \
+	 'ODFL', 'ALL', 'V']
+
+	'''
 	file_tickerlist = getRelativePath('cboesymbol.csv')
 	#file_tickerlist = getRelativePath('SP500.csv')
 	tickerList = []
@@ -34,6 +46,7 @@ def getTickerList():
 		for row in reader:
 			logger.info(row['Stock Symbol'])
 			tickerList.append(row['Stock Symbol'])
+	'''
 
 	return tickerList
 

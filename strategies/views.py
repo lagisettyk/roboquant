@@ -181,6 +181,7 @@ def backtestPortfolio(request):
 		jobList.append(q.enqueue(xiQuantStrategyUtil.run_strategy_redis, 20, ticker, int(amount), start_date, end_date))
 
 	#### Wait in loop until all of them are successfull
+	master_orders = [] #### populate master list of  orders dictionary...
 	jobID = 1
 	for job in jobList:
 		print "Currently processing job id: ", jobID
@@ -189,30 +190,26 @@ def backtestPortfolio(request):
 			time.sleep(1)
 			if job.get_status() == 'failed' or job.get_status()=='finished':
 				sleep = False
+		if job.get_status() == 'finished' and any(job.result.getOrders()):
+			master_orders.append(job.result.getOrders())
 		jobID +=1
 
-	########### Merge files to create master file #############
-	# First clean up master file for each run so that no duplicates but later we should do in memory
-	curDir = util.getCurrentDir()
-	dest = curDir+"/orders/"+'MasterOrder.csv'
-	with open(dest, 'w') as fdest:
-		pass
+	########### Iterate master orders file.... #############
+	dataRows = []
+	for k in range(len(master_orders)):
+		for key, value in master_orders[k].iteritems():
+			row = []
+			row.append(key)
+			row.append(value[0][0])
+			row.append(value[0][1])
+			row.append(value[0][2])
+			dataRows.append(row)
 
-	for ticker in tickerList:
-		src = curDir+"/orders/"+'orders_'+ticker+".csv"
-		try:
-			with open(src, 'rb') as fsrc:
-				with open(dest, 'a') as fdest:
-					shutil.copyfileobj(fsrc, fdest, 50000)
-					print "Copied file: ", src
-		except:
-			print "Inside file  exception...."
-			pass ### For now disregard if any of the file is missing....
-
-	print  "Successfully merged files...."
+	fake_csv = util.make_fake_csv(dataRows)
+	print  "Successfully created master_orders fake_csv file...."
 
 	############### Run the master order for computing portfolio#########
-	jobPortfolio = q.enqueue(xiQuantStrategyUtil.run_master_strategy,int(amount), dest)
+	jobPortfolio = q.enqueue(xiQuantStrategyUtil.run_master_strategy,int(amount), fake_csv)
 
 	sleep = True
 	while(sleep):

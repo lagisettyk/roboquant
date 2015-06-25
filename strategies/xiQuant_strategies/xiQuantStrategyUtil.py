@@ -74,6 +74,7 @@ class StrategyResults(object):
         self.__AdjPrices = None
         self.__AdjVolume = None
         self.__additionalDataSeries = {}
+        self.__orders = {} #### Need to be populated after successfully running the strategy.... by calling addOrders()....
         strat.attachAnalyzer(returnsAnalyzer)
         self.__returnsAnalyzer = returnsAnalyzer
         self.__AdjPrices = dict.fromkeys(instList) ### Initialize the dictionary object...
@@ -167,6 +168,12 @@ class StrategyResults(object):
 
                 #val = {'x':int(seconds * 1000), 'title': 'S', 'text': 'SOLD:' + str(order.getInstrument()) +' Shares:' + str(order.getQuantity()) + " Price " +  str(execInfo.getPrice())}
                 self.__tradeDetails.append(val)
+
+    def addOrders(self, orders):
+        self.__orders = orders
+
+    def getOrders(self):
+        return self.__orders
 
     def getAdjCloseSeries(self, instrument):
         return self.__AdjPrices[instrument]
@@ -572,7 +579,10 @@ def run_strategy_redis(bBandsPeriod, instrument, startPortfolio, startdate, endd
     strat.getEMASignal().setMaxLen(5000)
     #### Add boilingerbands series....
     strat.run()
-    #print "################: " , strat.getMACD()
+
+    ####Populate orders from the backtest run...
+    results.addOrders(strat.getOrders())
+   
 
     results.addSeries("upper", strat.getBollingerBands().getUpperBand())
     results.addSeries("middle", strat.getBollingerBands().getMiddleBand())
@@ -616,7 +626,9 @@ def run_strategy_TN(bBandsPeriod, instrument, startPortfolio, startdate, enddate
     strat.getEMASignal().setMaxLen(5000)
     #### Add boilingerbands series....
     strat.run()
-    #print "################: " , strat.getMACD()
+
+    ####Populate orders from the backtest run...
+    results.addOrders(strat.getOrders())
 
     results.addSeries("upper", strat.getBollingerBands().getUpperBand())
     results.addSeries("middle", strat.getBollingerBands().getMiddleBand())
@@ -631,7 +643,7 @@ def run_strategy_TN(bBandsPeriod, instrument, startPortfolio, startdate, enddate
 
 def run_master_strategy(initialcash, masterFile):
 
-    ordersFile = Orders_exec.OrdersFile(masterFile)
+    ordersFile = Orders_exec.OrdersFile(masterFile, fakecsv=True)
     startdate = datetime.datetime.fromtimestamp(ordersFile.getFirstDate())
     enddate = datetime.datetime.fromtimestamp(ordersFile.getLastDate())
     print startdate, enddate

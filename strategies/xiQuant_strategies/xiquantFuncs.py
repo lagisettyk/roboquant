@@ -7,11 +7,10 @@ from pyalgotrade.talibext import indicator
 import xiquantStrategyParams as consts
 import datetime
 
-####Added by kiran...
-import pytz
-
 # Returns the last values of a dataseries as a numpy.array, or None if not enough values
 # could be retrieved from the dataseries.
+####Added by kiran...
+import pytz
 
 def dsToNumpyArray(ds, count):
 	ret = None
@@ -63,7 +62,6 @@ def timestamp_from_datetime(t):
 
 def secondsSinceEpoch(dt):
 	epoch = datetime.datetime.utcfromtimestamp(0)
-	#delta = dt - epoch
 	delta = dt.replace(tzinfo=None) - epoch
 	return int(delta.total_seconds())
 

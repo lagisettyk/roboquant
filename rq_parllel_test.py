@@ -20,7 +20,7 @@ def test_parallel_strategy():
 	redis_conn = util.get_redis_conn()
 	q = Queue(connection=redis_conn)  # no args implies the default queue
 	import dateutil.parser
-	yourdate = dateutil.parser.parse('2005-01-01T08:00:00.000Z')
+	yourdate = dateutil.parser.parse('2005-06-30T08:00:00.000Z')
 	yourdate2 = dateutil.parser.parse('2014-12-31T08:00:00.000Z')
 
 	jobList = []
@@ -30,6 +30,7 @@ def test_parallel_strategy():
 		
 
 	#### Wait in loop until all of them are successfull
+	master_orders = [] #### List of  orders dictionary...
 	jobID = 1
 	for job in jobList:
 		print "Currently processing job id: ", jobID
@@ -38,11 +39,13 @@ def test_parallel_strategy():
 			time.sleep(1)
 			if job.get_status() == 'failed' or job.get_status()=='finished':
 				sleep = False
+		if job.get_status() == 'finished' and any(job.result.getOrders()):
+			master_orders.append(job.result.getOrders())
 		jobID +=1
 		
+	print  "Successfully processed....", master_orders
 
-	print  "Successfully processed...."
-
+	'''
 	########### Merge files to create master file #############
 	curDir = util.getCurrentDir()
 	dest = curDir+"/orders/"+'MasterOrder.csv'
@@ -58,7 +61,7 @@ def test_parallel_strategy():
 			pass ### For now disregard if any of the file is missing....
 
 	print  "Successfully merged files...."
-
+	'''
 
 def process_Options_History():
 
