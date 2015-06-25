@@ -154,7 +154,7 @@ class BBSpread(strategy.BacktestingStrategy):
 		self.__logger.debug("Load the input JSON exit price file.")
 		file_json_exit_price = os.path.join(module_dir, 'json_exit_price')
 		jsonExitPrice = open(file_json_exit_price)
-		self.__ordersFile = open(util.getCurrentDir()+"/orders/"+consts.ORDERS_FILE+self.__instrument+".csv", 'w')
+		self.__ordersFile = open(consts.ORDERS_FILE, 'w')
 
 	def onFinish(self, bars):
 		self.stopLogging()
