@@ -118,8 +118,11 @@ def backtest(request):
 	else:
 		job = q.enqueue(xiQuantStrategyUtil.run_strategy_TN, 20, ticker, int(amount), start_date, end_date)
 	#job = q.enqueue(xiQuantStrategyUtil.run_strategy_redis, 20, ticker, int(amount), start_date, end_date)
-	while (job.result is None):
+	sleep = True
+	while(sleep):
 		time.sleep(1)
+		if job.get_status() == 'failed' or job.get_status()=='finished':
+			sleep = False
 
 	results = {
 		"seriesData":job.result.getPortfolioResult(),
@@ -181,8 +184,11 @@ def backtestPortfolio(request):
 	jobID = 1
 	for job in jobList:
 		print "Currently processing job id: ", jobID
-		while (job.result is None):
+		sleep = True
+		while(sleep):
 			time.sleep(1)
+			if job.get_status() == 'failed' or job.get_status()=='finished':
+				sleep = False
 		jobID +=1
 
 	########### Merge files to create master file #############
@@ -194,17 +200,25 @@ def backtestPortfolio(request):
 
 	for ticker in tickerList:
 		src = curDir+"/orders/"+'orders_'+ticker+".csv"
-		with open(src, 'rb') as fsrc:
-			with open(dest, 'a') as fdest:
-				shutil.copyfileobj(fsrc, fdest, 50000)
-				print "Copied file: ", src
+		try:
+			with open(src, 'rb') as fsrc:
+				with open(dest, 'a') as fdest:
+					shutil.copyfileobj(fsrc, fdest, 50000)
+					print "Copied file: ", src
+		except:
+			print "Inside file  exception...."
+			pass ### For now disregard if any of the file is missing....
+
 	print  "Successfully merged files...."
 
 	############### Run the master order for computing portfolio#########
 	jobPortfolio = q.enqueue(xiQuantStrategyUtil.run_master_strategy,int(amount), dest)
 
-	while (jobPortfolio.result is None):
+	sleep = True
+	while(sleep):
 		time.sleep(1)
+		if jobPortfolio.get_status() == 'failed' or jobPortfolio.get_status()=='finished':
+			sleep = False
 
 	print  "Successfully processed portfolio results..."
 

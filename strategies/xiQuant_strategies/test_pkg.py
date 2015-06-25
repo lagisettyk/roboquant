@@ -103,6 +103,6 @@ print stdate, enddate
 
 port_results = xiQuantStrategyUtil.run_master_strategy(100000, 'MasterOrder.csv')
 print port_results.getPortfolioResult()
-print port_results.getCumulativeReturns() #### to do how to populate more than 3 years
+#print port_results.getCumulativeReturns() #### to do how to populate more than 3 years
 
 
