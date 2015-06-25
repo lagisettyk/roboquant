@@ -31,10 +31,10 @@ def getTickerListWithSPY():
 
 def getTickerList():
 
-	#tickerList = ['AAPL', 'NFLX', 'GOOGL', 'FDX']
+	tickerList = ['AAPL', 'NFLX', 'GOOGL', 'FDX']
 
-	tickerList = ['AAPL', 'AMZN', 'FDX', 'MA', 'NFLX', 'OCR', 'GD','NXPI', 'CVS', 'UNP', 'GILD', 'VRX', 'ACT', 'XLF','GOOGL', 'CF', 'URI', 'CP', 'WHR', 'IWM', 'UNH', 'VIAB', 'FLT', \
-	 'ODFL', 'ALL', 'V']
+	#tickerList = ['AAPL', 'AMZN', 'FDX', 'MA', 'NFLX', 'OCR', 'GD','NXPI', 'CVS', 'UNP', 'GILD', 'VRX', 'ACT', 'XLF','GOOGL', 'CF', 'URI', 'CP', 'WHR', 'IWM', 'UNH', 'VIAB', 'FLT', \
+	# 'ODFL', 'ALL', 'V']
 
 	'''
 	file_tickerlist = getRelativePath('cboesymbol.csv')
