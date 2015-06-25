@@ -85,22 +85,32 @@ print stdate, enddate
 #print results_momentum_list
 
 #results = xiQuantStrategyUtil.run_strategy_TN(20, "V", 100000, stdate, enddate)
-results = xiQuantStrategyUtil.run_strategy_redis(20, "NFLX", 100000, stdate, enddate)
-print results.getPortfolioResult()
-orders = results.getOrders()
+#results = xiQuantStrategyUtil.run_strategy_TN(20, "GOOGL", 100000, stdate, enddate)
+#print results.getPortfolioResult()
+
+
 dataRows = []
-for key, value in orders.iteritems():
-    row = []
-    row.append(key)
-    row.append(value[0][0])
-    row.append(value[0][1])
-    row.append(value[0][2])
-    dataRows.append(row)
+tickerList = util.getTickerList()
+for ticker in tickerList:
+    results = xiQuantStrategyUtil.run_strategy_redis(20, ticker, 100000, stdate, enddate)
+    #results = xiQuantStrategyUtil.run_strategy_TN(20, ticker, 100000, stdate, enddate)
+    print results.getPortfolioResult()
+    orders = results.getOrders()
+    for key, value in orders.iteritems():
+        row = []
+        row.append(key)
+        row.append(value[0][0])
+        row.append(value[0][1])
+        row.append(value[0][2])
+        dataRows.append(row)
+
+print dataRows
 
 fake_csv = util.make_fake_csv(dataRows)
 port_results = xiQuantStrategyUtil.run_master_strategy(100000, fake_csv)
 print port_results.getPortfolioResult()
 #print port_results.getCumulativeReturns() #### to do how to populate more than 3 years
+
 
 '''
 #### read fake_csv as csv file....

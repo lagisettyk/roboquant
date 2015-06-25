@@ -29,7 +29,6 @@ import jsonschema
 import xiquantFuncs
 import xiquantStrategyParams as consts
 import divergence
-
 ########Kiran's additions
 import logging.handlers
 import os
@@ -340,7 +339,7 @@ class BBSpread(strategy.BacktestingStrategy):
 				tInSecs = xiquantFuncs.secondsSinceEpoch(t)
 				self.__ordersFile.write("%s,%s,Sell-Market,%.2f\n" % (str(tInSecs), self.__instrument))
 				existingOrdersForTime = self.__orders.setdefault(tInSecs, [])
-				existingOrdersForTime.append((self.__instrument, 'Sell-Market'))
+				existingOrdersForTime.append((self.__instrument, 'Sell-Market', consts.DUMMY_MARKET_PRICE))
 				self.__orders[tInSecs] = existingOrdersForTime
 				self.__logger.info("Exiting a LONG position")
 				self.__logger.info("Portfolio: $%.2f" % self.getBroker().getCash())
@@ -351,7 +350,7 @@ class BBSpread(strategy.BacktestingStrategy):
 				tInSecs = xiquantFuncs.secondsSinceEpoch(t)
 				self.__ordersFile.write("%s,%s,Buy-Market,%.2f\n" % (str(tInSecs), self.__instrument))
 				existingOrdersForTime = self.__orders.setdefault(tInSecs, [])
-				existingOrdersForTime.append((self.__instrument, 'Buy-Market'))
+				existingOrdersForTime.append((self.__instrument, 'Buy-Market' , consts.DUMMY_MARKET_PRICE))
 				self.__orders[tInSecs] = existingOrdersForTime
 				self.__logger.debug("Exiting a SHORT position")
 				self.__logger.debug("Portfolio: $%.2f" % self.getBroker().getCash())
@@ -1274,7 +1273,7 @@ def run_strategy(bBandsPeriod, instrument, startPortfolio, startPeriod, endPerio
 			Image.open(fileNameRoot + '_2_' + '.png').save(fileNameRoot + '_2_' + '.jpg', 'JPEG')
 
 def main(plot):
-	instruments = ["googl"]
+	instruments = ["act"]
 	bBandsPeriod = 20
 	startPortfolio = 1000000
 	for inst in instruments:

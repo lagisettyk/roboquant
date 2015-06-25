@@ -27,7 +27,6 @@ class OrdersFile:
 			reader = csv.DictReader(ordersFile, fieldnames=["timeSinceEpoch", "symbol", "action", "stopPrice"])
 		else:
 			reader = csv.DictReader(open(ordersFile, "r"), fieldnames=["timeSinceEpoch", "symbol", "action", "stopPrice"])
-
 		for row in reader:
 			timeSinceEpoch = int(row["timeSinceEpoch"])
 			ordersList = self.__orders.setdefault(timeSinceEpoch, [])
@@ -97,12 +96,24 @@ class MyStrategy(strategy.BacktestingStrategy):
 		self.info(self.__ordersFile.getOrders(barDateTimeinSecs))
 		# The available cash is split equally among all the orders for the day
 		noOfOrders = len(self.__ordersFile.getOrders(barDateTimeinSecs))
+		self.info("Total no. of orders: %d" % noOfOrders)
+		# Some of the orders could be stop loss orders so we shouldn't be allocating any money
+		# to those orders.
+		for (instrument, action, price) in self.__ordersFile.getOrders(barDateTimeinSecs):
+			if action.lower() != "buy" and action.lower() != "sell":
+				noOfOrders -= 1
 		for instrument, action, stopPrice in self.__ordersFile.getOrders(barDateTimeinSecs):
-			sharesToBuy = int((self.getBroker().getCash() * consts.PERCENT_OF_CASH_BALANCE_FOR_ENTRY / noOfOrders) / stopPrice)
-			self.info("%s %d of %s at $%.2f" % (action, sharesToBuy, instrument, stopPrice))
 			if action.lower() == "buy":
+				sharesToBuy = int((self.getBroker().getCash() * consts.PERCENT_OF_CASH_BALANCE_FOR_ENTRY / noOfOrders) / stopPrice)
+				if sharesToBuy < 1:
+					continue
+				self.info("%s %d of %s at $%.2f" % (action, sharesToBuy, instrument, stopPrice))
 				self.__longPos[instrument] = self.enterLongStop(instrument, stopPrice, sharesToBuy, True)
 			elif action.lower() == "sell":
+				sharesToBuy = int((self.getBroker().getCash() * consts.PERCENT_OF_CASH_BALANCE_FOR_ENTRY / noOfOrders) / stopPrice)
+				if sharesToBuy < 1:
+					continue
+				self.info("%s %d of %s at $%.2f" % (action, sharesToBuy, instrument, stopPrice))
 				self.__shortPos[instrument] = self.enterShortStop(instrument, stopPrice, sharesToBuy, True)
 			elif action.lower() == "tightened-stop-buy" or action.lower() == "stop-buy":
 				self.__shortPos[instrument].cancelExit()
@@ -135,6 +146,7 @@ class MyStrategy(strategy.BacktestingStrategy):
 				self.__shortPos[instrument].exitStop(stopLossPrice, True)
 		portfolioValue = self.getBroker().getEquity()
 		self.info("Portfolio value: $%.2f" % (portfolioValue))
+
 '''
 def main():
 	# Load the orders file.
