@@ -147,7 +147,7 @@ def backtest(request):
     ### This is important to note json.dumps() convert python data structure to JSON form
 	return HttpResponse(json.dumps(results), content_type='application/json')
 
-def backtestPortfolio(request):
+def simulatepotfolio(redisURL, amount, startdate, enddate):
 	import redis
 	import json
 	import urlparse
@@ -158,29 +158,17 @@ def backtestPortfolio(request):
 	from utils import util
 	from xiQuant_strategies import xiQuantStrategyUtil
 	#import shutil
-	import csv
-
-	if request.method == 'GET':
-		#ticker = request.GET['Ticker']
-		amount = request.GET['amount']
-		stdate = request.GET['stdate']
-		enddate = request.GET['enddate']
-		strategy = request.GET['strategy']
-
-	start_date = dateutil.parser.parse(stdate)
-	end_date = dateutil.parser.parse(enddate)
-
-	print start_date, end_date
+	#import csv
 
 	tickerList = util.getTickerList()
 
-	redisConn = util.get_redis_conn(settings.REDIS_URL)
+	redisConn = util.get_redis_conn(redisURL)
 	q = Queue(connection=redisConn)  # no args implies the default queue
 
 	jobList = []
-	rank = len(tickerList)/10
+	rank = 5 #len(tickerList)/10
 	for ticker in tickerList:
-		jobList.append(q.enqueue(xiQuantStrategyUtil.run_strategy_redis, 20, ticker, int(amount), start_date, end_date))
+		jobList.append(q.enqueue(xiQuantStrategyUtil.run_strategy_redis, 20, ticker, int(amount), startdate, enddate))
 
 	#### Wait in loop until all of them are successfull
 	master_orders = [] #### populate master list of  orders dictionary...
@@ -194,8 +182,8 @@ def backtestPortfolio(request):
 				sleep = False
 		if job.get_status() == 'finished' and any(job.result.getOrders()):
 			#master_orders.append(job.result.getOrders())
-			#master_orders.append(job.result.getOrdersFilteredByMomentumRank(filterCriteria=rank))
-			master_orders.append(job.result.getOrdersFilteredByRules())
+			master_orders.append(job.result.getOrdersFilteredByMomentumRank(filterCriteria=rank))
+			#master_orders.append(job.result.getOrdersFilteredByRules())
 		jobID +=1
 
 	########### Iterate master orders file.... #############
@@ -224,7 +212,7 @@ def backtestPortfolio(request):
 	### Initialize another fake csv after writing out to set seek to zero#####
 	fake_csv = util.make_fake_csv(dataRows)
 	'''
-	
+
 	############### Run the master order for computing portfolio#########
 	jobPortfolio = q.enqueue(xiQuantStrategyUtil.run_master_strategy,int(amount), fake_csv)
 
@@ -234,17 +222,77 @@ def backtestPortfolio(request):
 		if jobPortfolio.get_status() == 'failed' or jobPortfolio.get_status()=='finished':
 			sleep = False
 
-	print  "Successfully processed portfolio results..."
+	print  "Successfully simulated portfolio"
 
-	results = {
-		"seriesData":jobPortfolio.result.getPortfolioResult(),
-		"flagData": jobPortfolio.result.getTradeDetails(),
-		"cumulativereturns": jobPortfolio.result.getCumulativeReturns()
-	}
+	return jobPortfolio.result
 
-	### This is important to note json.dumps() convert python data structure to JSON form
-	return HttpResponse(json.dumps(results), content_type='application/json')
 
+def backtestPortfolio(request):
+	import redis
+	import json
+	import urlparse
+	from django.conf import settings
+	from rq import Queue
+	from rq.job import Job
+	import time
+	import dateutil.parser
+	from utils import util
+	from xiQuant_strategies import xiQuantStrategyUtil
+	#import shutil
+	import csv
+
+	if request.method == 'GET':
+		#ticker = request.GET['Ticker']
+		jobid = request.GET['jobid']
+		amount = request.GET['amount']
+		stdate = request.GET['stdate']
+		enddate = request.GET['enddate']
+		strategy = request.GET['strategy']
+
+	start_date = dateutil.parser.parse(stdate)
+	end_date = dateutil.parser.parse(enddate)
+
+	print start_date, end_date
+	redisConn = util.get_redis_conn(settings.REDIS_URL)
+	
+	if jobid == 'NEW':
+		q = Queue(connection=redisConn)  # no args implies the default queue
+		jobPortfolio = q.enqueue(simulatepotfolio, settings.REDIS_URL, int(amount), start_date, end_date)
+
+		print  "Successfully submitted portfolio simulation..."
+
+		'''
+		sleep = True
+		while(sleep):
+			time.sleep(1)
+			if jobPortfolio.get_status() == 'failed' or jobPortfolio.get_status()=='finished':
+				sleep = False
+		'''
+		### Return just job id by kicking of redis job....
+		results = {
+		"jobstatus": jobPortfolio.id
+		}
+		### Return just job id....
+		return HttpResponse(json.dumps(results), content_type='application/json')
+	else:
+		print "$$$$$$$$$$$ ################# polling request received...."
+		jobPortfolio = Job.fetch(jobid, connection=redisConn)
+
+		if jobPortfolio.get_status() == 'failed' or jobPortfolio.get_status()=='finished':
+			results = {
+			"jobstatus": "SUCCESS",
+			"seriesData":jobPortfolio.result.getPortfolioResult(),
+			"flagData": jobPortfolio.result.getTradeDetails(),
+			"cumulativereturns": jobPortfolio.result.getCumulativeReturns()
+			}
+			### This is important to note json.dumps() convert python data structure to JSON form
+			return HttpResponse(json.dumps(results), content_type='application/json')
+		else:
+			results = {
+			"jobstatus": jobid
+			}
+			### Return just job id....
+			return HttpResponse(json.dumps(results), content_type='application/json')
 
 
 	

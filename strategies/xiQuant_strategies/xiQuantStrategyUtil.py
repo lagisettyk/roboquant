@@ -543,8 +543,8 @@ def tickersRankByMoneyFlow(date):
     import collections
 
     momentum_rank = {}
-    tickerList = util.getMasterTickerList()
-    #tickerList = util.getTickerList()
+    #tickerList = util.getMasterTickerList()
+    tickerList = util.getTickerList()
     for x in range(len(tickerList)):
         moneyflow = redis_build_moneyflow(tickerList[x], (date - datetime.timedelta(days=10)), date)
         if len(moneyflow) > 1:

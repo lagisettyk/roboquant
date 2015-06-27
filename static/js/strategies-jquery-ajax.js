@@ -85,41 +85,61 @@ $(document).ready( function() {
       var amount = $('#InitialCash').val();
       var drp = $('#reportrange2').data('daterangepicker');
       var strategy = $(this).text();
+      var jobid = "NEW" /// This is to indicate new vs existing job polling...
       //alert( "Initializing Portfolio simulation..." );
-      $.ajax({
-              url: '/strategies/backtest_portfolio/?strategy='+strategy+'&amount='+amount+"&stdate="+drp.startDate.toISOString()+"&enddate="+drp.endDate.toISOString(),
-              type: 'GET',
-              async: true,
-              dataType: "json",
-              beforeSend: function( xhr, status ) {
-                       //alert( "Before calling function" );
-                       //Indicates progress bar...
-                       $("*").css("cursor", "progress");
-              }, 
-              success: function (data) {
-                console.log("Inside Success")
-                portseries = []
-                portseries[0] = {name: "portfolio value", data: data.seriesData};
-                portseries[1] = {name: "trades", data: data.flagData};
-                portseries[2] = {name: "trades", data: data.cumulativereturns};
-                displayPortfolioSimulation(portseries)
-                
-              },
-              // Code to run if the request fails; the raw request and
-              // status codes are passed to the function
-              error: function( xhr, status, errorThrown ) {
-                    alert( "Sorry, there was a problem!" );
-                    console.log( "Error: " + errorThrown );
-                    console.log( "Status: " + status );
-                    console.dir( xhr );
-              },
-              // Code to run regardless of success or failure
-              complete: function( xhr, status ) {
-               //alert( "The request is complete!" );
-               //Change back cursor to normal...
-               $("*").css("cursor", "default");
-              } 
-        });
+      var intervalId = setInterval(function(){
+          $.ajax({
+                  url: '/strategies/backtest_portfolio/?strategy='+strategy+'&jobid='+jobid+'&amount='+amount+"&stdate="+drp.startDate.toISOString()+"&enddate="+drp.endDate.toISOString(),
+                  type: 'GET',
+                  async: true,
+                  dataType: "json",
+                  beforeSend: function( xhr, status ) {
+                           //alert( "Before calling function" );
+                           //Indicates progress bar...
+                           $("*").css("cursor", "progress");
+                  }, 
+                  success: function (data) {
+                    if (data.jobstatus == "SUCCESS")
+                    {
+                        //// CLear the interval before ....
+                        console.log("Inside Success");
+                        clearInterval(intervalId); 
+                        portseries = []
+                        portseries[0] = {name: "portfolio value", data: data.seriesData};
+                        portseries[1] = {name: "trades", data: data.flagData};
+                        portseries[2] = {name: "trades", data: data.cumulativereturns};
+                        displayPortfolioSimulation(portseries)
+                    }
+                    else
+                    {
+                      /// Let set interval make another calll with the returned jobid via status
+                      jobid = data.jobstatus
+                      //alert( "Inside polling loop...: " + jobid );
+                    } 
+                  },
+                  // Code to run if the request fails; the raw request and
+                  // status codes are passed to the function
+                  error: function( xhr, status, errorThrown ) {
+                        alert( "Sorry, there was a problem!" );
+                        console.log( "Error: " + errorThrown );
+                        console.log( "Status: " + status );
+                        console.dir( xhr );
+                  },
+                  // Code to run regardless of success or failure
+                  complete: function( data, xhr, status ) {
+                   //alert( "The request is complete!" );
+                   //Change back cursor to normal...
+                   if (data.jobstatus != "SUCCESS")
+                    {
+                        $("*").css("cursor", "default");
+                    }
+                    else
+                    {
+                        $("*").css("cursor", "default");
+                    }
+                  } 
+            });
+      }, 3000); /// interval function.....
   });
 
   function displayPortfolioSimulation (dataList) {
