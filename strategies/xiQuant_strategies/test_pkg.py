@@ -53,9 +53,10 @@ def redis_build_CSV_EOD(ticker, stdate, enddate):
 
 import dateutil.parser
 #stdate = dateutil.parser.parse('2005-06-15')
-stdate = dateutil.parser.parse('2005-06-30T08:00:00.000Z')
+stdate = dateutil.parser.parse('2005-06-15T08:00:00.000Z')
 enddate = dateutil.parser.parse('2014-12-31T08:00:00.000Z')
-#enddate = dateutil.parser.parse('2014-12-31')
+#enddate = dateutil.parser.parse('2012-02-02')
+
 #datetime.datetime.combine(datetime.date(2011, 01, 01), datetime.time(10, 23)) ### example for combining date and time...
 
 
@@ -84,9 +85,14 @@ print stdate, enddate
 #results_momentum_list = xiQuantStrategyUtil.tickersRankByMoneyFlowPercent(enddate)
 #print results_momentum_list
 
-#results = xiQuantStrategyUtil.run_strategy_TN(20, "V", 100000, stdate, enddate)
-#results = xiQuantStrategyUtil.run_strategy_TN(20, "GOOGL", 100000, stdate, enddate)
+#results_momentum_list = xiQuantStrategyUtil.tickersRankByMoneyFlow(enddate)
+#print results_momentum_list
+
+#results = xiQuantStrategyUtil.run_strategy_redis(20, "MA", 100000, stdate, enddate)
+#results = xiQuantStrategyUtil.run_strategy_TN(20, "NFLX", 100000, stdate, enddate)
 #print results.getPortfolioResult()
+#print results.getOrdersFilteredByMomentumRank(filterCriteria=3000)
+#print results.getOrders()
 
 
 dataRows = []
@@ -95,7 +101,9 @@ for ticker in tickerList:
     results = xiQuantStrategyUtil.run_strategy_redis(20, ticker, 100000, stdate, enddate)
     #results = xiQuantStrategyUtil.run_strategy_TN(20, ticker, 100000, stdate, enddate)
     print results.getPortfolioResult()
-    orders = results.getOrders()
+    #orders = results.getOrders()
+    #orders = results.getOrdersFilteredByMomentumRank(filterCriteria=1000)
+    orders = results.getOrdersFilteredByRules()
     for key, value in orders.iteritems():
         row = []
         row.append(key)

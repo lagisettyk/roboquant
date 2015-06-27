@@ -121,6 +121,12 @@ class MyStrategy(strategy.BacktestingStrategy):
 			elif action.lower() == "tightened-stop-sell" or action.lower() == "stop-sell":
 				self.__longPos[instrument].cancelExit()
 				self.__longPos[instrument].exitStop(stopPrice, True)
+			elif action.lower() == "buy-market":
+				if not self.__shortPos[instrument].exitActive():
+					self.__shortPos[instrument].exitMarket()
+			elif action.lower() == "sell-market":
+				if not self.__longPos[instrument].exitActive():
+					self.__longPos[instrument].exitMarket()
 			else:
 				pass # No need to take any action for Cover-Buy or Sell-Close entries.
 		# There must be a stop loss order to process if a Buy or Sell order was processed in the
@@ -147,7 +153,6 @@ class MyStrategy(strategy.BacktestingStrategy):
 		portfolioValue = self.getBroker().getEquity()
 		self.info("Portfolio value: $%.2f" % (portfolioValue))
 
-'''
 def main():
 	# Load the orders file.
 	ordersFile = OrdersFile("orders.csv")
@@ -187,5 +192,4 @@ def main():
 	print "Std. dev. daily return: %.4f" % (stats.stddev(retAnalyzer.getReturns()))
 	print "Sharpe ratio: %.2f" % (sharpeRatioAnalyzer.getSharpeRatio(0))
 
-main()
-'''
+#main()

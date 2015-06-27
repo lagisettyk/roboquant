@@ -16,6 +16,9 @@ import os
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 TEMPLATE_PATH = os.path.join(BASE_DIR, 'templates')
+
+#### Business logic related variables...
+TICKERLIST = []
 #print TEMPLATE_PATH
 
 # Quick-start development settings - unsuitable for production

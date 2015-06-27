@@ -12,6 +12,7 @@ import dateutil.parser
 import os
 from pyalgotrade.stratanalyzer import returns
 from pyalgotrade import dataseries
+import time
 
 
 
@@ -63,7 +64,7 @@ class StrategyResults(object):
         self.__plotSignals = plotSignals
         strat.getBarsProcessedEvent().subscribe(self.__onBarsProcessed)
         strat.getBroker().getOrderUpdatedEvent().subscribe(self.__onOrderEvent)
-        self.__instLit = instList
+        self.__instList = instList
         self.__portfolioValues = []
         self.__tradeDetails = []
         self.__instrumentDetails = []
@@ -174,6 +175,44 @@ class StrategyResults(object):
 
     def getOrders(self):
         return self.__orders
+
+    def getOrdersFilteredByMomentumRank(self, filterCriteria=25):
+        filteredOrders = {}
+        for key, value in self.__orders.iteritems():
+
+            if value[0][1] == 'Buy' or value[0][1] == 'Sell':
+                dt = datetime.datetime.fromtimestamp(key)
+                #mom_rank_orderedlist = tickersRankByMoneyFlowPercent(dt)
+                mom_rank_orderedlist = tickersRankByMoneyFlow(dt)
+                rank = mom_rank_orderedlist.values().index(self.__instList[0]) ### Please note first in the list is the stock details..
+                if rank <= filterCriteria:
+                    filteredOrders[key] = value
+                else:
+                    util.getLogger().info("Filtered Order of: " + self.__instList[0] + " on date: " + dt.strftime("%B %d, %Y") + " rank: " + str(rank))
+            else:
+                filteredOrders[key] = value
+
+        return filteredOrders
+
+
+    def getOrdersFilteredByRules(self, filterCriteria=25):
+        filteredOrders = {}
+        for key, value in self.__orders.iteritems():
+
+            if value[0][1] == 'Buy' or value[0][1] == 'Sell':
+                dt = datetime.datetime.fromtimestamp(key)
+                ADR_5days = ADR(self.__instList[0], 5, dt)
+                vol_5days = volume(self.__instList[0], 5, dt)
+                mf = moneyflow(self.__instList[0],  dt)
+                if (ADR_5days >=1) and (vol_5days >= 1000000) and mf >= 2000000:
+                    filteredOrders[key] = value
+                else:
+                    util.getLogger().info("Filtered Order of: " + self.__instList[0] + " on date: " + dt.strftime("%B %d, %Y") 
+                        + " ADR :", ADR_5days + " volume: " + vol_5days + " moneyflow: " + mf)
+            else:
+                filteredOrders[key] = value
+
+        return filteredOrders
 
     def getAdjCloseSeries(self, instrument):
         return self.__AdjPrices[instrument]
@@ -309,6 +348,56 @@ def add_feeds_EOD_redis( feed, ticker, stdate, enddate):
     feed.loadBars(ticker, bd)
     return feed
 
+def ADR(ticker,nDays, date):
+    adr_series = redis_build_ADR_ndays(ticker, nDays, (date - datetime.timedelta(days=10)), date)
+    return adr_series[-1]
+
+### Average Daily range....
+def redis_build_ADR_ndays(ticker, nDays, stdate, enddate):
+    import datetime
+    from time import mktime
+    from pyalgotrade.utils import dt
+
+    seconds = mktime(stdate.timetuple())
+    seconds2 = mktime(enddate.timetuple())
+    data_dict = {}
+    try:
+        redisConn = util.get_redis_conn()
+        ticker_data = redisConn.zrangebyscore(ticker + ":EOD", int(seconds), int(seconds2), 0, -1, True)
+        if(len(ticker_data) > 1):
+            data_dict = redis_listoflists_to_dict(ticker_data)
+        #data_dict = redis_listoflists_to_dict(ticker_data)
+    except Exception,e:
+        print str(e)
+        pass
+
+    #### Compute sma_ndays 
+    #### Avg(Close_Price * volume) over n days...
+    sma_ndays = [] ##### initialize bar data.....
+    keys = sorted(data_dict.keys())
+    i = 0 
+    j = nDays
+    while j < len(keys):
+        data_point = []
+        Avg = 0
+        timestamp = keys[j-1]
+        avg_list = keys[i:j]
+        for key in avg_list:
+            data = data_dict[key].split("|")
+            Avg += (float(data[1])-float(data[2]))
+
+        seconds = mktime(datetime.datetime.fromtimestamp(timestamp).timetuple())
+        data_point.append(int(seconds)*1000)
+        data_point.append(Avg/nDays)
+        sma_ndays.append(data_point)
+        i +=1
+        j +=1
+    return sma_ndays
+
+def volume(ticker, nDays, date):
+    vol_series = redis_build_volume_sma_ndays(ticker, nDays, (date - datetime.timedelta(days=10)), date)
+    return vol_series[-1]
+
 def redis_build_volume_sma_ndays(ticker, nDays, stdate, enddate):
     import datetime
     from time import mktime
@@ -320,7 +409,9 @@ def redis_build_volume_sma_ndays(ticker, nDays, stdate, enddate):
     try:
         redisConn = util.get_redis_conn()
         ticker_data = redisConn.zrangebyscore(ticker + ":EOD", int(seconds), int(seconds2), 0, -1, True)
-        data_dict = redis_listoflists_to_dict(ticker_data)
+        if(len(ticker_data) > 1):
+            data_dict = redis_listoflists_to_dict(ticker_data)
+        #data_dict = redis_listoflists_to_dict(ticker_data)
     except Exception,e:
         print str(e)
         pass
@@ -359,7 +450,9 @@ def redis_build_sma_3days(ticker, stdate, enddate):
     try:
         redisConn = util.get_redis_conn()
         ticker_data = redisConn.zrangebyscore(ticker + ":EOD", int(seconds), int(seconds2), 0, -1, True)
-        data_dict = redis_listoflists_to_dict(ticker_data)
+        if(len(ticker_data) > 1):
+            data_dict = redis_listoflists_to_dict(ticker_data)
+        #data_dict = redis_listoflists_to_dict(ticker_data)
     except Exception,e:
         print str(e)
         pass
@@ -384,6 +477,10 @@ def redis_build_sma_3days(ticker, stdate, enddate):
         i +=1
         j +=1
     return sma_3days
+
+def moneyflow(ticker, date):
+    moneyflow = redis_build_moneyflow(ticker, (date - datetime.timedelta(days=10)), date)
+    return moneyflow[-1]
 
 def redis_build_moneyflow(ticker, stdate, enddate):
     moneyflow = []
@@ -419,7 +516,11 @@ def redis_build_moneyflow_percent(ticker, stdate, enddate):
         seconds = mktime(datetime.datetime.fromtimestamp(sma_3days[x+1][0]).timetuple())
         data_point.append(int(seconds)*1000)### datetime in milliseconds...
         diff = sma_3days[x+1][1] - sma_3days[x][1]
-        data_point.append(diff/sma_3days[x][1] * 100)
+        #######We should definitely revisit and check this problem...
+        if sma_3days[x][1] != 0:
+            data_point.append(diff/sma_3days[x][1] * 100)
+        else:
+            data_point.append(-9999.00) ### Please note for now to make sure we are not facing divide by zero issue
         moneyflow.append(data_point)
     return moneyflow
 
@@ -427,12 +528,29 @@ def tickersRankByMoneyFlowPercent(date):
     import collections
 
     momentum_rank = {}
+    #tickerList = util.getMasterTickerList()
     tickerList = util.getTickerList()
     for x in range(len(tickerList)):
         moneyflow = redis_build_moneyflow_percent(tickerList[x], (date - datetime.timedelta(days=10)), date)
         if len(moneyflow) > 1:
             data_point = moneyflow[len(moneyflow)-1]
             momentum_rank[data_point[1]] = tickerList[x]
+        time.sleep(0.0001)
+
+    return collections.OrderedDict(sorted(momentum_rank.items(), reverse=True))
+
+def tickersRankByMoneyFlow(date):
+    import collections
+
+    momentum_rank = {}
+    tickerList = util.getMasterTickerList()
+    #tickerList = util.getTickerList()
+    for x in range(len(tickerList)):
+        moneyflow = redis_build_moneyflow(tickerList[x], (date - datetime.timedelta(days=10)), date)
+        if len(moneyflow) > 1:
+            data_point = moneyflow[len(moneyflow)-1]
+            momentum_rank[data_point[1]] = tickerList[x]
+        #time.sleep(0.0001)
 
     return collections.OrderedDict(sorted(momentum_rank.items(), reverse=True))
 

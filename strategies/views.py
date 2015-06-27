@@ -157,7 +157,8 @@ def backtestPortfolio(request):
 	import dateutil.parser
 	from utils import util
 	from xiQuant_strategies import xiQuantStrategyUtil
-	import shutil
+	#import shutil
+	import csv
 
 	if request.method == 'GET':
 		#ticker = request.GET['Ticker']
@@ -177,6 +178,7 @@ def backtestPortfolio(request):
 	q = Queue(connection=redisConn)  # no args implies the default queue
 
 	jobList = []
+	rank = len(tickerList)/10
 	for ticker in tickerList:
 		jobList.append(q.enqueue(xiQuantStrategyUtil.run_strategy_redis, 20, ticker, int(amount), start_date, end_date))
 
@@ -191,7 +193,9 @@ def backtestPortfolio(request):
 			if job.get_status() == 'failed' or job.get_status()=='finished':
 				sleep = False
 		if job.get_status() == 'finished' and any(job.result.getOrders()):
-			master_orders.append(job.result.getOrders())
+			#master_orders.append(job.result.getOrders())
+			#master_orders.append(job.result.getOrdersFilteredByMomentumRank(filterCriteria=rank))
+			master_orders.append(job.result.getOrdersFilteredByRules())
 		jobID +=1
 
 	########### Iterate master orders file.... #############
@@ -208,6 +212,19 @@ def backtestPortfolio(request):
 	fake_csv = util.make_fake_csv(dataRows)
 	print  "Successfully created master_orders fake_csv file...."
 
+	'''
+	#### Debug purpose write out Fake CSV file#######
+	with open('MasterOrders.csv', 'a') as csvfile:
+		writer = csv.DictWriter(csvfile, fieldnames=["timeSinceEpoch", "symbol", "action", "stopPrice"])
+		reader = csv.DictReader(fake_csv, fieldnames=["timeSinceEpoch", "symbol", "action", "stopPrice"])
+		for row in reader:
+			print row
+			writer.writerow(row)
+	print  "Successfully created master_orders debug file...."
+	### Initialize another fake csv after writing out to set seek to zero#####
+	fake_csv = util.make_fake_csv(dataRows)
+	'''
+	
 	############### Run the master order for computing portfolio#########
 	jobPortfolio = q.enqueue(xiQuantStrategyUtil.run_master_strategy,int(amount), fake_csv)
 

@@ -9,6 +9,16 @@ import dateutil.parser
 import StringIO
 
 
+pool = redis.ConnectionPool(host='localhost', port=6379, db=0)
+tickerList = []
+
+def get_redis_conn(redis_url=os.getenv('REDISCLOUD_URL', 'redis://localhost:6379')):
+	url = urlparse.urlparse(redis_url)
+	#print "$$$URL: ", url
+	#return redis.StrictRedis(host=url.hostname, port=url.port, password=url.password)
+	return redis.Redis(connection_pool=pool)
+
+
 def make_fake_csv(data):
     """Returns a populdated fake csv file object """
     fake_csv = StringIO.StringIO()
@@ -24,37 +34,47 @@ def getRelativePath(filename):
 	return os.path.join(getCurrentDir(), filename)  # get current directory
 
 def getTickerListWithSPY():
-	tickerList = ['AAPL', 'AMZN', 'FDX', 'MA', 'NFLX', 'OCR', 'GD','NXPI', 'CVS', 'UNP', 'GILD', 'VRX', 'ACT', 'XLF','GOOGL', 'CF', 'URI', 'CP', 'WHR', 'IWM', 'UNH', 'VIAB', 'FLT', \
+	tickerListWithSPY = ['AAPL', 'AMZN', 'FDX', 'MA', 'NFLX', 'OCR', 'GD','NXPI', 'CVS', 'UNP', 'GILD', 'VRX', 'ACT', 'XLF','GOOGL', 'CF', 'URI', 'CP', 'WHR', 'IWM', 'UNH', 'VIAB', 'FLT', \
 	 'ODFL', 'ALL', 'V', 'SPY']
 
-	return tickerList
+	return tickerListWithSPY
 
 def getTickerList():
 
-	#tickerList = ['NFLX', 'GOOGL']
-
-	tickerList = ['AAPL', 'AMZN', 'FDX', 'MA', 'NFLX', 'OCR', 'GD','NXPI', 'CVS', 'UNP', 'GILD', 'VRX', 'ACT', 'XLF','GOOGL', 'CF', 'URI', 'CP', 'WHR', 'IWM', 'UNH', 'VIAB', 'FLT', \
-	 'ODFL', 'ALL', 'V']
-	 
-	 '''
+	#tickerList = ['NFLX', 'MA']
+	
+	#tickerList = ['AAPL', 'AMZN', 'FDX', 'MA', 'NFLX', 'OCR', 'GD','NXPI', 'CVS', 'UNP', 'GILD', 'VRX', 'ACT', 'XLF','GOOGL', 'CF', 'URI', 'CP', 'WHR', 'IWM', 'UNH', 'VIAB', 'FLT', \
+	 #'ODFL', 'ALL', 'V']
+	
 	#file_tickerlist = getRelativePath('cboesymbol.csv')
 	file_tickerlist = getRelativePath('SP500.csv')
+	logger = getLogger()
+	tickerList = []
+	with open(file_tickerlist, 'rU') as csvfile:
+		reader = csv.DictReader(csvfile)
+		for row in reader:
+			#logger.info(row['Stock Symbol'])
+			tickerList.append(row['Stock Symbol'])
+	### Make sure file is explicitly closed even though with statement it was causing problems...
+	csvfile.close()
+	
+	return tickerList
+
+def getMasterTickerList():
+
+	file_tickerlist = getRelativePath('cboesymbol_master.csv')
 	tickerList = []
 	logger = getLogger()
 	with open(file_tickerlist, 'rU') as csvfile:
 		reader = csv.DictReader(csvfile)
 		for row in reader:
-			logger.info(row['Stock Symbol'])
+			#logger.info(row['Stock Symbol'])
 			tickerList.append(row['Stock Symbol'])
-	'''
 
 	return tickerList
 
 
-def get_redis_conn(redis_url=os.getenv('REDISCLOUD_URL', 'redis://localhost:6379')):
-	url = urlparse.urlparse(redis_url)
-	#print "$$$URL: ", url
-	return redis.StrictRedis(host=url.hostname, port=url.port, password=url.password)
+
 
 def getLogger(name='default.log'):
 	logger = logging.getLogger("xiQuant")
