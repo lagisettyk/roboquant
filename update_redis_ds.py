@@ -6,8 +6,9 @@ from Quandl import Quandl
 import redis
 
 ### Initialize global...
-histStartDate = '2005-01-01T08:00:00.000Z'
-logger = util.getLogger('Quandl.log')
+histStartDate = '2005-01-01'
+#logger = util.getLogger('Quandl.log')
+logger = util.Log
 
 #########Redis Commands for reference purpose...
 # Min Score in a given ZSET: ZRANGEBYSCORE myset -inf +inf WITHSCORES LIMIT 0 1
@@ -71,20 +72,10 @@ def populate_redis_eod(redisConn, tickerList, datasource, startdate, enddate):
 			mkt_data  = Quandl.get(
 				datasource +"/" + tickerList[ticker], returns="numpy", sort_order="asc", authtoken="L5A6rmU9FGvyss9F7Eym",  
 				trim_start = startdate, trim_end = enddate)
-			
 			if mkt_data.size > 0:
 				for daily_data in mkt_data:
 					redisConn.zadd(tickerList[ticker] +":EOD", mktime(daily_data[0].timetuple()), 
-						str(daily_data[8]) + "|" + str(daily_data[9]) + "|" + str(daily_data[10]) + "|" + str(daily_data[11]) + "|" + str(daily_data[12]))
-			'''
-			if mkt_data.size > 0:
-				for daily_data in mkt_data:
-					redisConn.zadd(tickerList[ticker] +":EOD_UnAdj", mktime(daily_data[0].timetuple()), 
-						str(daily_data[1]) + "|" + str(daily_data[2]) + "|" + str(daily_data[3]) + "|" + str(daily_data[4]) + "|" + str(daily_data[11]) + "|" + str(daily_data[12]))
-			'''	
-				### For now let's block this concept of removing old element...
-				#if popFirstElement:
-				#	redisConn.zremrangebyrank(tickerList[ticker]+":EOD", 0, 0)
+					str(daily_data[8]) + "|" + str(daily_data[9]) + "|" + str(daily_data[10]) + "|" + str(daily_data[11]) + "|" + str(daily_data[12]))
 		except Exception,e: 
 			logger.debug(tickerList[ticker] +": " + str(e))
 			pass

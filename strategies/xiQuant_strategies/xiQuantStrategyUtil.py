@@ -188,7 +188,7 @@ class StrategyResults(object):
                 if rank <= filterCriteria:
                     filteredOrders[key] = value
                 else:
-                    util.getLogger().info("Filtered Order of: " + self.__instList[0] + " on date: " + dt.strftime("%B %d, %Y") + " rank: " + str(rank))
+                    util.Log.info("Filtered Order of: " + self.__instList[0] + " on date: " + dt.strftime("%B %d, %Y") + " rank: " + str(rank))
             else:
                 filteredOrders[key] = value
 

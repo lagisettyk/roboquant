@@ -11,14 +11,21 @@ import StringIO
 redis_url=os.getenv('REDISCLOUD_URL', 'redis://localhost:6379')
 url = urlparse.urlparse(redis_url)
 pool = redis.ConnectionPool(host=url.hostname, port=url.port, password=url.password, db=0)
-#pool = redis.ConnectionPool(host='localhost', port=6379, db=0)
-#tickerList = []
+tickerList = []
+Log = None
+
 
 def get_redis_conn(redis_url=os.getenv('REDISCLOUD_URL', 'redis://localhost:6379')):
 	#url = urlparse.urlparse(redis_url)
 	#print "$$$URL: ", url
 	#return redis.StrictRedis(host=url.hostname, port=url.port, password=url.password)
-	return redis.Redis(connection_pool=pool)
+	return redis.StrictRedis(connection_pool=pool)
+
+def get_redis_conn_nopool(redis_url=os.getenv('REDISCLOUD_URL', 'redis://localhost:6379')):
+	url = urlparse.urlparse(redis_url)
+	#print "$$$URL: ", url
+	return redis.StrictRedis(host=url.hostname, port=url.port, password=url.password)
+	#return redis.StrictRedis(connection_pool=pool)
 
 
 def make_fake_csv(data):
@@ -36,7 +43,7 @@ def getRelativePath(filename):
 	return os.path.join(getCurrentDir(), filename)  # get current directory
 
 def getTickerListWithSPY():
-	tickerListWithSPY = ['AAPL', 'AMZN', 'FDX', 'MA', 'NFLX', 'OCR', 'GD','NXPI', 'CVS', 'UNP', 'GILD', 'VRX', 'ACT', 'XLF','GOOGL', 'CF', 'URI', 'CP', 'WHR', 'IWM', 'UNH', 'VIAB', 'FLT', \
+	tickerListWithSPY = ['AAPL', 'AMZN', 'FDX', 'MA', 'NFLX', 'OCR', 'GD','NXPI', 'CVS', 'UNP', 'GILD', 'VRX', 'XLF','GOOGL', 'CF', 'URI', 'CP', 'WHR', 'IWM', 'UNH', 'VIAB', 'FLT', \
 	 'ODFL', 'ALL', 'V', 'SPY']
 
 	return tickerListWithSPY
@@ -44,23 +51,23 @@ def getTickerListWithSPY():
 
 def getTickerList():
 
-	#tickerList = ['NFLX', 'MA', 'FDX']
+	#tickerList = ['NFLX']
 
-	tickerList = ['AAPL', 'AMZN', 'FDX', 'MA', 'NFLX', 'OCR', 'GD','NXPI', 'CVS', 'UNP', 'GILD', 'VRX', 'ACT', 'XLF','GOOGL', 'CF', 'URI', 'CP', 'WHR', 'IWM', 'UNH', 'VIAB', 'FLT', \
-	 'ODFL', 'ALL', 'V']
-	'''
-	file_tickerlist = getRelativePath('cboesymbol.csv')
-	#file_tickerlist = getRelativePath('SP500.csv')
-	logger = getLogger()
-	tickerList = []
-	with open(file_tickerlist, 'rU') as csvfile:
-		reader = csv.DictReader(csvfile)
-		for row in reader:
-			#logger.info(row['Stock Symbol'])
-			tickerList.append(row['Stock Symbol'])
-	### Make sure file is explicitly closed even though with statement it was causing problems...
-	csvfile.close()
-	'''
+	#tickerList = ['AAPL', 'AMZN', 'FDX', 'MA', 'NFLX', 'OCR', 'GD','NXPI', 'CVS', 'UNP', 'GILD', 'VRX', 'ACT', 'XLF','GOOGL', 'CF', 'URI', 'CP', 'WHR', 'IWM', 'UNH', 'VIAB', 'FLT', \
+	# 'ODFL', 'ALL', 'V']
+	if (len(tickerList) == 0):
+		#file_tickerlist = getRelativePath('cboesymbol.csv')
+		#file_tickerlist = getRelativePath('SP500.csv')
+		file_tickerlist = getRelativePath('cboesymbol_master.csv')
+		logger = getLogger()
+		#tickerList = []
+		with open(file_tickerlist, 'rU') as csvfile:
+			reader = csv.DictReader(csvfile)
+			for row in reader:
+				#logger.info(row['Stock Symbol'])
+				tickerList.append(row['Stock Symbol'])
+		### Make sure file is explicitly closed even though with statement it was causing problems...
+		csvfile.close()
 	
 	return tickerList
 
@@ -81,25 +88,28 @@ def getMasterTickerList():
 
 
 def getLogger(name='default.log'):
-	logger = logging.getLogger("xiQuant")
-	logger.setLevel(logging.INFO)
-	module_dir = os.path.dirname(__file__)
-	file_BB_Spread = os.path.join(module_dir, name)
-	handler = logging.handlers.RotatingFileHandler(
-             file_BB_Spread, maxBytes=1024 * 1024, backupCount=4)
-	handler.setLevel(logging.INFO)
-	formatter = logging.Formatter('%(asctime)s %(name)-12s %(levelname)-8s %(message)s')
-	handler.setFormatter(formatter)
-	logger.addHandler(handler)
 
-    #### Also enable logging to console...
-	console = logging.StreamHandler()
-	console.setLevel(logging.INFO)
-	console.setFormatter(formatter)
-	logger.addHandler(console)
+	if Log == None:
+		print ("Initializing logger....")
+		logger = logging.getLogger("xiQuant")
+		logger.setLevel(logging.INFO)
+		module_dir = os.path.dirname(__file__)
+		file_BB_Spread = os.path.join(module_dir, name)
+		handler = logging.handlers.RotatingFileHandler(
+	             file_BB_Spread, maxBytes=1024 * 1024, backupCount=4)
+		handler.setLevel(logging.INFO)
+		formatter = logging.Formatter('%(asctime)s %(name)-12s %(levelname)-8s %(message)s')
+		handler.setFormatter(formatter)
+		logger.addHandler(handler)
 
-	return logger
+	    #### Also enable logging to console...
+		console = logging.StreamHandler()
+		console.setLevel(logging.INFO)
+		console.setFormatter(formatter)
+		logger.addHandler(console)
 
+		return logger
 
+Log = getLogger()
 
 	

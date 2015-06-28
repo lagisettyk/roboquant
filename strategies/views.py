@@ -166,7 +166,7 @@ def simulatepotfolio(redisURL, amount, startdate, enddate):
 	q = Queue(connection=redisConn)  # no args implies the default queue
 
 	jobList = []
-	rank = 5 #len(tickerList)/10
+	rank = 20 #len(tickerList)/10
 	for ticker in tickerList:
 		jobList.append(q.enqueue(xiQuantStrategyUtil.run_strategy_redis, 20, ticker, int(amount), startdate, enddate))
 
@@ -256,7 +256,7 @@ def backtestPortfolio(request):
 	redisConn = util.get_redis_conn(settings.REDIS_URL)
 	
 	if jobid == 'NEW':
-		q = Queue(connection=redisConn)  # no args implies the default queue
+		q = Queue(connection=redisConn, default_timeout=9000)  # no args implies the default queue
 		jobPortfolio = q.enqueue(simulatepotfolio, settings.REDIS_URL, int(amount), start_date, end_date)
 
 		print  "Successfully submitted portfolio simulation..."

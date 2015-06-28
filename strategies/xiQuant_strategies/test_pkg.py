@@ -64,6 +64,11 @@ enddate = dateutil.parser.parse('2014-12-31T08:00:00.000Z')
 
 print stdate, enddate
 
+util.Log.info("Got logger handle...")
+util.Log.info("Testing...")
+util.Log.info("Testing...")
+util.Log.info("Testing...")
+
 #dateTime = dateutil.parser.parse('2011-04-20T08:00:00.000Z')
 #print "$$$Calender: ", xiQuantStrategyUtil.isEarnings("AAPL", dateTime, False)
 
@@ -94,7 +99,7 @@ print stdate, enddate
 #print results.getOrdersFilteredByMomentumRank(filterCriteria=3000)
 #print results.getOrders()
 
-
+'''
 dataRows = []
 tickerList = util.getTickerList()
 for ticker in tickerList:
@@ -118,7 +123,7 @@ fake_csv = util.make_fake_csv(dataRows)
 port_results = xiQuantStrategyUtil.run_master_strategy(100000, fake_csv)
 print port_results.getPortfolioResult()
 #print port_results.getCumulativeReturns() #### to do how to populate more than 3 years
-
+'''
 
 '''
 #### read fake_csv as csv file....
