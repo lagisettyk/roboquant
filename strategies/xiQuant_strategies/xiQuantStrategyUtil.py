@@ -686,7 +686,7 @@ def getOrdersFiltered(orders, instrument, filterCriteria=25):
 
     
    
-def run_strategy_redis(bBandsPeriod, instrument, startPortfolio, startdate, enddate):
+def run_strategy_redis(bBandsPeriod, instrument, startPortfolio, startdate, enddate, indicators=True):
 
     feed = redis_build_feed_EOD(instrument, startdate, enddate)
     #feed = build_feed_TN(instrument, startdate, enddate)
@@ -703,35 +703,43 @@ def run_strategy_redis(bBandsPeriod, instrument, startPortfolio, startdate, endd
 
     instList = [instrument, 'SPY']
 
-    # Attach a returns analyzers to the strategy.
-    returnsAnalyzer = Returns()
-    results = StrategyResults(strat, instList, returnsAnalyzer, plotSignals=True)
+    if indicators:
+        # Attach a returns analyzers to the strategy.
+        returnsAnalyzer = Returns()
+        results = StrategyResults(strat, instList, returnsAnalyzer, plotSignals=True)
 
-    ###Initialize the bands to maxlength of 5000 for 10 years backtest..
-    strat.getBollingerBands().getMiddleBand().setMaxLen(5000)
-    strat.getBollingerBands().getUpperBand().setMaxLen(5000)
-    strat.getBollingerBands().getLowerBand().setMaxLen(5000) 
-    strat.getRSI().setMaxLen(5000)
-    strat.getEMAFast().setMaxLen(5000)
-    strat.getEMASlow().setMaxLen(5000)
-    strat.getEMASignal().setMaxLen(5000)
-    #### Add boilingerbands series....
-    strat.run()
+        ###Initialize the bands to maxlength of 5000 for 10 years backtest..
+        strat.getBollingerBands().getMiddleBand().setMaxLen(5000)
+        strat.getBollingerBands().getUpperBand().setMaxLen(5000)
+        strat.getBollingerBands().getLowerBand().setMaxLen(5000) 
+        strat.getRSI().setMaxLen(5000)
+        strat.getEMAFast().setMaxLen(5000)
+        strat.getEMASlow().setMaxLen(5000)
+        strat.getEMASignal().setMaxLen(5000)
+        #### Add boilingerbands series....
+        strat.run()
 
-    ####Populate orders from the backtest run...
-    #filteredOrders = getOrdersFiltered(strat.getOrders(), instrument, filterCriteria = 20)
-    results.addOrders(strat.getOrders())
-    #results.addOrders(filteredOrders)
-   
+        ####Populate orders from the backtest run...
+        #filteredOrders = getOrdersFiltered(strat.getOrders(), instrument, filterCriteria = 20)
+        results.addOrders(strat.getOrders())
+        #results.addOrders(filteredOrders)
+       
 
-    results.addSeries("upper", strat.getBollingerBands().getUpperBand())
-    results.addSeries("middle", strat.getBollingerBands().getMiddleBand())
-    results.addSeries("lower", strat.getBollingerBands().getLowerBand())
-    results.addSeries("RSI", strat.getRSI())
-    results.addSeries("EMA Fast", strat.getEMAFast())
-    results.addSeries("EMA Slow", strat.getEMASlow())
-    results.addSeries("EMA Signal", strat.getEMASignal())
-    #results.addSeries("macd", strat.getMACD())
+        results.addSeries("upper", strat.getBollingerBands().getUpperBand())
+        results.addSeries("middle", strat.getBollingerBands().getMiddleBand())
+        results.addSeries("lower", strat.getBollingerBands().getLowerBand())
+        results.addSeries("RSI", strat.getRSI())
+        results.addSeries("EMA Fast", strat.getEMAFast())
+        results.addSeries("EMA Slow", strat.getEMASlow())
+        results.addSeries("EMA Signal", strat.getEMASignal())
+        #results.addSeries("macd", strat.getMACD())
+    else:
+        # This is to ensue we consume less memory on the portfolio simulation case ... main thread.......
+        returnsAnalyzer = Returns()
+        results = StrategyResults(strat, instList, returnsAnalyzer, plotSignals=False)
+        strat.run()
+        filteredOrders = getOrdersFiltered(strat.getOrders(), instrument, filterCriteria = 20)
+        results.addOrders(filteredOrders)
     
     return results
 
