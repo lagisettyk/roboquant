@@ -29,8 +29,8 @@ def timed_job():
 	time.sleep(600)
 	print job.result   # => 889
 
-@sched.scheduled_job('date')
-#@sched.scheduled_job('cron', day_of_week='mon-fri', hour=17)
+#@sched.scheduled_job('date')
+@sched.scheduled_job('cron', day_of_week='mon-fri', hour=17)
 def scheduled_job():
 	print('This job is run every weekday at 7pm.')
 	redis_conn = util.get_redis_conn()

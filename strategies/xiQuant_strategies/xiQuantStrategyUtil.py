@@ -733,15 +733,18 @@ def run_strategy_redis(bBandsPeriod, instrument, startPortfolio, startdate, endd
         results.addSeries("EMA Slow", strat.getEMASlow())
         results.addSeries("EMA Signal", strat.getEMASignal())
         #results.addSeries("macd", strat.getMACD())
+        return results
     else:
         # This is to ensue we consume less memory on the portfolio simulation case ... main thread.......
         returnsAnalyzer = Returns()
         results = StrategyResults(strat, instList, returnsAnalyzer, plotSignals=False)
         strat.run()
         filteredOrders = getOrdersFiltered(strat.getOrders(), instrument, filterCriteria = 20)
-        results.addOrders(filteredOrders)
+        #results.addOrders(filteredOrders)
+        return filteredOrders
     
-    return results
+    #return results
+    
 
 def run_strategy_TN(bBandsPeriod, instrument, startPortfolio, startdate, enddate):
 
