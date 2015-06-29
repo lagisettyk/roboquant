@@ -719,9 +719,9 @@ def run_strategy_redis(bBandsPeriod, instrument, startPortfolio, startdate, endd
     strat.run()
 
     ####Populate orders from the backtest run...
-    filteredOrders = getOrdersFiltered(strat.getOrders(), instrument, filterCriteria = 20)
-    #results.addOrders(strat.getOrders())
-    results.addOrders(filteredOrders)
+    #filteredOrders = getOrdersFiltered(strat.getOrders(), instrument, filterCriteria = 20)
+    results.addOrders(strat.getOrders())
+    #results.addOrders(filteredOrders)
    
 
     results.addSeries("upper", strat.getBollingerBands().getUpperBand())
