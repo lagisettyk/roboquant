@@ -26,11 +26,11 @@ def test_parallel_strategy():
 	jobList = []
 
 	for ticker in tickerList:
-		jobList.append(q.enqueue(xiQuantStrategyUtil.run_strategy_redis, 20, ticker, 100000, yourdate, yourdate2))
+		jobList.append(q.enqueue(xiQuantStrategyUtil.run_strategy_TN, 20, ticker, 100000, yourdate, yourdate2))
 		
 
 	#### Wait in loop until all of them are successfull
-	master_orders = [] #### List of  orders dictionary...
+	#master_orders = [] #### List of  orders dictionary...
 	jobID = 1
 	for job in jobList:
 		print "Currently processing job id: ", jobID
@@ -39,20 +39,21 @@ def test_parallel_strategy():
 			time.sleep(1)
 			if job.get_status() == 'failed' or job.get_status()=='finished':
 				sleep = False
-		if job.get_status() == 'finished' and any(job.result.getOrders()):
-			master_orders.append(job.result.getOrders())
+		#if job.get_status() == 'finished' and any(job.result.getOrders()):
+		#	master_orders.append(job.result.getOrders())
 		jobID +=1
 		
-	print  "Successfully processed....", master_orders
+	print  "Successfully processed...."
 
-	'''
 	########### Merge files to create master file #############
 	curDir = util.getCurrentDir()
-	dest = curDir+"/orders/"+'MasterOrder.csv'
+	dest = 'MasterResults.csv'
 	for ticker in tickerList:
-		src = curDir+"/orders/"+'orders_'+ticker+".csv"
+		#src = curDir+'results_'+ticker+".csv"
+		src = 'results_'+ticker+".csv"
 		try:
 			with open(src, 'rb') as fsrc:
+				print "$$$$$ I am here...."
 				with open(dest, 'a') as fdest:
 					shutil.copyfileobj(fsrc, fdest, 50000)
 					print "Copied file: ", src
@@ -61,7 +62,7 @@ def test_parallel_strategy():
 			pass ### For now disregard if any of the file is missing....
 
 	print  "Successfully merged files...."
-	'''
+
 
 def process_Options_History():
 

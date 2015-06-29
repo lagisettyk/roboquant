@@ -11,7 +11,7 @@ import StringIO
 redis_url=os.getenv('REDISCLOUD_URL', 'redis://localhost:6379')
 url = urlparse.urlparse(redis_url)
 pool = redis.ConnectionPool(host=url.hostname, port=url.port, password=url.password, db=0)
-tickerList = []
+#tickerList = []
 Log = None
 
 
@@ -51,15 +51,17 @@ def getTickerListWithSPY():
 
 def getTickerList():
 
-	#tickerList = ['NFLX']
+	#tickerList = ['NFLX', 'FDX']
 
-	#tickerList = ['AAPL', 'AMZN', 'FDX', 'MA', 'NFLX', 'OCR', 'GD','NXPI', 'CVS', 'UNP', 'GILD', 'VRX', 'ACT', 'XLF','GOOGL', 'CF', 'URI', 'CP', 'WHR', 'IWM', 'UNH', 'VIAB', 'FLT', \
-	# 'ODFL', 'ALL', 'V']
+	tickerList = ['AAPL', 'AMZN', 'FDX', 'MA', 'NFLX', 'OCR', 'GD','NXPI', 'CVS', 'UNP', 'GILD', 'VRX', 'ACT', 'XLF','GOOGL', 'CF', 'URI', 'CP', 'WHR', 'IWM', 'UNH', 'VIAB', 'FLT', \
+	 'ODFL', 'ALL', 'V']
+	'''
 	if (len(tickerList) == 0):
 		#file_tickerlist = getRelativePath('cboesymbol.csv')
-		#file_tickerlist = getRelativePath('SP500.csv')
-		file_tickerlist = getRelativePath('cboesymbol_master.csv')
-		logger = getLogger()
+		file_tickerlist = getRelativePath('SP500.csv')
+		#file_tickerlist = getRelativePath('cboesymbol_master.csv')
+		#file_tickerlist = getRelativePath('cboesymbol_1000.csv')
+		#logger = getLogger()
 		#tickerList = []
 		with open(file_tickerlist, 'rU') as csvfile:
 			reader = csv.DictReader(csvfile)
@@ -68,9 +70,9 @@ def getTickerList():
 				tickerList.append(row['Stock Symbol'])
 		### Make sure file is explicitly closed even though with statement it was causing problems...
 		csvfile.close()
-	
+	'''
 	return tickerList
-
+	
 def getMasterTickerList():
 
 	file_tickerlist = getRelativePath('cboesymbol_master.csv')

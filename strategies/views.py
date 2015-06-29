@@ -163,7 +163,7 @@ def simulatepotfolio(redisURL, amount, startdate, enddate):
 	tickerList = util.getTickerList()
 
 	redisConn = util.get_redis_conn(redisURL)
-	q = Queue(connection=redisConn)  # no args implies the default queue
+	q = Queue(connection=redisConn, default_timeout=15000)  # no args implies the default queue
 
 	jobList = []
 	rank = 20 #len(tickerList)/10
@@ -181,8 +181,8 @@ def simulatepotfolio(redisURL, amount, startdate, enddate):
 			if job.get_status() == 'failed' or job.get_status()=='finished':
 				sleep = False
 		if job.get_status() == 'finished' and any(job.result.getOrders()):
-			#master_orders.append(job.result.getOrders())
-			master_orders.append(job.result.getOrdersFilteredByMomentumRank(filterCriteria=rank))
+			master_orders.append(job.result.getOrders())
+			#master_orders.append(job.result.getOrdersFilteredByMomentumRank(filterCriteria=rank))
 			#master_orders.append(job.result.getOrdersFilteredByRules())
 		jobID +=1
 
@@ -254,20 +254,14 @@ def backtestPortfolio(request):
 
 	print start_date, end_date
 	redisConn = util.get_redis_conn(settings.REDIS_URL)
+	#redisConn = util.get_redis_conn_nopool(settings.REDIS_URL)
 	
 	if jobid == 'NEW':
-		q = Queue(connection=redisConn, default_timeout=9000)  # no args implies the default queue
+		q = Queue(connection=redisConn, default_timeout=15000)  # no args implies the default queue
+		#q = Queue(connection=redisConn)  # no args implies the default queue
 		jobPortfolio = q.enqueue(simulatepotfolio, settings.REDIS_URL, int(amount), start_date, end_date)
 
 		print  "Successfully submitted portfolio simulation..."
-
-		'''
-		sleep = True
-		while(sleep):
-			time.sleep(1)
-			if jobPortfolio.get_status() == 'failed' or jobPortfolio.get_status()=='finished':
-				sleep = False
-		'''
 		### Return just job id by kicking of redis job....
 		results = {
 		"jobstatus": jobPortfolio.id

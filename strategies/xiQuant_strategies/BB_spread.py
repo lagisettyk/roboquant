@@ -103,13 +103,14 @@ class BBSpread(strategy.BacktestingStrategy):
 		# as the value. Each item in the list is a tuple of (instrument, action, price) or
 		# (instrument, action) kinds.
 		self.__orders = {} 
+		self.__results = None
 
 	def initLogging(self):
 		logger = logging.getLogger("xiQuant")
 		logger.setLevel(logging.INFO)
 		logFileName = "BB_Spread_" + self.__instrument + ".log"
 		handler = logging.handlers.RotatingFileHandler(
-              logFileName, maxBytes=1024 * 1024, backupCount=5)
+              logFileName, maxBytes=1024 * 1024 * 1024, backupCount=5)
 		#handler = logging.FileHandler(logFileName)
 		handler.setLevel(logging.INFO)
 		formatter = logging.Formatter('%(asctime)s %(name)-12s %(levelname)-8s %(message)s')
@@ -126,8 +127,10 @@ class BBSpread(strategy.BacktestingStrategy):
 		self.__logger.debug("SPY 20 SMA: $%.2f" % self.__smaSPYShort1[-1])
 		self.__logger.debug("SPY Upper BBand: $%.2f" % self.__upperSPYBBDataSeries[-1])
 		if self.__spyDS[-1] > self.__smaSPYShort1[-1] and self.__spyDS[-1] < self.__upperSPYBBDataSeries[-1]:
+			self.__logger.debug("The market is Bullish today.")
 			return True
 		else:
+			self.__logger.debug("The market is NOT Bullish today.")
 			return False
 
 	def isBearish(self):
@@ -135,8 +138,10 @@ class BBSpread(strategy.BacktestingStrategy):
 		self.__logger.debug("SPY 20 SMA: $%.2f" % self.__smaSPYShort1[-1])
 		self.__logger.debug("SPY Lower BBand: $%.2f" % self.__lowerSPYBBDataSeries[-1])
 		if self.__spyDS[-1] < self.__smaSPYShort1[-1] and self.__spyDS[-1] > self.__lowerSPYBBDataSeries[-1]:
+			self.__logger.debug("The market is Bearish today.")
 			return True
 		else:
+			self.__logger.debug("The market is NOT Bearish today.")
 			return False
 
 	def getOrders(self):
@@ -157,22 +162,28 @@ class BBSpread(strategy.BacktestingStrategy):
 		file_json_exit_price = os.path.join(module_dir, 'json_exit_price')
 		jsonExitPrice = open(file_json_exit_price)
 		self.__ordersFile = open(consts.ORDERS_FILE, 'w')
-
+		#self.__resultsFile = open(consts.RESULTS_FILE+self.__instrument+".csv", 'w')
+		self.__resultsFile = open(consts.RESULTS_FILE, 'w')
+		self.__resultsFile.write("Instrument,Trade-Type,Entry-Date,Entry-Price,Exit-Date,Exit-Price\n")
 
 	def onFinish(self, bars):
 		self.stopLogging()
 		self.__ordersFile.close()
+		self.__resultsFile.close()
 		return
 
 	def onEnterOk(self, position):
 		execInfo = position.getEntryOrder().getExecutionInfo()
 		t = self.__priceDS.getDateTimes()[-1]
 		tInSecs = xiquantFuncs.secondsSinceEpoch(t)
+		getcontext().prec = 2
 		if self.__longPos == position:
 			self.__logger.info("%s: BOUGHT %d at $%.2f" % (execInfo.getDateTime(), execInfo.getQuantity(), execInfo.getPrice()))
+			self.__results = self.__instrument + ',' + "LONG," + str(t) + ',' + str(execInfo.getPrice()) + ','
 			self.__logger.info("Portfolio cash after BUY: $%.2f" % self.getBroker().getCash())
 		elif self.__shortPos == position:
 			self.__logger.info("%s: SOLD %d at $%.2f" % (execInfo.getDateTime(), execInfo.getQuantity(), execInfo.getPrice()))
+			self.__results = self.__instrument + ',' + "SHORT," + str(t) + ',' + str(execInfo.getPrice()) + ','
 			self.__logger.info("Portfolio cash after SELL: $%.2f" % self.getBroker().getCash())
 
 		# Enter a stop loss order for the entry day
@@ -216,12 +227,21 @@ class BBSpread(strategy.BacktestingStrategy):
 		execInfo = position.getExitOrder().getExecutionInfo()
 		t = self.__priceDS.getDateTimes()[-1]
 		tInSecs = xiquantFuncs.secondsSinceEpoch(t)
+		getcontext().prec = 2
 		if self.__longPos == position: 
 			self.__logger.info("%s: SOLD CLOSE %d at $%.2f" % (execInfo.getDateTime(), execInfo.getQuantity(), execInfo.getPrice()))
+			exitStr = str(t) + ',' + str(execInfo.getPrice()) + '\n'
+			self.__results += exitStr
+			self.__resultsFile.write(self.__results)
+			self.__results = None
 			self.__logger.info("Portfolio after SELL CLOSE: $%.2f" % self.getBroker().getCash())
 			self.__longPos = None 
 		elif self.__shortPos == position: 
 			self.__logger.info("%s: COVER BUY %d at $%.2f" % (execInfo.getDateTime(), execInfo.getQuantity(), execInfo.getPrice()))
+			exitStr = str(t) + ',' + str(execInfo.getPrice()) + '\n'
+			self.__results += exitStr
+			self.__resultsFile.write(self.__results)
+			self.__results = None
 			self.__logger.info("Portfolio after COVER BUY: $%.2f" % self.getBroker().getCash())
 			self.__shortPos = None 
 		else: 
@@ -573,7 +593,7 @@ class BBSpread(strategy.BacktestingStrategy):
 			if self.__priceDS[-2] > self.__bbands.getUpperBand()[-2]:
 				self.__logger.debug("Upper band: %.2f" % self.__bbands.getUpperBand()[-1])
 				self.__logger.debug("Price: %.2f" % self.__priceDS[-1])
-				self.__logger.debug("Previous upper band: %.4f" % self.__bbands.getUpperBand()[-2])
+				self.__logger.debug("Previous upper band: %.2f" % Decimal(self.__bbands.getUpperBand()[-2]))
 				self.__logger.debug("Previous price: %.2f" % self.__priceDS[-2])
 				self.__logger.debug("Not the first day of upper band breach/touch.")
 				return False
@@ -857,7 +877,7 @@ class BBSpread(strategy.BacktestingStrategy):
 			if self.__priceDS[-2] < self.__bbands.getLowerBand()[-2]:
 				self.__logger.debug("Lower band: %.2f" % self.__bbands.getLowerBand()[-1])
 				self.__logger.debug("Price: %.2f" % self.__priceDS[-1])
-				self.__logger.debug("Previous lower band: %.4f" % self.__bbands.getLowerBand()[-2])
+				self.__logger.debug("Previous lower band: %.2f" % Decimal(self.__bbands.getLowerBand()[-2]))
 				self.__logger.debug("Previous price: %.2f" % self.__priceDS[-2])
 				self.__logger.debug("Not the first day of lower band breach/touch.")
 				return False
@@ -1072,7 +1092,7 @@ class BBSpread(strategy.BacktestingStrategy):
 		if len(self.__bbands.getLowerBand()) >= consts.BB_SLOPE_LOOKBACK_WINDOW:
 			lowerBand = self.__bbands.getLowerBand()[-1]
 			prevLowerBand = self.__bbands.getLowerBand()[-2]
-			self.__logger.debug("Prev Lower Band: %.4f" % prevLowerBand)
+			self.__logger.debug("Prev Lower Band: %.2f" % Decimal(prevLowerBand))
 			if Decimal(lowerBand) > Decimal(prevLowerBand):
 				# Reset the first croc mouth opening marker as the mouth is begin to close
 				self.__logger.debug("Reset first croc opening day")
@@ -1154,7 +1174,7 @@ class BBSpread(strategy.BacktestingStrategy):
 		if len(self.__bbands.getUpperBand()) >= consts.BB_SLOPE_LOOKBACK_WINDOW:
 			upperBand = self.__bbands.getUpperBand()[-1]
 			prevUpperBand = self.__bbands.getUpperBand()[-2]
-			self.__logger.debug("Prev Upper Band: %.4f" % prevUpperBand)
+			self.__logger.debug("Prev Upper Band: %.2f" % Decimal(prevUpperBand))
 			if Decimal(upperBand) < Decimal(prevUpperBand):
 				# Reset the first croc mouth opening marker as the mouth is begin to close
 				self.__logger.debug("Reset first croc opening day")
@@ -1273,7 +1293,7 @@ def run_strategy(bBandsPeriod, instrument, startPortfolio, startPeriod, endPerio
 			Image.open(fileNameRoot + '_2_' + '.png').save(fileNameRoot + '_2_' + '.jpg', 'JPEG')
 
 def main(plot):
-	instruments = ["nflx"]
+	instruments = ["fdx"]
 	bBandsPeriod = 20
 	startPortfolio = 1000000
 	for inst in instruments:

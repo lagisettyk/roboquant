@@ -9,8 +9,6 @@ import datetime
 
 # Returns the last values of a dataseries as a numpy.array, or None if not enough values
 # could be retrieved from the dataseries.
-####Added by kiran...
-import pytz
 
 def dsToNumpyArray(ds, count):
 	ret = None
@@ -26,7 +24,7 @@ def dsToNumpyArray(ds, count):
 
 def slope(inpDS, lookbackWin):
 	if lookbackWin > 2:
-		return LINEARREG_SLOPE(inpDS, lookbackWin)
+		return indicator.LINEARREG_SLOPE(inpDS, lookbackWin)
 	else:
 		prevVal = inpDS[-1 * lookbackWin] 
 		currVal = inpDS[-1] 
@@ -62,7 +60,7 @@ def timestamp_from_datetime(t):
 
 def secondsSinceEpoch(dt):
 	epoch = datetime.datetime.utcfromtimestamp(0)
-	delta = dt.replace(tzinfo=None) - epoch
+	delta = dt - epoch
 	return int(delta.total_seconds())
 
 def getEarningsCalendar(instrument, startPeriod, endPeriod):

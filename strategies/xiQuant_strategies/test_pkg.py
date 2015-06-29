@@ -53,7 +53,7 @@ def redis_build_CSV_EOD(ticker, stdate, enddate):
 
 import dateutil.parser
 #stdate = dateutil.parser.parse('2005-06-15')
-stdate = dateutil.parser.parse('2005-06-15T08:00:00.000Z')
+stdate = dateutil.parser.parse('2005-01-01T08:00:00.000Z')
 enddate = dateutil.parser.parse('2014-12-31T08:00:00.000Z')
 #enddate = dateutil.parser.parse('2012-02-02')
 
@@ -64,10 +64,10 @@ enddate = dateutil.parser.parse('2014-12-31T08:00:00.000Z')
 
 print stdate, enddate
 
-util.Log.info("Got logger handle...")
-util.Log.info("Testing...")
-util.Log.info("Testing...")
-util.Log.info("Testing...")
+#util.Log.info("Got logger handle...")
+#util.Log.info("Testing...")
+#util.Log.info("Testing...")
+#util.Log.info("Testing...")
 
 #dateTime = dateutil.parser.parse('2011-04-20T08:00:00.000Z')
 #print "$$$Calender: ", xiQuantStrategyUtil.isEarnings("AAPL", dateTime, False)
@@ -93,9 +93,9 @@ util.Log.info("Testing...")
 #results_momentum_list = xiQuantStrategyUtil.tickersRankByMoneyFlow(enddate)
 #print results_momentum_list
 
-#results = xiQuantStrategyUtil.run_strategy_redis(20, "MA", 100000, stdate, enddate)
+results = xiQuantStrategyUtil.run_strategy_redis(20, "NFLX", 100000, stdate, enddate)
 #results = xiQuantStrategyUtil.run_strategy_TN(20, "NFLX", 100000, stdate, enddate)
-#print results.getPortfolioResult()
+print results.getPortfolioResult()
 #print results.getOrdersFilteredByMomentumRank(filterCriteria=3000)
 #print results.getOrders()
 

@@ -338,7 +338,8 @@ def add_feeds_EOD_redis( feed, ticker, stdate, enddate):
 
     bd = [] ##### initialize bar data.....
     for key in data_dict:
-        dateTime = dt.timestamp_to_datetime(key)
+        #dateTime = dt.timestamp_to_datetime(key)
+        dateTime = dt.timestamp_to_datetime(key).replace(tzinfo=None) 
         data = data_dict[key].split("|") ### split pipe delimted values
         bar = BasicBar(dateTime, 
             float(data[0]) , float(data[1]), float(data[2]), float(data[3]), float(data[4]), float(data[3]), Frequency.DAY)
@@ -543,8 +544,8 @@ def tickersRankByMoneyFlow(date):
     import collections
 
     momentum_rank = {}
-    #tickerList = util.getMasterTickerList()
-    tickerList = util.getTickerList()
+    tickerList = util.getMasterTickerList()
+    #tickerList = util.getTickerList()
     for x in range(len(tickerList)):
         moneyflow = redis_build_moneyflow(tickerList[x], (date - datetime.timedelta(days=10)), date)
         if len(moneyflow) > 1:
@@ -663,6 +664,26 @@ def processOptionsFile(inputfile, outputfile):
                     keyList.append(key) ### to track specific ticker option has been populated...
     return "Successfully processed"
 
+##### Orders filtered by momentum rank....
+def getOrdersFiltered(orders, instrument, filterCriteria=25):
+    filteredOrders = {}
+    
+    for key, value in orders.iteritems():
+
+        if value[0][1] == 'Buy' or value[0][1] == 'Sell':
+            dt = datetime.datetime.fromtimestamp(key)
+            #mom_rank_orderedlist = tickersRankByMoneyFlowPercent(dt)
+            mom_rank_orderedlist = tickersRankByMoneyFlow(dt)
+            rank = mom_rank_orderedlist.values().index(instrument) if instrument in mom_rank_orderedlist.values() else -1 ### Please return high number so that orders do not get filtered..
+            if rank <= filterCriteria:
+                filteredOrders[key] = value
+            else:
+                util.Log.info("Filtered Order of: " + instrument + " on date: " + dt.strftime("%B %d, %Y") + " rank: " + str(rank))
+        else:
+            filteredOrders[key] = value
+
+    return filteredOrders
+
 
     
    
@@ -699,7 +720,9 @@ def run_strategy_redis(bBandsPeriod, instrument, startPortfolio, startdate, endd
     strat.run()
 
     ####Populate orders from the backtest run...
-    results.addOrders(strat.getOrders())
+    filteredOrders = getOrdersFiltered(strat.getOrders(), instrument, filterCriteria = 20)
+    #results.addOrders(strat.getOrders())
+    results.addOrders(filteredOrders)
    
 
     results.addSeries("upper", strat.getBollingerBands().getUpperBand())
