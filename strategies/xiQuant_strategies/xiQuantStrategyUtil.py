@@ -176,6 +176,7 @@ class StrategyResults(object):
     def getOrders(self):
         return self.__orders
 
+    '''
     def getOrdersFilteredByMomentumRank(self, filterCriteria=25):
         filteredOrders = {}
         for key, value in self.__orders.iteritems():
@@ -193,7 +194,7 @@ class StrategyResults(object):
                 filteredOrders[key] = value
 
         return filteredOrders
-
+    '''
 
     def getOrdersFilteredByRules(self, filterCriteria=25):
         filteredOrders = {}
@@ -529,8 +530,7 @@ def tickersRankByMoneyFlowPercent(date):
     import collections
 
     momentum_rank = {}
-    #tickerList = util.getMasterTickerList()
-    tickerList = util.getTickerList()
+    tickerList = util.getMasterTickerList()
     for x in range(len(tickerList)):
         moneyflow = redis_build_moneyflow_percent(tickerList[x], (date - datetime.timedelta(days=10)), date)
         if len(moneyflow) > 1:
@@ -545,7 +545,6 @@ def tickersRankByMoneyFlow(date):
 
     momentum_rank = {}
     tickerList = util.getMasterTickerList()
-    #tickerList = util.getTickerList()
     for x in range(len(tickerList)):
         moneyflow = redis_build_moneyflow(tickerList[x], (date - datetime.timedelta(days=10)), date)
         if len(moneyflow) > 1:

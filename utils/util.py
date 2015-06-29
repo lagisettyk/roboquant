@@ -11,7 +11,7 @@ import StringIO
 redis_url=os.getenv('REDISCLOUD_URL', 'redis://localhost:6379')
 url = urlparse.urlparse(redis_url)
 pool = redis.ConnectionPool(host=url.hostname, port=url.port, password=url.password, db=0)
-#tickerList = []
+tickerList = []
 Log = None
 
 
@@ -49,28 +49,26 @@ def getTickerListWithSPY():
 	return tickerListWithSPY
 
 
-def getTickerList():
+def getTickerList(strategy):
 
-	#tickerList = ['NFLX', 'FDX']
-
-	tickerList = ['AAPL', 'AMZN', 'FDX', 'MA', 'NFLX', 'OCR', 'GD','NXPI', 'CVS', 'UNP', 'GILD', 'VRX', 'ACT', 'XLF','GOOGL', 'CF', 'URI', 'CP', 'WHR', 'IWM', 'UNH', 'VIAB', 'FLT', \
-	 'ODFL', 'ALL', 'V']
-	'''
 	if (len(tickerList) == 0):
-		#file_tickerlist = getRelativePath('cboesymbol.csv')
-		file_tickerlist = getRelativePath('SP500.csv')
-		#file_tickerlist = getRelativePath('cboesymbol_master.csv')
-		#file_tickerlist = getRelativePath('cboesymbol_1000.csv')
-		#logger = getLogger()
-		#tickerList = []
+		if strategy == 'CBOE-r100':
+			file_tickerlist = getRelativePath('cboesymbol.csv')
+		if strategy == 'SP-500':
+			file_tickerlist = getRelativePath('SP500.csv')
+		if strategy == 'CBOE-r1000':
+			file_tickerlist = getRelativePath('cboesymbol_1000.csv')
+		if strategy == 'CBOE-ALL':
+			file_tickerlist = getRelativePath('cboesymbol_master.csv')
+		if strategy == 'Abhi-26':
+			file_tickerlist = getRelativePath('Abhi_26.csv')
 		with open(file_tickerlist, 'rU') as csvfile:
 			reader = csv.DictReader(csvfile)
 			for row in reader:
-				#logger.info(row['Stock Symbol'])
 				tickerList.append(row['Stock Symbol'])
 		### Make sure file is explicitly closed even though with statement it was causing problems...
 		csvfile.close()
-	'''
+
 	return tickerList
 	
 def getMasterTickerList():

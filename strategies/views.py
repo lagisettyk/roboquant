@@ -147,7 +147,7 @@ def backtest(request):
     ### This is important to note json.dumps() convert python data structure to JSON form
 	return HttpResponse(json.dumps(results), content_type='application/json')
 
-def simulatepotfolio(redisURL, amount, startdate, enddate):
+def simulatepotfolio(redisURL, amount, strategy, startdate, enddate):
 	import redis
 	import json
 	import urlparse
@@ -160,7 +160,7 @@ def simulatepotfolio(redisURL, amount, startdate, enddate):
 	#import shutil
 	#import csv
 
-	tickerList = util.getTickerList()
+	tickerList = util.getTickerList(strategy)
 
 	redisConn = util.get_redis_conn(redisURL)
 	q = Queue(connection=redisConn, default_timeout=15000)  # no args implies the default queue
@@ -199,19 +199,6 @@ def simulatepotfolio(redisURL, amount, startdate, enddate):
 
 	fake_csv = util.make_fake_csv(dataRows)
 	print  "Successfully created master_orders fake_csv file...."
-
-	'''
-	#### Debug purpose write out Fake CSV file#######
-	with open('MasterOrders.csv', 'a') as csvfile:
-		writer = csv.DictWriter(csvfile, fieldnames=["timeSinceEpoch", "symbol", "action", "stopPrice"])
-		reader = csv.DictReader(fake_csv, fieldnames=["timeSinceEpoch", "symbol", "action", "stopPrice"])
-		for row in reader:
-			print row
-			writer.writerow(row)
-	print  "Successfully created master_orders debug file...."
-	### Initialize another fake csv after writing out to set seek to zero#####
-	fake_csv = util.make_fake_csv(dataRows)
-	'''
 
 	############### Run the master order for computing portfolio#########
 	jobPortfolio = q.enqueue(xiQuantStrategyUtil.run_master_strategy,int(amount), fake_csv)
@@ -259,7 +246,7 @@ def backtestPortfolio(request):
 	if jobid == 'NEW':
 		q = Queue(connection=redisConn, default_timeout=15000)  # no args implies the default queue
 		#q = Queue(connection=redisConn)  # no args implies the default queue
-		jobPortfolio = q.enqueue(simulatepotfolio, settings.REDIS_URL, int(amount), start_date, end_date)
+		jobPortfolio = q.enqueue(simulatepotfolio, settings.REDIS_URL, int(amount), strategy, start_date, end_date)
 
 		print  "Successfully submitted portfolio simulation..."
 		### Return just job id by kicking of redis job....

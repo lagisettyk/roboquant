@@ -76,8 +76,11 @@ $(document).ready( function() {
   $('#strategyList').on('click', '#dLabel', function(){
     console.log("inside dLabel")
     $('#showList').empty()
-    $('#showList').html('<li><a href="#" id="port_simulate">BB_Spread_strategy</a>'
-                         //+'</li><li><a href="#" id="port_simulate">TN_strategy</a></li>'
+    $('#showList').html('<li><a href="#" id="port_simulate">Abhi-26</a>'
+                         +'</li><li><a href="#" id="port_simulate">CBOE-r100</a></li>'
+                         +'</li><li><a href="#" id="port_simulate">SP-500</a></li>'
+                         +'</li><li><a href="#" id="port_simulate">CBOE-r1000</a></li>'
+                         +'</li><li><a href="#" id="port_simulate">CBOE-ALL</a></li>'
                         );
   });
 
