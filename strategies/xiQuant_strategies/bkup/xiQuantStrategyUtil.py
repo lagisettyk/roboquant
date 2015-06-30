@@ -664,7 +664,7 @@ def processOptionsFile(inputfile, outputfile):
     return "Successfully processed"
 
 ##### Orders filtered by momentum rank....
-def getOrdersFiltered(orders, instrument, filterCriteria=25):
+def getOrdersFiltered(orders, instrument, filterCriteria=20):
     filteredOrders = {}
     
     for key, value in orders.iteritems():
@@ -686,7 +686,7 @@ def getOrdersFiltered(orders, instrument, filterCriteria=25):
 
     
    
-def run_strategy_redis(bBandsPeriod, instrument, startPortfolio, startdate, enddate, indicators=True):
+def run_strategy_redis(bBandsPeriod, instrument, startPortfolio, startdate, enddate, filterCriteria=20, indicators=True):
 
     feed = redis_build_feed_EOD(instrument, startdate, enddate)
     #feed = build_feed_TN(instrument, startdate, enddate)
@@ -739,9 +739,13 @@ def run_strategy_redis(bBandsPeriod, instrument, startPortfolio, startdate, endd
         returnsAnalyzer = Returns()
         results = StrategyResults(strat, instList, returnsAnalyzer, plotSignals=False)
         strat.run()
-        filteredOrders = getOrdersFiltered(strat.getOrders(), instrument, filterCriteria = 20)
-        #results.addOrders(filteredOrders)
-        return filteredOrders
+        if filterCriteria == 10000:
+            orders = strat.getOrders()
+        else:
+            orders = getOrdersFiltered(strat.getOrders(), instrument, filterCriteria)
+            
+
+        return orders
     
     #return results
     

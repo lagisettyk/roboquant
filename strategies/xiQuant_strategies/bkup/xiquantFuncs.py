@@ -22,6 +22,9 @@ def dsToNumpyArray(ds, count):
 		pass
 	return ret
 
+def normalize(value, mean, stdDev):
+	return float((value - mean) / stdDev)
+
 def slope(inpDS, lookbackWin):
 	if lookbackWin > 2:
 		return indicator.LINEARREG_SLOPE(inpDS, lookbackWin)

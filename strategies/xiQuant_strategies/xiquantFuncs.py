@@ -25,7 +25,10 @@ def dsToNumpyArray(ds, count):
 def normalize(value, mean, stdDev):
 	return float((value - mean) / stdDev)
 
-def slope(inpDS, lookbackWin):
+def slope(val1, val2):
+	return numpy.arctan((val1 - val2) / 2) * 180 / numpy.pi
+
+def slopeForSeries(inpDS, lookbackWin):
 	if lookbackWin > 2:
 		return indicator.LINEARREG_SLOPE(inpDS, lookbackWin)
 	else:
