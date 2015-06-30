@@ -87,12 +87,15 @@ $(document).ready( function() {
   $('#strategyList').on('click','#port_simulate',function(){
       var amount = $('#InitialCash').val();
       var drp = $('#reportrange2').data('daterangepicker');
+      var rank = $('#rank').val();
       var strategy = $(this).text();
       var jobid = "NEW" /// This is to indicate new vs existing job polling...
-      //alert( "Initializing Portfolio simulation..." );
+      //alert( "Initializing Portfolio simulation... rank: "+rank );
       var intervalId = setInterval(function(){
+          //Set cursor to processing....
+          $("*").css("cursor", "progress");
           $.ajax({
-                  url: '/strategies/backtest_portfolio/?strategy='+strategy+'&jobid='+jobid+'&amount='+amount+"&stdate="+drp.startDate.toISOString()+"&enddate="+drp.endDate.toISOString(),
+                  url: '/strategies/backtest_portfolio/?strategy='+strategy+'&jobid='+jobid+'&amount='+amount+'&rank='+rank+"&stdate="+drp.startDate.toISOString()+"&enddate="+drp.endDate.toISOString(),
                   type: 'GET',
                   async: true,
                   dataType: "json",
@@ -104,9 +107,11 @@ $(document).ready( function() {
                   success: function (data) {
                     if (data.jobstatus == "SUCCESS")
                     {
-                        //// CLear the interval before ....
-                        console.log("Inside Success");
+                        //// CLear the interval & set back the cursor...
                         clearInterval(intervalId); 
+                        $("*").css("cursor", "default");
+                        
+                        console.log("Inside Success");
                         portseries = []
                         portseries[0] = {name: "portfolio value", data: data.seriesData};
                         portseries[1] = {name: "trades", data: data.flagData};
@@ -132,14 +137,14 @@ $(document).ready( function() {
                   complete: function( data, xhr, status ) {
                    //alert( "The request is complete!" );
                    //Change back cursor to normal...
-                   if (data.jobstatus != "SUCCESS")
+                   /*if (data.jobstatus != "SUCCESS")
                     {
-                        $("*").css("cursor", "default");
+                       $("*").css("cursor", "progress");
                     }
                     else
                     {
                         $("*").css("cursor", "default");
-                    }
+                    }*/
                   } 
             });
       }, 3000); /// interval function.....

@@ -147,7 +147,7 @@ def backtest(request):
     ### This is important to note json.dumps() convert python data structure to JSON form
 	return HttpResponse(json.dumps(results), content_type='application/json')
 
-def simulatepotfolio(redisURL, amount, strategy, startdate, enddate):
+def simulatepotfolio(redisURL, amount, strategy, startdate, enddate, filterRank):
 	import redis
 	import json
 	import urlparse
@@ -157,8 +157,7 @@ def simulatepotfolio(redisURL, amount, strategy, startdate, enddate):
 	import dateutil.parser
 	from utils import util
 	from xiQuant_strategies import xiQuantStrategyUtil
-	#import shutil
-	#import csv
+	
 
 	tickerList = util.getTickerList(strategy)
 
@@ -166,9 +165,9 @@ def simulatepotfolio(redisURL, amount, strategy, startdate, enddate):
 	q = Queue(connection=redisConn, default_timeout=15000)  # no args implies the default queue
 
 	jobList = []
-	rank = 20 #len(tickerList)/10
 	for ticker in tickerList:
-		jobList.append(q.enqueue(xiQuantStrategyUtil.run_strategy_redis, 20, ticker, int(amount), startdate, enddate, indicators=False, result_ttl=3000))
+		#jobList.append(q.enqueue(xiQuantStrategyUtil.run_strategy_redis, 20, ticker, int(amount), startdate, enddate, indicators=False, result_ttl=3000))
+		jobList.append(q.enqueue(xiQuantStrategyUtil.run_strategy_redis, 20, ticker, int(amount), startdate, enddate, filterRank, indicators=False))
 
 	#### Wait in loop until all of them are successfull
 	master_orders = [] #### populate master list of  orders dictionary...
@@ -235,18 +234,19 @@ def backtestPortfolio(request):
 		stdate = request.GET['stdate']
 		enddate = request.GET['enddate']
 		strategy = request.GET['strategy']
+		filterRank = request.GET['rank']
+
 
 	start_date = dateutil.parser.parse(stdate)
 	end_date = dateutil.parser.parse(enddate)
 
-	print start_date, end_date
 	redisConn = util.get_redis_conn(settings.REDIS_URL)
 	#redisConn = util.get_redis_conn_nopool(settings.REDIS_URL)
 	
 	if jobid == 'NEW':
 		q = Queue(connection=redisConn, default_timeout=15000)  # no args implies the default queue
 		#q = Queue(connection=redisConn)  # no args implies the default queue
-		jobPortfolio = q.enqueue(simulatepotfolio, settings.REDIS_URL, int(amount), strategy, start_date, end_date)
+		jobPortfolio = q.enqueue(simulatepotfolio, settings.REDIS_URL, int(amount), strategy, start_date, end_date, int(filterRank))
 
 		print  "Successfully submitted portfolio simulation..."
 		### Return just job id by kicking of redis job....
