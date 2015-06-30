@@ -1,0 +1,33 @@
+{"BB_Spread_Call": {
+					"OR": {
+							"Entry_Day": {
+											"Stop_Limit": "Open_Plus_Close_By_2"
+										},
+							"Day_Two": {
+										"Stop_Limit": "Below_Day_Low"
+								},
+							"Onwards": {
+										"AND": {
+												"BB_Lower_Band": "Curves_In",
+												"Stop_Limit": "2_percent_below_Close"
+										}
+								}
+						}
+				},
+"BB_Spread_Put": {
+					"OR": {
+							"Entry_Day": {
+											"Stop_Limit": "Open_Plus_Close_By_2"
+										},
+							"Day_Two": {
+										"Stop_Limit": "Above_Day_High"
+								},
+							"Onwards": {
+										"AND": {
+												"BB_Lower_Band": "Curves_In",
+												"Stop_Limit": "2_percent_Above_Open"
+										}
+								}
+						}
+				}
+		}
