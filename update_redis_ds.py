@@ -5,6 +5,11 @@ import dateutil.parser
 from Quandl import Quandl
 import redis
 
+import sys
+sys.path.append('/home/parallels/Code/heroku-envbased/roboquant/strategies/')
+
+from xiQuant_strategies import xiQuantStrategyUtil
+
 ### Initialize global...
 histStartDate = '2005-01-01'
 #logger = util.getLogger('Quandl.log')
@@ -84,5 +89,27 @@ def populate_redis_eod(redisConn, tickerList, datasource, startdate, enddate):
 	status = "successfully populated redis store...."
 	return status
 
+def populate_redis_moneyflow(redisConn, tickerList, startdate, enddate):
 
+	for ticker in range(len(tickerList)):
+		moneyflowList = xiQuantStrategyUtil.redis_build_moneyflow(tickerList[ticker], startdate, enddate)
+		print "Currently processing ticker: ", ticker
+		for k in range(len(moneyflowList)):
+			if moneyflowList[k][1] is not None:
+				try:
+					redisConn.zadd("cashflow:"+str(moneyflowList[k][0]), float(moneyflowList[k][1]), tickerList[ticker])
+				except Exception,e: 
+					logger.debug(tickerList[ticker] +": cashflow data issue" + str(e))
+					pass
+	status = "successfully populated redis store with cashflow data..."
+	return status
+
+def populate_redis_moneyflow_history(tickerList):
+	redisConn = util.get_redis_conn()
+	return populate_redis_moneyflow(redisConn, tickerList, startdate=dateutil.parser.parse(histStartDate), 
+		                                                  enddate=(datetime.date.today() - datetime.timedelta(days=1)))
+
+
+
+	
 

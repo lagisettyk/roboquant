@@ -78,3 +78,5 @@ def isEarnings(earningsCalList, dateTime):
 	else:
 		dateTime = dateTime + datetime.timedelta(days=1)
 	return dateTime.date() in earningsCalList
+
+

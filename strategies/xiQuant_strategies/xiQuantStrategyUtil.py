@@ -671,13 +671,19 @@ def getOrdersFiltered(orders, instrument, filterCriteria=20):
 
         if value[0][1] == 'Buy' or value[0][1] == 'Sell':
             dt = datetime.datetime.fromtimestamp(key)
+            seconds = mktime(dt.timetuple())
+            keyvalue = int(seconds)*1000
             #mom_rank_orderedlist = tickersRankByMoneyFlowPercent(dt)
-            mom_rank_orderedlist = tickersRankByMoneyFlow(dt)
-            rank = mom_rank_orderedlist.values().index(instrument) if instrument in mom_rank_orderedlist.values() else -1 ### Please return high number so that orders do not get filtered..
-            if rank <= filterCriteria:
-                filteredOrders[key] = value
-            else:
-                util.Log.info("Filtered Order of: " + instrument + " on date: " + dt.strftime("%B %d, %Y") + " rank: " + str(rank))
+            #mom_rank_orderedlist = tickersRankByMoneyFlow(dt)
+            #rank = mom_rank_orderedlist.values().index(instrument) if instrument in mom_rank_orderedlist.values() else -1 ### Please return high number so that orders do not get filtered..
+            rediskey = "cashflow:"+str(keyvalue)
+            redisConn = util.get_redis_conn()
+            rank = redisConn.zrevrank(rediskey, instrument)
+            if rank is not None:
+                if rank <= filterCriteria:
+                    filteredOrders[key] = value
+                else:
+                    util.Log.info("Filtered Order of: " + instrument + " on date: " + dt.strftime("%B %d, %Y") + " rank: " + str(rank))
         else:
             filteredOrders[key] = value
 
