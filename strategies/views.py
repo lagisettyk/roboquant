@@ -173,17 +173,21 @@ def simulatepotfolio(redisURL, amount, strategy, startdate, enddate, filterRank)
 	master_orders = [] #### populate master list of  orders dictionary...
 	jobID = 1
 	for job in jobList:
-		print "Currently processing job id: ", jobID
-		sleep = True
-		while(sleep):
-			time.sleep(1)
-			if job.get_status() == 'failed' or job.get_status()=='finished':
-				sleep = False
-		if job.get_status() == 'finished' and any(job.result):
-			master_orders.append(job.result)
-			#master_orders.append(job.result.getOrdersFilteredByMomentumRank(filterCriteria=rank))
-			#master_orders.append(job.result.getOrdersFilteredByRules())
-		jobID +=1
+		try:
+			print "Currently processing job id: ", jobID
+			sleep = True
+			while(sleep):
+				time.sleep(1)
+				if job.get_status() == 'failed' or job.get_status()=='finished':
+					sleep = False
+			if job.get_status() == 'finished' and any(job.result):
+				master_orders.append(job.result)
+				#master_orders.append(job.result.getOrdersFilteredByMomentumRank(filterCriteria=rank))
+				#master_orders.append(job.result.getOrdersFilteredByRules())
+			jobID +=1
+		except Exception,e:
+			print "Entered into exception block while processing:...", str(e)
+			pass ### Make sure you move on with other job...
 
 	########### Iterate master orders file.... #############
 	dataRows = []
