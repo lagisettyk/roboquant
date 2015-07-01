@@ -42,7 +42,7 @@ def scheduled_job():
 	print job.result   # => 889
 
 
-@sched.scheduled_job('date')
+#@sched.scheduled_job('date')
 #@sched.scheduled_job('cron', day_of_week='mon-fri', hour=17)
 def populate_moneyflow():
 	print('This job is to populate cashflow')

@@ -166,8 +166,8 @@ def simulatepotfolio(redisURL, amount, strategy, startdate, enddate, filterRank)
 
 	jobList = []
 	for ticker in tickerList:
-		jobList.append(q.enqueue(xiQuantStrategyUtil.run_strategy_redis, 20, ticker, int(amount), startdate, enddate, indicators=False, result_ttl=3000))
-		#jobList.append(q.enqueue(xiQuantStrategyUtil.run_strategy_redis, 20, ticker, int(amount), startdate, enddate, filterRank, indicators=False))
+		jobList.append(q.enqueue(xiQuantStrategyUtil.run_strategy_redis, 20, ticker, int(amount), startdate, enddate, filterRank, indicators=False, result_ttl=3000))
+		#jobList.append(q.enqueue(xiQuantStrategyUtil.run_strategy_redis, 20, ticker, int(amount), startdate, enddate,  filterRank, indicators=False))
 
 	#### Wait in loop until all of them are successfull
 	master_orders = [] #### populate master list of  orders dictionary...
