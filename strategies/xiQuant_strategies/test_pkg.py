@@ -52,10 +52,10 @@ def redis_build_CSV_EOD(ticker, stdate, enddate):
     	a.writerows(bd)
 
 import dateutil.parser
-#stdate = dateutil.parser.parse('2005-06-15')
+stdate = dateutil.parser.parse('2005-06-15')
 stdate = dateutil.parser.parse('2005-06-30T08:00:00.000Z')
 enddate = dateutil.parser.parse('2014-12-31T08:00:00.000Z')
-#enddate = dateutil.parser.parse('2012-02-02')
+#enddate = dateutil.parser.parse('2012-12-12')
 
 #datetime.datetime.combine(datetime.date(2011, 01, 01), datetime.time(10, 23)) ### example for combining date and time...
 
@@ -93,7 +93,7 @@ print stdate, enddate
 #results_momentum_list = xiQuantStrategyUtil.tickersRankByMoneyFlow(enddate)
 #print results_momentum_list
 
-results = xiQuantStrategyUtil.run_strategy_redis(20, "NFLX", 100000, stdate, enddate, filterCriteria=80, indicators=False)
+results = xiQuantStrategyUtil.run_strategy_redis(20, "IWM", 100000, stdate, enddate, filterCriteria=5000, indicators=False)
 print results
 #results = xiQuantStrategyUtil.run_strategy_redis(20, "NFLX", 100000, stdate, enddate)
 #results = xiQuantStrategyUtil.run_strategy_TN(20, "NFLX", 100000, stdate, enddate)
