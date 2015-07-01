@@ -4,9 +4,12 @@ from time import mktime
 import dateutil.parser
 from Quandl import Quandl
 import redis
+import os
 
 import sys
-sys.path.append('/home/parallels/Code/heroku-envbased/roboquant/strategies/')
+sys.path.append(os.path.dirname(__file__)+'/strategies')
+
+#print sys.path
 
 from xiQuant_strategies import xiQuantStrategyUtil
 
