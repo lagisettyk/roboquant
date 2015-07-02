@@ -671,13 +671,35 @@ def getOrdersFiltered(orders, instrument, filterCriteria=20):
 
         if value[0][1] == 'Buy' or value[0][1] == 'Sell':
             dt = datetime.datetime.fromtimestamp(key)
-            #mom_rank_orderedlist = tickersRankByMoneyFlowPercent(dt)
+            '''
             mom_rank_orderedlist = tickersRankByMoneyFlow(dt)
             rank = mom_rank_orderedlist.values().index(instrument) if instrument in mom_rank_orderedlist.values() else -1 ### Please return high number so that orders do not get filtered..
+            print "^^^^^^^^^^^^^^^^^^^^^^^^@@@@@@@@@@@@@: ", dt, rank, mom_rank_orderedlist.keys()[rank]
             if rank <= filterCriteria:
                 filteredOrders[key] = value
             else:
                 util.Log.info("Filtered Order of: " + instrument + " on date: " + dt.strftime("%B %d, %Y") + " rank: " + str(rank))
+            '''
+            #### Please note this date shift to make sure CASHFLOW rank is based on previous day...
+            dtactual =  (dt - datetime.timedelta(days=1))
+            seconds = mktime(dtactual.timetuple()) #### please note you need to get money flow of the one day before......
+            keyvalue = int(seconds)*1000
+            rediskey = "cashflow:"+str(keyvalue)
+            redisConn = util.get_redis_conn()
+            rank = redisConn.zrevrank(rediskey, instrument) 
+            ##### This is to handle weekdays and holidays.....
+            while rank is None:
+                dtactual = (dtactual - datetime.timedelta(days=1))
+                seconds = mktime(dtactual.timetuple()) #### please note you need to get money flow of the one day before......
+                keyvalue = int(seconds)*1000
+                rediskey = "cashflow:"+str(keyvalue)
+                rank = redisConn.zrevrank(rediskey, instrument) 
+            #print "^^^^^^^^^^^^^^^^^^^^^^^^@@@@@@@@@@@@@: ", dt, dtactual, rediskey, rank
+            if rank is not None:
+                if rank <= filterCriteria:
+                    filteredOrders[key] = value
+                else:
+                    util.Log.info("Filtered Order of: " + instrument + " on date: " + dt.strftime("%B %d, %Y") + " rank: " + str(rank))
         else:
             filteredOrders[key] = value
 

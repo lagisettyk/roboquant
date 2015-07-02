@@ -34,7 +34,6 @@ import xiquantStrategyParams as consts
 import divergence
 
 ########Kiran's additions
-import logging.handlers
 import os
 from utils import util
 module_dir = os.path.dirname(__file__)  # get current directory
@@ -112,12 +111,11 @@ class BBSpread(strategy.BacktestingStrategy):
 
 	def initLogging(self):
 		logger = logging.getLogger("xiQuant")
-		logger.setLevel(logging.INFO)
+		logger.propagate = False # stop the logs from going to the console
+		logger.setLevel(logging.CRITICAL)
 		logFileName = "BB_Spread_" + self.__instrument + ".log"
-		handler = logging.handlers.RotatingFileHandler(
-              logFileName, maxBytes=1024 * 1024 * 1024, backupCount=5)
-		#handler = logging.FileHandler(logFileName)
-		handler.setLevel(logging.INFO)
+		handler = logging.FileHandler(logFileName, delay=True)
+		handler.setLevel(logging.CRITICAL)
 		formatter = logging.Formatter('%(asctime)s %(name)-12s %(levelname)-8s %(message)s')
 		handler.setFormatter(formatter)
 		logger.addHandler(handler)
@@ -550,17 +548,15 @@ class BBSpread(strategy.BacktestingStrategy):
 		# Both the bands MUST open up like a crocodile mouth.
 		if self.__inpStrategy["BB_Spread_Call"]["BB_Upper_And_BB_Lower"]["AND"][0] == "BB_Upper_Croc_Open" and self.__inpStrategy["BB_Spread_Call"]["BB_Upper_And_BB_Lower"]["AND"][1] == "BB_Lower_Croc_Open":
 			if len(self.__bbands.getLowerBand()) > consts.BB_SLOPE_LOOKBACK_WINDOW:
-				#lowerSlope = xiquantFuncs.slope(self.__bbands.getLowerBand(), consts.BB_SLOPE_LOOKBACK_WINDOW)
 				normLowerBand = xiquantFuncs.normalize(self.__bbands.getLowerBand()[-1], self.__smaLowerTiny[-1], self.__stdDevLower[-1])
 				normPrevLowerBand = xiquantFuncs.normalize(self.__bbands.getLowerBand()[-2], self.__smaLowerTiny[-2], self.__stdDevLower[-2])
-				lowerSlope = numpy.arctan((normLowerBand - normPrevLowerBand) / consts.BB_SLOPE_LOOKBACK_WINDOW) * 180 / numpy.pi
+				lowerSlope = xiquantFuncs.slope(normLowerBand, normPrevLowerBand)
 				self.__logger.debug("Lower Slope: %d" % lowerSlope)
 		
 			if len(self.__bbands.getUpperBand()) >= consts.BB_SLOPE_LOOKBACK_WINDOW:
-				#upperSlope = xiquantFuncs.slope(self.__bbands.getUpperBand(), consts.BB_SLOPE_LOOKBACK_WINDOW)
 				normUpperBand = xiquantFuncs.normalize(self.__bbands.getUpperBand()[-1], self.__smaUpperTiny[-1], self.__stdDevUpper[-1])
 				normPrevUpperBand = xiquantFuncs.normalize(self.__bbands.getUpperBand()[-2], self.__smaUpperTiny[-2], self.__stdDevUpper[-2])
-				upperSlope = numpy.arctan((normUpperBand - normPrevUpperBand) / consts.BB_SLOPE_LOOKBACK_WINDOW) * 180 / numpy.pi
+				upperSlope = xiquantFuncs.slope(normUpperBand, normPrevUpperBand)
 				self.__logger.debug("Upper Slope: %d" % upperSlope)
 		
 			if lowerSlope <= -1 * consts.BB_CROC_SLOPE:
@@ -848,17 +844,16 @@ class BBSpread(strategy.BacktestingStrategy):
 		if self.__inpStrategy["BB_Spread_Put"]["BB_Upper_And_BB_Lower"]["AND"][0] == "BB_Upper_Croc_Open" and \
 			self.__inpStrategy["BB_Spread_Put"]["BB_Upper_And_BB_Lower"]["AND"][1] == "BB_Lower_Croc_Open":
 			if len(self.__bbands.getLowerBand()) > consts.BB_SLOPE_LOOKBACK_WINDOW:
-				#lowerSlope = xiquantFuncs.slope(self.__bbands.getLowerBand(), consts.BB_SLOPE_LOOKBACK_WINDOW)
 				normLowerBand = xiquantFuncs.normalize(self.__bbands.getLowerBand()[-1], self.__smaLowerTiny[-1], self.__stdDevLower[-1])
 				normPrevLowerBand = xiquantFuncs.normalize(self.__bbands.getLowerBand()[-2], self.__smaLowerTiny[-2], self.__stdDevLower[-2])
-				lowerSlope = numpy.arctan((normLowerBand - normPrevLowerBand) / consts.BB_SLOPE_LOOKBACK_WINDOW) * 180 / numpy.pi
+				lowerSlope = xiquantFuncs.slope(normLowerBand, normPrevLowerBand)
 				self.__logger.debug("Lower Slope: %d" % lowerSlope)
 		
 			if len(self.__bbands.getUpperBand()) >= consts.BB_SLOPE_LOOKBACK_WINDOW:
 				#upperSlope = xiquantFuncs.slope(self.__bbands.getUpperBand(), consts.BB_SLOPE_LOOKBACK_WINDOW)
 				normUpperBand = xiquantFuncs.normalize(self.__bbands.getUpperBand()[-1], self.__smaUpperTiny[-1], self.__stdDevUpper[-1])
 				normPrevUpperBand = xiquantFuncs.normalize(self.__bbands.getUpperBand()[-2], self.__smaUpperTiny[-2], self.__stdDevUpper[-2])
-				upperSlope = numpy.arctan((normUpperBand - normPrevUpperBand) / consts.BB_SLOPE_LOOKBACK_WINDOW) * 180 / numpy.pi
+				upperSlope = xiquantFuncs.slope(normUpperBand, normPrevUpperBand)
 				self.__logger.debug("Upper Slope: %d" % upperSlope)
 		
 			if upperSlope >= consts.BB_CROC_SLOPE:
@@ -1138,16 +1133,11 @@ class BBSpread(strategy.BacktestingStrategy):
 	def exitLongSignal(self, bar):
 		if len(self.__bbands.getLowerBand()) >= consts.BB_SLOPE_LOOKBACK_WINDOW:
 			lowerBand = self.__bbands.getLowerBand()[-1]
-			precLowerBand = float("%0.2f" % self.__bbands.getLowerBand()[-1])
 			prevLowerBand = self.__bbands.getLowerBand()[-2]
-			precPrevLowerBand = float("%0.2f" % self.__bbands.getLowerBand()[-2])
-			self.__logger.debug("Previous lower band: %.4f" % precPrevLowerBand)
-			#self.__logger.debug("Prev Lower Band: %.4f" % Decimal(prevLowerBand))
-			#if Decimal(lowerBand) > Decimal(prevLowerBand):
-			#if precLowerBand > precPrevLowerBand:
-			normLowerBand = xiquantFuncs.normalize(self.__bbands.getLowerBand()[-1], self.__smaLowerTiny[-1], self.__stdDevLower[-1])
-			normPrevLowerBand = xiquantFuncs.normalize(self.__bbands.getLowerBand()[-2], self.__smaLowerTiny[-2], self.__stdDevLower[-2])
-			lowerSlope = numpy.arctan((normLowerBand - normPrevLowerBand) / consts.BB_SLOPE_LOOKBACK_WINDOW) * 180 / numpy.pi
+			self.__logger.debug("Previous lower band: %.4f" % prevLowerBand)
+			normLowerBand = xiquantFuncs.normalize(lowerBand, self.__smaLowerTiny[-1], self.__stdDevLower[-1])
+			normPrevLowerBand = xiquantFuncs.normalize(prevLowerBand, self.__smaLowerTiny[-2], self.__stdDevLower[-2])
+			lowerSlope = xiquantFuncs.slope(normLowerBand, normPrevLowerBand)
 			self.__logger.debug("Lower Slope: %d" % lowerSlope)
 			if lowerSlope > 0:
 				# Reset the first croc mouth opening marker as the mouth is begin to close
@@ -1231,16 +1221,11 @@ class BBSpread(strategy.BacktestingStrategy):
 	def exitShortSignal(self, bar):
 		if len(self.__bbands.getUpperBand()) >= consts.BB_SLOPE_LOOKBACK_WINDOW:
 			upperBand = self.__bbands.getUpperBand()[-1]
-			precUpperBand = float("%0.2f" % self.__bbands.getUpperBand()[-1])
 			prevUpperBand = self.__bbands.getUpperBand()[-2]
-			precPrevUpperBand = float("%0.2f" % self.__bbands.getUpperBand()[-2])
-			self.__logger.debug("Previous upper band: %.4f" % precPrevUpperBand)
-			#self.__logger.debug("Prev Upper Band: %.4f" % Decimal(prevUpperBand))
-			#if Decimal(upperBand) < Decimal(prevUpperBand):
-			#if precUpperBand < precPrevUpperBand:
-			normUpperBand = xiquantFuncs.normalize(self.__bbands.getUpperBand()[-1], self.__smaUpperTiny[-1], self.__stdDevUpper[-1])
-			normPrevUpperBand = xiquantFuncs.normalize(self.__bbands.getUpperBand()[-2], self.__smaUpperTiny[-2], self.__stdDevUpper[-2])
-			upperSlope = numpy.arctan((normUpperBand - normPrevUpperBand) / consts.BB_SLOPE_LOOKBACK_WINDOW) * 180 / numpy.pi
+			self.__logger.debug("Previous upper band: %.4f" % prevUpperBand)
+			normUpperBand = xiquantFuncs.normalize(upperBand, self.__smaUpperTiny[-1], self.__stdDevUpper[-1])
+			normPrevUpperBand = xiquantFuncs.normalize(prevUpperBand, self.__smaUpperTiny[-2], self.__stdDevUpper[-2])
+			upperSlope = xiquantFuncs.slope(normUpperBand, normPrevUpperBand)
 			self.__logger.debug("Upper Slope: %d" % upperSlope)
 			if upperSlope < 0:
 				# Reset the first croc mouth opening marker as the mouth is begin to close
@@ -1350,7 +1335,7 @@ def run_strategy(bBandsPeriod, instrument, startPortfolio, startPeriod, endPerio
 		plt1.getInstrumentSubplot(instrument).addDataSeries("EMA Signal", strat.getEMASignal())
 
 		strat.run()
-		print strat.getOrders()
+		#print strat.getOrders()
 
 		if plot:
 			plt.plot()

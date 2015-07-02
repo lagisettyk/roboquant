@@ -157,6 +157,7 @@ def simulatepotfolio(redisURL, amount, strategy, startdate, enddate, filterRank)
 	import dateutil.parser
 	from utils import util
 	from xiQuant_strategies import xiQuantStrategyUtil
+	import operator
 	
 
 	tickerList = util.getTickerList(strategy)
@@ -166,7 +167,7 @@ def simulatepotfolio(redisURL, amount, strategy, startdate, enddate, filterRank)
 
 	jobList = []
 	for ticker in tickerList:
-		jobList.append(q.enqueue(xiQuantStrategyUtil.run_strategy_redis, 20, ticker, int(amount), startdate, enddate, filterRank, indicators=False, result_ttl=3000))
+		jobList.append(q.enqueue(xiQuantStrategyUtil.run_strategy_redis, 20, ticker, int(amount), startdate, enddate, filterRank, indicators=False, result_ttl=5000))
 		#jobList.append(q.enqueue(xiQuantStrategyUtil.run_strategy_redis, 20, ticker, int(amount), startdate, enddate,  filterRank, indicators=False))
 
 	#### Wait in loop until all of them are successfull
@@ -198,7 +199,14 @@ def simulatepotfolio(redisURL, amount, strategy, startdate, enddate, filterRank)
 			row.append(value[0][0])
 			row.append(value[0][1])
 			row.append(value[0][2])
+			#row.append(value[0][3]) #### added for rank
 			dataRows.append(row)
+
+	######### before passing let's sort orders based on moneyness rank
+	#####################################################################
+	#sorted_datarows = sorted(dataRows, key = lambda x: (int(x[1]), int(x[3])))
+	#dataRows.sort(key = operator.itemgetter(0, 4))
+
 
 	fake_csv = util.make_fake_csv(dataRows)
 	print  "Successfully created master_orders fake_csv file...."
