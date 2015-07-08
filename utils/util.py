@@ -7,6 +7,7 @@ import logging.handlers
 import csv
 import dateutil.parser
 import StringIO
+import datetime
 
 redis_url=os.getenv('REDISCLOUD_URL', 'redis://localhost:6379')
 url = urlparse.urlparse(redis_url)
@@ -43,7 +44,7 @@ def getRelativePath(filename):
 	return os.path.join(getCurrentDir(), filename)  # get current directory
 
 def getTickerListWithSPY():
-	tickerListWithSPY = ['AAPL', 'AMZN', 'FDX', 'MA', 'NFLX', 'OCR', 'GD','NXPI', 'CVS', 'UNP', 'GILD', 'VRX', 'XLF','GOOGL', 'CF', 'URI', 'CP', 'WHR', 'IWM', 'UNH', 'VIAB', 'FLT', \
+	tickerListWithSPY = ['AAPL', 'AMZN', 'FDX', 'MA', 'NFLX', 'OCR', 'GD','NXPI', 'CVS', 'UNP', 'GILD', 'VRX', 'XLF','GOOG', 'CF', 'URI', 'CP', 'WHR', 'IWM', 'UNH', 'VIAB', 'FLT', \
 	 'ODFL', 'ALL', 'V', 'SPY']
 
 	return tickerListWithSPY
@@ -84,7 +85,9 @@ def getMasterTickerList():
 
 	return tickerList
 
-
+def getRedisEffectiveDates(startdate, enddate):
+	return  (startdate - datetime.timedelta(days=1)), (enddate + datetime.timedelta(days=1))
+    
 
 
 def getLogger(name='default.log'):

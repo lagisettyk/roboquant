@@ -323,6 +323,10 @@ def add_feeds_EOD_redis( feed, ticker, stdate, enddate):
     from pyalgotrade.utils import dt
     from pyalgotrade.bar import BasicBar, Frequency
 
+    ###### Please note zrangebyscore returns between values the scores to make it include both start date and end date as part of
+    ######## data series we need to do date arithmetic on passed in data ################
+    stdate, enddate = util.getRedisEffectiveDates(stdate, enddate)
+
     seconds = mktime(stdate.timetuple())
     seconds2 = mktime(enddate.timetuple())
 
@@ -359,6 +363,10 @@ def redis_build_ADR_ndays(ticker, nDays, stdate, enddate):
     import datetime
     from time import mktime
     from pyalgotrade.utils import dt
+
+    ###### Please note zrangebyscore returns between values the scores to make it include both start date and end date as part of
+    ######## data series we need to do date arithmetic on passed in data ################
+    stdate, enddate = util.getRedisEffectiveDates(stdate, enddate)
 
     seconds = mktime(stdate.timetuple())
     seconds2 = mktime(enddate.timetuple())
@@ -405,6 +413,10 @@ def redis_build_volume_sma_ndays(ticker, nDays, stdate, enddate):
     from time import mktime
     from pyalgotrade.utils import dt
 
+    ###### Please note zrangebyscore returns between values the scores to make it include both start date and end date as part of
+    ######## data series we need to do date arithmetic on passed in data ################
+    stdate, enddate = util.getRedisEffectiveDates(stdate, enddate)
+
     seconds = mktime(stdate.timetuple())
     seconds2 = mktime(enddate.timetuple())
     data_dict = {}
@@ -446,6 +458,11 @@ def redis_build_sma_3days(ticker, stdate, enddate):
     from time import mktime
     from pyalgotrade.utils import dt
 
+
+    ###### Please note zrangebyscore returns between values the scores to make it include both start date and end date as part of
+    ######## data series we need to do date arithmetic on passed in data ################
+    stdate, enddate = util.getRedisEffectiveDates(stdate, enddate)
+
     seconds = mktime(stdate.timetuple())
     seconds2 = mktime(enddate.timetuple())
     data_dict = {}
@@ -480,6 +497,75 @@ def redis_build_sma_3days(ticker, stdate, enddate):
         j +=1
     return sma_3days
 
+
+def tickersRankByCashFlow(date, sortOrder):
+    import collections
+
+    momentum_rank = {}
+    tickerList = util.getMasterTickerList()
+    for x in range(len(tickerList)):
+        moneyflow = cashflow_timeseries_TN(tickerList[x], (date - datetime.timedelta(days=10)), date)
+        if len(moneyflow) > 1:
+            data_point = moneyflow[len(moneyflow)-1]
+            momentum_rank[data_point[1]] = tickerList[x]
+    
+    if sortOrder == 'Reverse':
+        return collections.OrderedDict(sorted(momentum_rank.items(), reverse=True))
+    else:
+        return collections.OrderedDict(sorted(momentum_rank.items(), reverse=False))
+
+def cashflow(ticker, date):
+    cashflow = cashflow_timeseries_TN(ticker, (date - datetime.timedelta(days=10)), date)
+    return cashflow[-1]
+    
+
+
+def cashflow_timeseries_TN(ticker, startdate, enddate):
+
+    ###### Please note zrangebyscore returns between values the scores to make it include both start date and end date as part of
+    ######## data series we need to do date arithmetic on passed in data ################
+    startdate, enddate = util.getRedisEffectiveDates(startdate, enddate)
+
+    seconds = mktime(startdate.timetuple())
+    seconds2 = mktime(enddate.timetuple())
+    data_dict = {}
+    try:
+        redisConn = util.get_redis_conn()
+        ticker_data = redisConn.zrangebyscore(ticker + ":EOD", int(seconds), int(seconds2), 0, -1, True)
+        if(len(ticker_data) > 1):
+            data_dict = redis_listoflists_to_dict(ticker_data)
+    except Exception,e:
+        print str(e)
+        pass
+
+    cashflow_accum = []
+    keys = sorted(data_dict.keys())
+    i = 0 
+    j = 2
+    while j < len(keys):
+        data_point = []
+        cashflow = 0
+        timestamp = keys[j-1]
+        #timestamp = keys[j]
+        keyList = keys[i:j]
+        priceList = []
+        volumeList = []
+        for key in keyList:
+            data = data_dict[key].split("|")
+            priceList.append(float(data[3]))
+            volumeList.append(float(data[4]))
+
+        cashflow =  (priceList[1] - priceList[0]) * volumeList[1]
+        seconds = mktime(datetime.datetime.fromtimestamp(timestamp).timetuple())
+        data_point.append(int(seconds)*1000)
+        data_point.append(cashflow)
+        cashflow_accum.append(data_point)
+        i +=1
+        j +=1
+
+    return cashflow_accum
+
+
 def moneyflow(ticker, date):
     moneyflow = redis_build_moneyflow(ticker, (date - datetime.timedelta(days=10)), date)
     return moneyflow[-1]
@@ -499,6 +585,7 @@ def redis_build_moneyflow(ticker, stdate, enddate):
         seconds = mktime(datetime.datetime.fromtimestamp(sma_3days[x+1][0]).timetuple())
         data_point.append(int(seconds)*1000) ### datetime in milliseconds...
         data_point.append(sma_3days[x+1][1] - sma_3days[x][1])
+        #data_point.append(sma_3days[x+1][1])
         moneyflow.append(data_point)
     return moneyflow
 
@@ -526,7 +613,7 @@ def redis_build_moneyflow_percent(ticker, stdate, enddate):
         moneyflow.append(data_point)
     return moneyflow
 
-def tickersRankByMoneyFlowPercent(date):
+def tickersRankByMoneyFlowPercent(date, sortOrder):
     import collections
 
     momentum_rank = {}
@@ -535,12 +622,16 @@ def tickersRankByMoneyFlowPercent(date):
         moneyflow = redis_build_moneyflow_percent(tickerList[x], (date - datetime.timedelta(days=10)), date)
         if len(moneyflow) > 1:
             data_point = moneyflow[len(moneyflow)-1]
+            #data_point = moneyflow[len(moneyflow)-2]
             momentum_rank[data_point[1]] = tickerList[x]
         time.sleep(0.0001)
 
-    return collections.OrderedDict(sorted(momentum_rank.items(), reverse=True))
+    if sortOrder == 'Reverse':
+        return collections.OrderedDict(sorted(momentum_rank.items(), reverse=True))
+    else:
+        return collections.OrderedDict(sorted(momentum_rank.items(), reverse=False))
 
-def tickersRankByMoneyFlow(date):
+def tickersRankByMoneyFlow(date, sortOrder):
     import collections
 
     momentum_rank = {}
@@ -550,9 +641,10 @@ def tickersRankByMoneyFlow(date):
         if len(moneyflow) > 1:
             data_point = moneyflow[len(moneyflow)-1]
             momentum_rank[data_point[1]] = tickerList[x]
-        #time.sleep(0.0001)
-
-    return collections.OrderedDict(sorted(momentum_rank.items(), reverse=True))
+    if sortOrder == 'Reverse':
+        return collections.OrderedDict(sorted(momentum_rank.items(), reverse=True))
+    else:
+        return collections.OrderedDict(sorted(momentum_rank.items(), reverse=False))
 
 def build_feed_TN(ticker, stdate, enddate):
     from pyalgotrade.bar import BasicBar, Frequency
@@ -588,7 +680,6 @@ def getEarningsCal(instrument):
     import csv
     import dateutil.parser
 
-
     cal = []
     file_cal = util.getRelativePath('earnings_cal.csv')
     with open(file_cal, 'rU') as csvfile:
@@ -597,24 +688,15 @@ def getEarningsCal(instrument):
             symbol = row['Ticker']
             if symbol == instrument :
                 if row['Flag'] == 'A':
-                    ### Add additional day ...
-                    if dateutil.parser.parse(row['Cal_Date']).date().weekday == 4:
-                        dateTime = dateutil.parser.parse(row['Cal_Date']) + datetime.timedelta(days=2)
-                    else:
-                        dateTime = dateutil.parser.parse(row['Cal_Date']) + datetime.timedelta(days=1)
-                else:
                     dateTime =  dateutil.parser.parse(row['Cal_Date'])
-
+                else:
+                      ### Add additional day ...
+                    if dateutil.parser.parse(row['Cal_Date']).date().weekday == 0:
+                        dateTime = dateutil.parser.parse(row['Cal_Date']) - datetime.timedelta(days=2)
+                    else:
+                        dateTime = dateutil.parser.parse(row['Cal_Date']) - datetime.timedelta(days=1)
                 cal.append(dateTime.date())
     return cal
-
-def isEarnings(instrument, dateTime, tomorrow=False):
-    cal = getEarningsCal(instrument)
-    if dateTime.date().weekday() == 4 :
-        dateTime = dateTime + datetime.timedelta(days=2)
-    else:
-        dateTime = dateTime + datetime.timedelta(days=1)
-    return dateTime.date() in cal
 
 
 def processOptionsFile(inputfile, outputfile):
@@ -670,34 +752,76 @@ def getOrdersFiltered(orders, instrument, filterCriteria=20):
     for key, value in orders.iteritems():
 
         if value[0][1] == 'Buy' or value[0][1] == 'Sell':
+
+            '''
             dt = datetime.datetime.fromtimestamp(key)
-            #### Please note this date shift to make sure CASHFLOW rank is based on previous day...
-            dtactual =  (dt - datetime.timedelta(days=1))
-            seconds = mktime(dtactual.timetuple()) #### please note you need to get money flow of the one day before......
-            keyvalue = int(seconds)*1000
-            rediskey = "cashflow:"+str(keyvalue)
+            #dtactual = dt + datetime.timedelta(days=1)
+            if value[0][1] == 'Buy':
+                mom_rank_orderedlist = tickersRankByCashFlow(dt, sortOrder = 'Reverse')
+                #mom_rank_orderedlist = tickersRankByMoneyFlow(dtactual, sortOrder = 'Reverse')
+                rank = mom_rank_orderedlist.values().index(instrument) if instrument in mom_rank_orderedlist.values() else -1 ### Please return high number so that orders do not get filtered..
+            else:
+                mom_rank_orderedlist = tickersRankByCashFlow(dt, sortOrder = 'Ascending')
+                #mom_rank_orderedlist = tickersRankByMoneyFlow(dtactual, sortOrder = 'Ascending')
+                rank = mom_rank_orderedlist.values().index(instrument) if instrument in mom_rank_orderedlist.values() else -1 ### Please return high number so that orders do not get filtered..
+            print "^^^^^^^^^^^^^^^^^^^^^^^^@@@@@@@@@@@@@: ", dt, rank, mom_rank_orderedlist.keys()[rank]
+            newval = []
+            newval.append((value[0][0], value[0][1], value[0][2], rank))
+            if rank <= filterCriteria:
+                filteredOrders[key] =  newval
+            else:
+                util.Log.info("Filtered Order of: " + instrument + " on date: " + dt.strftime("%B %d, %Y") + " rank: " + str(rank))
+            '''
+            dt = datetime.datetime.fromtimestamp(key)
+            seconds = mktime(dt.timetuple()) #### please note you need to get money flow of the one day before......
+            keyString = int(seconds)*1000
+            rediskey = "cashflow:"+str(keyString)
             redisConn = util.get_redis_conn()
-            rank = redisConn.zrevrank(rediskey, instrument) 
-            ##### This is to handle weekdays and holidays.....
-            while rank is None:
-                dtactual = (dtactual - datetime.timedelta(days=1))
-                seconds = mktime(dtactual.timetuple()) #### please note you need to get money flow of the one day before......
-                keyvalue = int(seconds)*1000
-                rediskey = "cashflow:"+str(keyvalue)
+            if value[0][1] == 'Buy':
                 rank = redisConn.zrevrank(rediskey, instrument) 
-            #print "^^^^^^^^^^^^^^^^^^^^^^^^@@@@@@@@@@@@@: ", dt, dtactual, rediskey, rank
+            else:
+                rank = redisConn.zrank(rediskey, instrument) 
+            print "^^^^^^^^^^^^^^^^^^^^^^^^@@@@@@@@@@@@@: ", dt, rediskey, rank
             ### update rank based on cashflow for BUY and SELL orders...
             newval = []
             newval.append((value[0][0], value[0][1], value[0][2], rank))
-            if rank is not None:
-                if rank <= filterCriteria:
-                    filteredOrders[key] = newval
-                else:
-                    util.Log.info("Filtered Order of: " + instrument + " on date: " + dt.strftime("%B %d, %Y") + " rank: " + str(rank))
+            if rank <= filterCriteria:
+                #filteredOrders[key] = value
+                filteredOrders[key] = newval
+            else:
+                util.Log.info("Filtered Order of: " + instrument + " on date: " + dt.strftime("%B %d, %Y") + " rank: " + str(rank))
         else:
             filteredOrders[key] = value
 
     return filteredOrders
+
+def getOrdersFilteredByRules(orders, instrument):
+        filteredOrders = {}
+        for key, value in orders.iteritems():
+
+            if value[0][1] == 'Buy' or value[0][1] == 'Sell':
+                dt = datetime.datetime.fromtimestamp(key)
+                ADR_5days = ADR(instrument, 5, dt)
+                vol_5days = volume(instrument, 5, dt)
+                mf = cashflow(instrument,  dt)
+                newval = []
+                newval.append((value[0][0], value[0][1], value[0][2], -1))
+                if (ADR_5days[1] >=1) and (vol_5days[1] >= 1000000) and mf[1] >= 2000000:
+                #if (ADR_5days[1] >=1) and (vol_5days[1] >= 500000) and mf[1] >= 750000 and value[0][1] == 'Buy':
+                    print "Data:  ", dt, ADR_5days, vol_5days, mf
+                    filteredOrders[key] = newval
+                elif (ADR_5days[1] >=1) and (vol_5days[1] >= 1000000) and mf[1] <= -2000000 and value[0][1] == 'Sell':
+                    print "Data:  ", ADR_5days, vol_5days, mf
+                    filteredOrders[key] = newval
+                else:
+                    print "Data:  ", dt, ADR_5days, vol_5days, mf
+                    print "In the else loop....................########"
+                    util.Log.info("Filtered Order of: " + instrument + " on date: " + dt.strftime("%B %d, %Y") 
+                        + " ADR :", str(ADR_5days[1]) + " volume: " + str(vol_5days[1]) + " moneyflow: " + str(mf[1]))
+            else:
+                filteredOrders[key] = value
+
+        return filteredOrders
 
 
     
@@ -759,8 +883,8 @@ def run_strategy_redis(bBandsPeriod, instrument, startPortfolio, startdate, endd
             orders = strat.getOrders()
         else:
             orders = getOrdersFiltered(strat.getOrders(), instrument, filterCriteria)
+            #orders = getOrdersFilteredByRules(strat.getOrders(), instrument)
             
-
         return orders
     
     #return results

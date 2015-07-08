@@ -199,13 +199,13 @@ def simulatepotfolio(redisURL, amount, strategy, startdate, enddate, filterRank)
 			row.append(value[0][0])
 			row.append(value[0][1])
 			row.append(value[0][2])
-			#row.append(value[0][3]) #### added for rank
+			row.append(value[0][3]) #### added for rank
 			dataRows.append(row)
 
 	######### before passing let's sort orders based on moneyness rank
 	#####################################################################
 	#sorted_datarows = sorted(dataRows, key = lambda x: (int(x[1]), int(x[3])))
-	#dataRows.sort(key = operator.itemgetter(0, 4))
+	dataRows.sort(key = operator.itemgetter(0, 4))
 
 
 	fake_csv = util.make_fake_csv(dataRows)

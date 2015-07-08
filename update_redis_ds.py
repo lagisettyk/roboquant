@@ -95,7 +95,7 @@ def populate_redis_eod(redisConn, tickerList, datasource, startdate, enddate):
 def populate_redis_moneyflow(redisConn, tickerList, startdate, enddate):
 
 	for ticker in range(len(tickerList)):
-		moneyflowList = xiQuantStrategyUtil.redis_build_moneyflow(tickerList[ticker], startdate, enddate)
+		moneyflowList = xiQuantStrategyUtil.cashflow_timeseries_TN(tickerList[ticker], startdate, enddate)
 		print "Currently processing ticker: ", ticker
 		for k in range(len(moneyflowList)):
 			if moneyflowList[k][1] is not None:

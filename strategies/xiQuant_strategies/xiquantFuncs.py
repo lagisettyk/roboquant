@@ -72,11 +72,9 @@ def secondsSinceEpoch(dt):
 def getEarningsCalendar(instrument, startPeriod, endPeriod):
 	return []
 
-def isEarnings(earningsCalList, dateTime):
-	if dateTime.date().weekday() == 4: # If the analysis day is a Friday
-		dateTime = dateTime + datetime.timedelta(days=2)
+def isEarnings(earningsCalList, date):
+	if date.weekday() == 4: # If the analysis day is a Friday
+		date = date + datetime.timedelta(days=2)
 	else:
-		dateTime = dateTime + datetime.timedelta(days=1)
-	return dateTime.date() in earningsCalList
-
-
+		date = date + datetime.timedelta(days=1)
+	return date in earningsCalList

@@ -92,7 +92,7 @@ class MyStrategy(strategy.BacktestingStrategy):
 		#bar = bars[self.__instrument]
 		#barDateTimeinSecs = int((bars.getDateTime() - datetime.datetime(1970,1,1,0,0,0)).total_seconds())
 		barDateTimeinSecs = xiquantFuncs.secondsSinceEpoch(bars.getDateTime())
-		self.info("Bar Time: $%.2f" % (barDateTimeinSecs))
+		self.info("Bar Time: %.2f" % (barDateTimeinSecs))
 		self.info(self.__ordersFile.getOrders(barDateTimeinSecs))
 		# The available cash is split equally among all the orders for the day
 		noOfOrders = len(self.__ordersFile.getOrders(barDateTimeinSecs))
@@ -102,30 +102,61 @@ class MyStrategy(strategy.BacktestingStrategy):
 		for (instrument, action, price) in self.__ordersFile.getOrders(barDateTimeinSecs):
 			if action.lower() != "buy" and action.lower() != "sell":
 				noOfOrders -= 1
+		cashAvailable = float(self.getBroker().getCash(includeShort=False) * consts.PERCENT_OF_CASH_BALANCE_FOR_ENTRY)
+		self.info("Available cash: %.2f" % cashAvailable)
 		for instrument, action, stopPrice in self.__ordersFile.getOrders(barDateTimeinSecs):
 			if action.lower() == "buy":
-				sharesToBuy = int((self.getBroker().getCash() * consts.PERCENT_OF_CASH_BALANCE_FOR_ENTRY / noOfOrders) / stopPrice)
+				sharesToBuy = int((cashAvailable / noOfOrders) / stopPrice)
+				self.info("Shares to buy: %d" % sharesToBuy)
 				if sharesToBuy < 1:
-					continue
+					# Buy at least 1 share
+					if stopPrice < cashAvailable:
+						self.info("%s %s of %s at $%.2f" % (action, '1', instrument, stopPrice))
+						self.__longPos[instrument] = self.enterLongStop(instrument, stopPrice, 1, True)
+						cashAvailable -= stopPrice
+						noOfOrders -= 1
+						continue
+					else:
+						# Though there isn't enough money to buy one share of this
+						# instrument, the money could be sufficient to buy shares of
+						# other instruments.
+						continue 
 				self.info("%s %d of %s at $%.2f" % (action, sharesToBuy, instrument, stopPrice))
 				self.__longPos[instrument] = self.enterLongStop(instrument, stopPrice, sharesToBuy, True)
 			elif action.lower() == "sell":
-				sharesToBuy = int((self.getBroker().getCash() * consts.PERCENT_OF_CASH_BALANCE_FOR_ENTRY / noOfOrders) / stopPrice)
+				sharesToBuy = int((self.getBroker().getCash(includeShort=False) * consts.PERCENT_OF_CASH_BALANCE_FOR_ENTRY / noOfOrders) / stopPrice)
 				if sharesToBuy < 1:
-					continue
+					# Buy at least 1 share
+					if stopPrice < cashAvailable:
+						self.info("%s %s of %s at $%.2f" % (action, '1', instrument, stopPrice))
+						self.__shortPos[instrument] = self.enterShortStop(instrument, stopPrice, 1, True)
+						cashAvailable -= stopPrice
+						noOfOrders -= 1
+						continue
+					else:
+						# Though there isn't enough money to buy one share of this
+						# instrument, the money could be sufficient to buy shares of
+						# other instruments.
+						continue 
 				self.info("%s %d of %s at $%.2f" % (action, sharesToBuy, instrument, stopPrice))
 				self.__shortPos[instrument] = self.enterShortStop(instrument, stopPrice, sharesToBuy, True)
 			elif action.lower() == "tightened-stop-buy" or action.lower() == "stop-buy":
-				self.__shortPos[instrument].cancelExit()
-				self.__shortPos[instrument].exitStop(stopPrice, True)
+				if self.__shortPos.get(instrument, None) and self.__shortPos[instrument]:
+					self.__shortPos[instrument].cancelExit()
+					self.__shortPos[instrument].exitStop(stopPrice, True)
 			elif action.lower() == "tightened-stop-sell" or action.lower() == "stop-sell":
-				self.__longPos[instrument].cancelExit()
-				self.__longPos[instrument].exitStop(stopPrice, True)
+				if self.__longPos.get(instrument, None) and self.__longPos[instrument]:
+					self.__longPos[instrument].cancelExit()
+					self.__longPos[instrument].exitStop(stopPrice, True)
 			elif action.lower() == "buy-market":
-				if not self.__shortPos[instrument].exitActive():
+				if self.__shortPos.get(instrument, None) and self.__shortPos[instrument]:
+					self.info("Processing a Buy-Market order.")
+					self.__shortPos[instrument].cancelExit()
 					self.__shortPos[instrument].exitMarket()
 			elif action.lower() == "sell-market":
-				if not self.__longPos[instrument].exitActive():
+				if self.__longPos.get(instrument, None) and self.__longPos[instrument]:
+					self.info("Processing a Sell-Market order.")
+					self.__longPos[instrument].cancelExit()
 					self.__longPos[instrument].exitMarket()
 			else:
 				pass # No need to take any action for Cover-Buy or Sell-Close entries.
@@ -136,8 +167,10 @@ class MyStrategy(strategy.BacktestingStrategy):
 		for instrument, action, stopLossPrice in self.__ordersFile.getOrders(stopLossDateTime):
 			self.info("%s %s at $%.2f" % (action, instrument, stopLossPrice))
 			if self.__longPos.get(instrument, None) and self.__longPos[instrument]:
+				self.__longPos[instrument].cancelExit()
 				self.__longPos[instrument].exitStop(stopLossPrice, True)
 			if self.__shortPos.get(instrument, None) and self.__shortPos[instrument]:
+				self.__shortPos[instrument].cancelExit()
 				self.__shortPos[instrument].exitStop(stopLossPrice, True)
 		# Process any tightened stop loss orders or ones to lock profit
 		#stopLossDateTime = int((bars.getDateTime() + datetime.timedelta(seconds=2) - datetime.datetime(1970,1,1,0,0,0)).total_seconds())

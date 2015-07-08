@@ -11,7 +11,7 @@ sys.path.append('/home/parallels/Code/heroku-envbased/roboquant/strategies')
 
 from xiQuant_strategies import xiQuantStrategyUtil
 
-tickerList = util.getTickerList()
+tickerList = util.getTickerList('Abhi-26')
 
 def test_parallel_strategy():
 	import shutil

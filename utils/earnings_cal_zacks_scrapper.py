@@ -52,15 +52,14 @@ def populate_historical_earnings_cal(tickerList):
 #def populate_earnings_flag(tickerList):
 	
 
-tickerList = util.getTickerList()
+tickerList = util.getTickerListWithSPY()
 populate_historical_earnings_cal(tickerList)
 
 
 #### Test reading the file....
-'''
 with open('earnings_cal.csv', 'rU') as csvfile:
         reader = csv.DictReader(csvfile)
         for row in reader:
             dateTime = dateutil.parser.parse(row['Cal_Date'])
             print "####: ", dateTime
-'''
+
