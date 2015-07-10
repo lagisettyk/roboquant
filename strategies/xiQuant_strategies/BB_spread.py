@@ -37,7 +37,6 @@ import os
 from utils import util
 module_dir = os.path.dirname(__file__)  # get current directory
 
-
 class BBSpread(strategy.BacktestingStrategy):
 	def __init__(self, feed, instrument, bBandsPeriod, earningsCal, startPortfolio):
 		strategy.BacktestingStrategy.__init__(self, feed, startPortfolio)
@@ -107,7 +106,6 @@ class BBSpread(strategy.BacktestingStrategy):
 		# as the value. Each item in the list is a tuple of (instrument, action, price) or
 		# (instrument, action) kinds.
 		self.__orders = {} 
-		self.__results = None
 		self.__SPYExceptions = consts.SPY_EXCEPTIONS
 		self.__portfolioCashBefore = 0.0
 
@@ -167,14 +165,11 @@ class BBSpread(strategy.BacktestingStrategy):
 		file_json_exit_price = os.path.join(module_dir, 'json_exit_price')
 		jsonExitPrice = open(file_json_exit_price)
 		self.__ordersFile = open(consts.ORDERS_FILE, 'w')
-		#self.__resultsFile = open(consts.RESULTS_FILE+self.__instrument+".csv", 'w')
-		self.__resultsFile = open(consts.RESULTS_FILE, 'w')
-		self.__resultsFile.write("Instrument,Trade-Type,Entry-Date,Entry-Price,Portfolio-Before,Portfolio-After,Exit-Date,Exit-Price,Portfolio-Before,Portfolio-After\n")
+		
 
 	def onFinish(self, bars):
 		self.stopLogging()
 		self.__ordersFile.close()
-		self.__resultsFile.close()
 		return
 
 	def onEnterOk(self, position):
@@ -183,17 +178,9 @@ class BBSpread(strategy.BacktestingStrategy):
 		tInSecs = xiquantFuncs.secondsSinceEpoch(t)
 		if self.__longPos == position:
 			self.__logger.info("%s: BOUGHT %d at $%.2f" % (execInfo.getDateTime(), execInfo.getQuantity(), execInfo.getPrice()))
-			cashBefore = "%0.2f" % self.__portfolioCashBefore
-			cashAfter = "%0.2f" % self.getBroker().getCash(includeShort=False)
-			buyPrice = "%0.2f" % execInfo.getPrice()
-			self.__results = self.__instrument + ',' + "LONG," + str(t.date()) + ',' + buyPrice + ',' + cashBefore + ',' + cashAfter + ','
 			self.__logger.info("Portfolio cash after BUY: $%.2f" % self.getBroker().getCash(includeShort=False))
 		elif self.__shortPos == position:
 			self.__logger.info("%s: SOLD %d at $%.2f" % (execInfo.getDateTime(), execInfo.getQuantity(), execInfo.getPrice()))
-			cashBefore = "%0.2f" % self.__portfolioCashBefore
-			cashAfter = "%0.2f" % self.getBroker().getCash(includeShort=False)
-			sellPrice = "%0.2f" % execInfo.getPrice()
-			self.__results = self.__instrument + ',' + "SHORT," + str(t.date()) + ',' + sellPrice + ',' + cashBefore + ',' + cashAfter + ','
 			self.__logger.info("Portfolio cash after SELL: $%.2f" % self.getBroker().getCash(includeShort=False))
 
 		# Enter a stop loss order for the entry day
@@ -241,24 +228,10 @@ class BBSpread(strategy.BacktestingStrategy):
 		tInSecs = xiquantFuncs.secondsSinceEpoch(t)
 		if self.__longPos == position: 
 			self.__logger.info("%s: SOLD CLOSE %d at $%.2f" % (execInfo.getDateTime(), execInfo.getQuantity(), execInfo.getPrice()))
-			cashBefore = "%0.2f" % self.__portfolioCashBefore
-			cashAfter = "%0.2f" % self.getBroker().getCash(includeShort=False)
-			sellPrice = "%0.2f" % execInfo.getPrice()
-			exitStr = str(t.date()) + ',' + sellPrice + ',' + cashBefore + ',' + cashAfter + '\n'
-			self.__results += exitStr
-			self.__resultsFile.write(self.__results)
-			self.__results = None
 			self.__logger.info("Portfolio after SELL CLOSE: $%.2f" % self.getBroker().getCash(includeShort=False))
 			self.__longPos = None 
 		elif self.__shortPos == position: 
 			self.__logger.info("%s: COVER BUY %d at $%.2f" % (execInfo.getDateTime(), execInfo.getQuantity(), execInfo.getPrice()))
-			cashBefore = "%0.2f" % self.__portfolioCashBefore
-			cashAfter = "%0.2f" % self.getBroker().getCash(includeShort=False)
-			buyPrice = "%0.2f" % execInfo.getPrice()
-			exitStr = str(t.date()) + ',' + buyPrice + ',' + cashBefore + ',' + cashAfter + '\n'
-			self.__results += exitStr
-			self.__resultsFile.write(self.__results)
-			self.__results = None
 			self.__logger.info("Portfolio after COVER BUY: $%.2f" % self.getBroker().getCash(includeShort=False))
 			self.__shortPos = None 
 		else: 
@@ -1401,7 +1374,7 @@ def run_strategy(bBandsPeriod, instrument, startPortfolio, startPeriod, endPerio
 			Image.open(fileNameRoot + '_2_' + '.png').save(fileNameRoot + '_2_' + '.jpg', 'JPEG')
 
 def main(plot):
-	instruments = ["fdx"]
+	instruments = ["amzn"]
 	bBandsPeriod = 20
 	startPortfolio = 1000000
 	for inst in instruments:

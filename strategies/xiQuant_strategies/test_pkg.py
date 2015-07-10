@@ -8,6 +8,7 @@ import xiQuantStrategyUtil
 from pyalgotrade.technical import ma
 from utils import util
 import csv
+import operator
 
 
 def redis_build_CSV_EOD(ticker, stdate, enddate):
@@ -52,8 +53,8 @@ def redis_build_CSV_EOD(ticker, stdate, enddate):
     	a.writerows(bd)
 
 import dateutil.parser
-stdate = dateutil.parser.parse('2005-01-01')
-#stdate = dateutil.parser.parse('2005-06-30T08:00:00.000Z')
+#stdate = dateutil.parser.parse('2005-01-01')
+stdate = dateutil.parser.parse('2005-06-30T08:00:00.000Z')
 enddate = dateutil.parser.parse('2014-12-31T08:00:00.000Z')
 #enddate = dateutil.parser.parse(' 2011-06-29')
 
@@ -100,7 +101,7 @@ print stdate, enddate
 
 #results_momentum_list = xiQuantStrategyUtil.tickersRankByMoneyFlow(enddate)
 #print results_momentum_list
-#results = xiQuantStrategyUtil.run_strategy_redis(20, "MA", 100000, stdate, enddate, filterCriteria=5000, indicators=False)
+#results = xiQuantStrategyUtil.run_strategy_redis(20, "GOOGL", 100000, stdate, enddate, filterCriteria=5000, indicators=False)
 #print results
 
 #results = xiQuantStrategyUtil.run_strategy_redis(20, "NFLX", 100000, stdate, enddate)
@@ -110,10 +111,12 @@ print stdate, enddate
 #print results.getOrders()
 
 dataRows = []
-#tickerList = util.getTickerList()
+#tickerList = util.getTickerList('Abhi-26')
 tickerList = ['GOOGL']
 for ticker in tickerList:
-    results = xiQuantStrategyUtil.run_strategy_redis(20, "GOOGL", 100000, stdate, enddate, filterCriteria=5000, indicators=False)
+    results = xiQuantStrategyUtil.run_strategy_redis(20, ticker, 100000, stdate, enddate, filterCriteria=20, indicators=False)
+    #results = xiQuantStrategyUtil.run_strategy_redis(20, "GOOGL", 100000, stdate, enddate, filterCriteria=100, indicators=False)
+    #results = xiQuantStrategyUtil.run_strategy_TN(20, "NFLX", 100000, stdate, enddate, filterCriteria=10000, indicators=False)
     #results = xiQuantStrategyUtil.run_strategy_TN(20, ticker, 100000, stdate, enddate)
     print results
     orders = results
@@ -128,21 +131,30 @@ for ticker in tickerList:
         row.append(value[0][3])
         dataRows.append(row)
 
-#print dataRows
+print dataRows
+dataRows.sort(key = operator.itemgetter(0, 4))
 
 fake_csv = util.make_fake_csv(dataRows)
-port_results = xiQuantStrategyUtil.run_master_strategy(100000, fake_csv)
-print port_results.getPortfolioResult()
+#port_results = xiQuantStrategyUtil.run_master_strategy(100000, fake_csv, datasource='TN')
+#port_results = xiQuantStrategyUtil.run_master_strategy(100000, fake_csv, datasource='REDIS')
+#print port_results.getPortfolioResult()
 #print port_results.getCumulativeReturns() #### to do how to populate more than 3 years
 
 
-
-'''
 #### read fake_csv as csv file....
-reader = csv.DictReader(fake_csv, fieldnames=["timeSinceEpoch", "symbol", "action", "stopPrice"])
-for row in reader:
-    print row
-'''
+reader = csv.DictReader(fake_csv, fieldnames=["timeSinceEpoch", "symbol", "action", "stopPrice", "rank"])
+with open('MasterOrders.csv', 'w') as csvfile:
+    writer = csv.DictWriter(csvfile, fieldnames=["timeSinceEpoch", "symbol", "action", "stopPrice", "rank"])
+    writer.writeheader()
+    for row in reader:
+        print row
+        writer.writerow(row)
+
+
+fake_csv.seek(0)
+port_results = xiQuantStrategyUtil.run_master_strategy(100000, fake_csv, datasource='REDIS')
+print port_results.getPortfolioResult()
+
 
 
 #print results.getMACD()

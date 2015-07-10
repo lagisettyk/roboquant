@@ -191,11 +191,15 @@ def simulatepotfolio(redisURL, amount, strategy, startdate, enddate, filterRank)
 			pass ### Make sure you move on with other job...
 
 	########### Iterate master orders file.... #############
+	uniqueKeys = []
 	dataRows = []
 	for k in range(len(master_orders)):
 		for key, value in master_orders[k].iteritems():
 			row = []
 			row.append(key)
+			if key not in uniqueKeys:
+				uniqueKeys.append(key)
+
 			row.append(value[0][0])
 			row.append(value[0][1])
 			row.append(value[0][2])
@@ -207,9 +211,32 @@ def simulatepotfolio(redisURL, amount, strategy, startdate, enddate, filterRank)
 	#sorted_datarows = sorted(dataRows, key = lambda x: (int(x[1]), int(x[3])))
 	dataRows.sort(key = operator.itemgetter(0, 4))
 
+	##########################Now enforce portfolio simulation sort/filtering order rules####################################
+	#########################################################################################################################
+	#########################################################################################################################
+	################# Only apply these if the filterrank is less than 20 ####################################################
+	if filterRank < 20:
+		uniqueKeys = sorted(uniqueKeys)
+		modifiedDataRows = []
+		for key in uniqueKeys:
+			orders = 0
+			for k in range(len(dataRows)):
+				if dataRows[k][0] == key:
+					orders += 1
+					if orders <= filterRank:
+						modifiedDataRows.append(dataRows[k])
+		
+		fake_csv = util.make_fake_csv(modifiedDataRows)
+		print  "Orders filtered due to rank: ", len(dataRows) - len(modifiedDataRows)
 
-	fake_csv = util.make_fake_csv(dataRows)
-	print  "Successfully created master_orders fake_csv file...."
+	else:
+
+		fake_csv = util.make_fake_csv(dataRows)	
+		print  "Successfully processed tickers"	
+
+	#fake_csv = util.make_fake_csv(dataRows)
+	#fake_csv = util.make_fake_csv(modifiedDataRows)
+	#print  "Orders filtered due to rank: ", len(dataRows) - len(modifiedDataRows)
 
 	############### Run the master order for computing portfolio#########
 	jobPortfolio = q.enqueue(xiQuantStrategyUtil.run_master_strategy,int(amount), fake_csv)

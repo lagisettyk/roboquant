@@ -33,10 +33,10 @@ import xiquantFuncs
 import xiquantStrategyParams as consts
 import divergence
 
-########Kiran's additions
 import os
 from utils import util
 module_dir = os.path.dirname(__file__)  # get current directory
+
 
 class BBSpread(strategy.BacktestingStrategy):
 	def __init__(self, feed, instrument, bBandsPeriod, earningsCal, startPortfolio):
@@ -108,6 +108,8 @@ class BBSpread(strategy.BacktestingStrategy):
 		# (instrument, action) kinds.
 		self.__orders = {} 
 		self.__results = None
+		self.__SPYExceptions = consts.SPY_EXCEPTIONS
+		self.__portfolioCashBefore = 0.0
 
 	def initLogging(self):
 		logger = logging.getLogger("xiQuant")
@@ -167,7 +169,7 @@ class BBSpread(strategy.BacktestingStrategy):
 		self.__ordersFile = open(consts.ORDERS_FILE, 'w')
 		#self.__resultsFile = open(consts.RESULTS_FILE+self.__instrument+".csv", 'w')
 		self.__resultsFile = open(consts.RESULTS_FILE, 'w')
-		self.__resultsFile.write("Instrument,Trade-Type,Entry-Date,Entry-Price,Exit-Date,Exit-Price\n")
+		self.__resultsFile.write("Instrument,Trade-Type,Entry-Date,Entry-Price,Portfolio-Before,Portfolio-After,Exit-Date,Exit-Price,Portfolio-Before,Portfolio-After\n")
 
 	def onFinish(self, bars):
 		self.stopLogging()
@@ -181,11 +183,17 @@ class BBSpread(strategy.BacktestingStrategy):
 		tInSecs = xiquantFuncs.secondsSinceEpoch(t)
 		if self.__longPos == position:
 			self.__logger.info("%s: BOUGHT %d at $%.2f" % (execInfo.getDateTime(), execInfo.getQuantity(), execInfo.getPrice()))
-			self.__results = self.__instrument + ',' + "LONG," + str(t) + ',' + str(execInfo.getPrice()) + ','
+			cashBefore = "%0.2f" % self.__portfolioCashBefore
+			cashAfter = "%0.2f" % self.getBroker().getCash(includeShort=False)
+			buyPrice = "%0.2f" % execInfo.getPrice()
+			self.__results = self.__instrument + ',' + "LONG," + str(t.date()) + ',' + buyPrice + ',' + cashBefore + ',' + cashAfter + ','
 			self.__logger.info("Portfolio cash after BUY: $%.2f" % self.getBroker().getCash(includeShort=False))
 		elif self.__shortPos == position:
 			self.__logger.info("%s: SOLD %d at $%.2f" % (execInfo.getDateTime(), execInfo.getQuantity(), execInfo.getPrice()))
-			self.__results = self.__instrument + ',' + "SHORT," + str(t) + ',' + str(execInfo.getPrice()) + ','
+			cashBefore = "%0.2f" % self.__portfolioCashBefore
+			cashAfter = "%0.2f" % self.getBroker().getCash(includeShort=False)
+			sellPrice = "%0.2f" % execInfo.getPrice()
+			self.__results = self.__instrument + ',' + "SHORT," + str(t.date()) + ',' + sellPrice + ',' + cashBefore + ',' + cashAfter + ','
 			self.__logger.info("Portfolio cash after SELL: $%.2f" % self.getBroker().getCash(includeShort=False))
 
 		# Enter a stop loss order for the entry day
@@ -233,7 +241,10 @@ class BBSpread(strategy.BacktestingStrategy):
 		tInSecs = xiquantFuncs.secondsSinceEpoch(t)
 		if self.__longPos == position: 
 			self.__logger.info("%s: SOLD CLOSE %d at $%.2f" % (execInfo.getDateTime(), execInfo.getQuantity(), execInfo.getPrice()))
-			exitStr = str(t) + ',' + str(execInfo.getPrice()) + '\n'
+			cashBefore = "%0.2f" % self.__portfolioCashBefore
+			cashAfter = "%0.2f" % self.getBroker().getCash(includeShort=False)
+			sellPrice = "%0.2f" % execInfo.getPrice()
+			exitStr = str(t.date()) + ',' + sellPrice + ',' + cashBefore + ',' + cashAfter + '\n'
 			self.__results += exitStr
 			self.__resultsFile.write(self.__results)
 			self.__results = None
@@ -241,7 +252,10 @@ class BBSpread(strategy.BacktestingStrategy):
 			self.__longPos = None 
 		elif self.__shortPos == position: 
 			self.__logger.info("%s: COVER BUY %d at $%.2f" % (execInfo.getDateTime(), execInfo.getQuantity(), execInfo.getPrice()))
-			exitStr = str(t) + ',' + str(execInfo.getPrice()) + '\n'
+			cashBefore = "%0.2f" % self.__portfolioCashBefore
+			cashAfter = "%0.2f" % self.getBroker().getCash(includeShort=False)
+			buyPrice = "%0.2f" % execInfo.getPrice()
+			exitStr = str(t.date()) + ',' + buyPrice + ',' + cashBefore + ',' + cashAfter + '\n'
 			self.__results += exitStr
 			self.__resultsFile.write(self.__results)
 			self.__results = None
@@ -365,9 +379,11 @@ class BBSpread(strategy.BacktestingStrategy):
 		self.__logger.debug("%s: Low Price: $%.2f" % (bar.getDateTime(), bar.getLow()))
 		sharesToBuy = 0
 	
+		self.__logger.info("Portfolio Cash: $%.2f" % self.getBroker().getCash(includeShort=False))
 		# The following explicit exit on market order occurs ONLY on the earnings day otherwise
 		# we always let the market kick us out of a position with the stop loss orders.
 		if self.exitLongSignal(bar):
+			self.__portfolioCashBefore = self.getBroker().getCash(includeShort=False)
 			self.__longPos.cancelExit()
 			self.__longPos.exitMarket()
 			t = bar.getDateTime()
@@ -377,8 +393,9 @@ class BBSpread(strategy.BacktestingStrategy):
 			existingOrdersForTime.append((self.__instrument, 'Sell-Market', consts.DUMMY_MARKET_PRICE, consts.DUMMY_RANK))
 			self.__orders[tInSecs] = existingOrdersForTime
 			self.__logger.info("Exiting a LONG position")
-			self.__logger.info("Portfolio: $%.2f" % self.getBroker().getCash(includeShort=False))
+			self.__logger.info("Portfolio Cash: $%.2f" % self.getBroker().getCash(includeShort=False))
 		elif self.exitShortSignal(bar):
+			self.__portfolioCashBefore = self.getBroker().getCash(includeShort=False)
 			self.__shortPos.cancelExit()
 			self.__shortPos.exitMarket()
 			t = bar.getDateTime()
@@ -388,12 +405,12 @@ class BBSpread(strategy.BacktestingStrategy):
 			existingOrdersForTime.append((self.__instrument, 'Buy-Market' , consts.DUMMY_MARKET_PRICE, consts.DUMMY_RANK))
 			self.__orders[tInSecs] = existingOrdersForTime
 			self.__logger.debug("Exiting a SHORT position")
-			self.__logger.debug("Portfolio: $%.2f" % self.getBroker().getCash(includeShort=False))
+			self.__logger.debug("Portfolio Cash: $%.2f" % self.getBroker().getCash(includeShort=False))
 		else:
 			if self.enterLongSignal(bar):
 				# Bullish; enter a long position.
 				self.__logger.info("Bullish; Trying to enter a LONG position")
-				self.__logger.debug("%s: Portfolio: $%.2f" % (bar.getDateTime(), self.getBroker().getCash(includeShort=False)))
+				self.__logger.debug("%s: Portfolio Cash: $%.2f" % (bar.getDateTime(), self.getBroker().getCash(includeShort=False)))
 				currPrice = bar.getClose()
 				#self.__logger.debug("%s: Close Price: $%.2f" % (bar.getDateTime(), currPrice))
 				#self.__logger.debug("%s: Open Price: $%.2f" % (bar.getDateTime(), bar.getOpen()))
@@ -418,6 +435,7 @@ class BBSpread(strategy.BacktestingStrategy):
 				self.__logger.debug("%s: Entry Price: %.2f" % (bar.getDateTime(), entryPrice))
 				sharesToBuy = int((self.getBroker().getCash(includeShort=False) * consts.PERCENT_OF_CASH_BALANCE_FOR_ENTRY) / entryPrice)
 				self.__logger.debug("Shares To Buy: %d" % sharesToBuy)
+				self.__portfolioCashBefore = self.getBroker().getCash(includeShort=False)
 				self.__longPos = self.enterLongStop(self.__instrument, entryPrice, sharesToBuy, True)
 				t = bar.getDateTime()
 				tInSecs = xiquantFuncs.secondsSinceEpoch(t)
@@ -465,7 +483,7 @@ class BBSpread(strategy.BacktestingStrategy):
 			elif self.enterShortSignal(bar):
 				# Bearish; enter a short position.
 				self.__logger.info("Bearish; Trying to enter a SHORT position")
-				self.__logger.debug("%s: Portfolio: $%.2f" % (bar.getDateTime(), self.getBroker().getCash(includeShort=False)))
+				self.__logger.debug("%s: Portfolio Cash: $%.2f" % (bar.getDateTime(), self.getBroker().getCash(includeShort=False)))
 				currPrice = bar.getClose()
 				#self.__logger.debug("%s: Close Price: $%.2f" % (bar.getDateTime(), currPrice))
 				#self.__logger.debug("%s: Open Price: $%.2f" % (bar.getDateTime(), bar.getOpen()))
@@ -491,6 +509,7 @@ class BBSpread(strategy.BacktestingStrategy):
 				sharesToBuy = int((self.getBroker().getCash(includeShort=False) / 
 								entryPrice) * consts.PERCENT_OF_CASH_BALANCE_FOR_ENTRY)
 				self.__logger.debug( "Shares To Buy: %d" % sharesToBuy)
+				self.__portfolioCashBefore = self.getBroker().getCash(includeShort=False)
 				self.__shortPos = self.enterShortStop(self.__instrument, entryPrice, sharesToBuy, True)
 				t = bar.getDateTime()
 				tInSecs = xiquantFuncs.secondsSinceEpoch(t)
@@ -606,9 +625,12 @@ class BBSpread(strategy.BacktestingStrategy):
 			return False
 
 		# For any instrument, we trade on the same side of the market, so check the market sentiment first
-		if self.isBearish():
-			self.__logger.debug("The market is Bearish so we will not try to go LONG.")
-			return False
+		if not self.__instrument.upper() in self.__SPYExceptions:
+			if self.isBearish():
+				self.__logger.debug("The market is Bearish so we will not try to go LONG.")
+				return False
+		else:
+			self.__logger.debug("%s is in the exceptions list, so we don't check if the market is Bullish or Bearish today." % self.__instrument)
 
 		# The close MUST breach or bounce off of the upper band.
 		if self.__inpStrategy["BB_Spread_Call"]["BB_Upper_And_BB_Lower"]["OR"][0] == "BB_Upper_Breach":
@@ -915,9 +937,12 @@ class BBSpread(strategy.BacktestingStrategy):
 			return False
 
 		# For any instrument, we trade on the same side of the market, so check the market sentiment first
-		if self.isBullish():
-			self.__logger.debug("The market is Bullish so we will not try to go short.")
-			return False
+		if not self.__instrument.upper() in self.__SPYExceptions:
+			if self.isBullish():
+				self.__logger.debug("The market is Bullish so we will not try to go short.")
+				return False
+		else:
+			self.__logger.debug("%s is in the exceptions list, so we don't check if the market is Bullish or Bearish today." % self.__instrument)
 
 		# The close MUST breach or bounce off of the lower band.
 		if self.__inpStrategy["BB_Spread_Put"]["BB_Upper_And_BB_Lower"]["OR"][0] == "BB_Lower_Breach":
@@ -1175,6 +1200,7 @@ class BBSpread(strategy.BacktestingStrategy):
 		if self.__longPos == None:
 				return False
 		self.__logger.debug("We hold a position in %s" % self.__instrument)
+		self.__portfolioCashBefore = self.getBroker().getCash(includeShort=False)
 
 		# We don't explicitly exit but based on the indicators we just tighten the stop limit orders.
 		# The only exception to that rule is the earnings date -- we exit at the market open if earnings
@@ -1264,6 +1290,7 @@ class BBSpread(strategy.BacktestingStrategy):
 		if self.__shortPos == None:
 			return False
 		self.__logger.debug("We hold a position in %s" % self.__instrument)
+		self.__portfolioCashBefore = self.getBroker().getCash(includeShort=False)
 
 		# We don't explicitly exit but based on the indicators we just tighten the stop limit orders.
 		# The only exception to that rule is the earnings date -- we exit at the market open if earnings

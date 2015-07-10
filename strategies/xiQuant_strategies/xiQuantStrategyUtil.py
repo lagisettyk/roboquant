@@ -196,6 +196,7 @@ class StrategyResults(object):
         return filteredOrders
     '''
 
+    '''
     def getOrdersFilteredByRules(self, filterCriteria=25):
         filteredOrders = {}
         for key, value in self.__orders.iteritems():
@@ -214,6 +215,7 @@ class StrategyResults(object):
                 filteredOrders[key] = value
 
         return filteredOrders
+    '''
 
     def getAdjCloseSeries(self, instrument):
         return self.__AdjPrices[instrument]
@@ -747,6 +749,8 @@ def processOptionsFile(inputfile, outputfile):
 
 ##### Orders filtered by momentum rank....
 def getOrdersFiltered(orders, instrument, filterCriteria=20):
+
+    orders = getOrdersFilteredByRules(orders, instrument) ##### Please note this is to filter orders based on ADR Cashflow etc...
     filteredOrders = {}
     
     for key, value in orders.iteritems():
@@ -757,17 +761,18 @@ def getOrdersFiltered(orders, instrument, filterCriteria=20):
             dt = datetime.datetime.fromtimestamp(key)
             #dtactual = dt + datetime.timedelta(days=1)
             if value[0][1] == 'Buy':
-                mom_rank_orderedlist = tickersRankByCashFlow(dt, sortOrder = 'Reverse')
-                #mom_rank_orderedlist = tickersRankByMoneyFlow(dtactual, sortOrder = 'Reverse')
+                #mom_rank_orderedlist = tickersRankByCashFlow(dt, sortOrder = 'Reverse')
+                mom_rank_orderedlist = tickersRankByMoneyFlow(dt, sortOrder = 'Reverse')
                 rank = mom_rank_orderedlist.values().index(instrument) if instrument in mom_rank_orderedlist.values() else -1 ### Please return high number so that orders do not get filtered..
             else:
-                mom_rank_orderedlist = tickersRankByCashFlow(dt, sortOrder = 'Ascending')
-                #mom_rank_orderedlist = tickersRankByMoneyFlow(dtactual, sortOrder = 'Ascending')
+                #mom_rank_orderedlist = tickersRankByCashFlow(dt, sortOrder = 'Ascending')
+                mom_rank_orderedlist = tickersRankByMoneyFlow(dt, sortOrder = 'Ascending')
                 rank = mom_rank_orderedlist.values().index(instrument) if instrument in mom_rank_orderedlist.values() else -1 ### Please return high number so that orders do not get filtered..
             print "^^^^^^^^^^^^^^^^^^^^^^^^@@@@@@@@@@@@@: ", dt, rank, mom_rank_orderedlist.keys()[rank]
             newval = []
             newval.append((value[0][0], value[0][1], value[0][2], rank))
             if rank <= filterCriteria:
+                print "***********############^^^^^^^^^^^+++++++++++++++++"
                 filteredOrders[key] =  newval
             else:
                 util.Log.info("Filtered Order of: " + instrument + " on date: " + dt.strftime("%B %d, %Y") + " rank: " + str(rank))
@@ -785,11 +790,15 @@ def getOrdersFiltered(orders, instrument, filterCriteria=20):
             ### update rank based on cashflow for BUY and SELL orders...
             newval = []
             newval.append((value[0][0], value[0][1], value[0][2], rank))
-            if rank <= filterCriteria:
-                #filteredOrders[key] = value
+            ########## Please note we are just appending relevant cashflow ranks and relevant filter rules will be applied 
+            ########## during portfolio simulation rules...
+            if filterCriteria < 20:
                 filteredOrders[key] = newval
             else:
-                util.Log.info("Filtered Order of: " + instrument + " on date: " + dt.strftime("%B %d, %Y") + " rank: " + str(rank))
+                if rank <= filterCriteria:
+                    filteredOrders[key] = newval
+                else:
+                    util.Log.info("Filtered Order of: " + instrument + " on date: " + dt.strftime("%B %d, %Y") + " rank: " + str(rank))
         else:
             filteredOrders[key] = value
 
@@ -806,11 +815,11 @@ def getOrdersFilteredByRules(orders, instrument):
                 mf = cashflow(instrument,  dt)
                 newval = []
                 newval.append((value[0][0], value[0][1], value[0][2], -1))
-                if (ADR_5days[1] >=1) and (vol_5days[1] >= 1000000) and mf[1] >= 2000000:
-                #if (ADR_5days[1] >=1) and (vol_5days[1] >= 500000) and mf[1] >= 750000 and value[0][1] == 'Buy':
+                #if (ADR_5days[1] >=1) and (vol_5days[1] >= 1000000) and mf[1] >= 2000000:
+                if mf[1] >= 2000000 and value[0][1] == 'Buy':
                     print "Data:  ", dt, ADR_5days, vol_5days, mf
                     filteredOrders[key] = newval
-                elif (ADR_5days[1] >=1) and (vol_5days[1] >= 1000000) and mf[1] <= -2000000 and value[0][1] == 'Sell':
+                elif mf[1] <= -2000000 and value[0][1] == 'Sell':
                     print "Data:  ", ADR_5days, vol_5days, mf
                     filteredOrders[key] = newval
                 else:
@@ -883,14 +892,13 @@ def run_strategy_redis(bBandsPeriod, instrument, startPortfolio, startdate, endd
             orders = strat.getOrders()
         else:
             orders = getOrdersFiltered(strat.getOrders(), instrument, filterCriteria)
-            #orders = getOrdersFilteredByRules(strat.getOrders(), instrument)
             
         return orders
     
     #return results
     
 
-def run_strategy_TN(bBandsPeriod, instrument, startPortfolio, startdate, enddate):
+def run_strategy_TN(bBandsPeriod, instrument, startPortfolio, startdate, enddate, filterCriteria=20, indicators=True):
 
     #feed = redis_build_feed_EOD(instrument, startdate, enddate)
     feed = build_feed_TN(instrument, startdate, enddate)
@@ -907,36 +915,51 @@ def run_strategy_TN(bBandsPeriod, instrument, startPortfolio, startdate, enddate
 
     instList = [instrument, 'SPY']
 
-    # Attach a returns analyzers to the strategy.
-    returnsAnalyzer = Returns()
-    results = StrategyResults(strat, instList, returnsAnalyzer, plotSignals=True)
+    if indicators:
 
-    ###Initialize the bands to maxlength of 5000 for 10 years backtest..
-    strat.getBollingerBands().getMiddleBand().setMaxLen(5000)
-    strat.getBollingerBands().getUpperBand().setMaxLen(5000)
-    strat.getBollingerBands().getLowerBand().setMaxLen(5000) 
-    strat.getRSI().setMaxLen(5000)
-    strat.getEMAFast().setMaxLen(5000)
-    strat.getEMASlow().setMaxLen(5000)
-    strat.getEMASignal().setMaxLen(5000)
-    #### Add boilingerbands series....
-    strat.run()
+        # Attach a returns analyzers to the strategy.
+        returnsAnalyzer = Returns()
+        results = StrategyResults(strat, instList, returnsAnalyzer, plotSignals=True)
 
-    ####Populate orders from the backtest run...
-    results.addOrders(strat.getOrders())
+        ###Initialize the bands to maxlength of 5000 for 10 years backtest..
+        strat.getBollingerBands().getMiddleBand().setMaxLen(5000)
+        strat.getBollingerBands().getUpperBand().setMaxLen(5000)
+        strat.getBollingerBands().getLowerBand().setMaxLen(5000) 
+        strat.getRSI().setMaxLen(5000)
+        strat.getEMAFast().setMaxLen(5000)
+        strat.getEMASlow().setMaxLen(5000)
+        strat.getEMASignal().setMaxLen(5000)
+        #### Add boilingerbands series....
+        strat.run()
 
-    results.addSeries("upper", strat.getBollingerBands().getUpperBand())
-    results.addSeries("middle", strat.getBollingerBands().getMiddleBand())
-    results.addSeries("lower", strat.getBollingerBands().getLowerBand())
-    results.addSeries("RSI", strat.getRSI())
-    results.addSeries("EMA Fast", strat.getEMAFast())
-    results.addSeries("EMA Slow", strat.getEMASlow())
-    results.addSeries("EMA Signal", strat.getEMASignal())
-    #results.addSeries("macd", strat.getMACD())
-    
-    return results
+        ####Populate orders from the backtest run...
+        results.addOrders(strat.getOrders())
 
-def run_master_strategy(initialcash, masterFile):
+        results.addSeries("upper", strat.getBollingerBands().getUpperBand())
+        results.addSeries("middle", strat.getBollingerBands().getMiddleBand())
+        results.addSeries("lower", strat.getBollingerBands().getLowerBand())
+        results.addSeries("RSI", strat.getRSI())
+        results.addSeries("EMA Fast", strat.getEMAFast())
+        results.addSeries("EMA Slow", strat.getEMASlow())
+        results.addSeries("EMA Signal", strat.getEMASignal())
+        #results.addSeries("macd", strat.getMACD())
+        
+        return results
+
+    else:
+        # This is to ensue we consume less memory on the portfolio simulation case ... main thread.......
+        returnsAnalyzer = Returns()
+        results = StrategyResults(strat, instList, returnsAnalyzer, plotSignals=False)
+        strat.run()
+        if filterCriteria == 10000:
+            orders = strat.getOrders()
+        else:
+            orders = getOrdersFiltered(strat.getOrders(), instrument, filterCriteria)
+            #orders = getOrdersFilteredByRules(strat.getOrders(), instrument)
+            
+        return orders
+
+def run_master_strategy(initialcash, masterFile, datasource='REDIS'):
 
     ordersFile = Orders_exec.OrdersFile(masterFile, fakecsv=True)
     startdate = datetime.datetime.fromtimestamp(ordersFile.getFirstDate())
@@ -949,11 +972,16 @@ def run_master_strategy(initialcash, masterFile):
     feed = None
     #### Provide bars for all the instruments in the strategy...
     for instrument in ordersFile.getInstruments():
-        if feed is None:
-            feed = redis_build_feed_EOD(instrument, startdate, enddate)
+        if datasource == 'REDIS':
+            if feed is None:
+                feed = redis_build_feed_EOD(instrument, startdate, enddate)
+            else:
+                feed = add_feeds_EOD_redis(feed, instrument, startdate, enddate)
         else:
-            feed = add_feeds_EOD_redis(feed, instrument, startdate, enddate)
-
+            if feed is None:
+                feed = build_feed_TN(instrument, startdate, enddate)
+            else:
+                feed = add_feeds_TN(feed, instrument, startdate, enddate)
         
     useAdjustedClose = True
     myStrategy = Orders_exec.MyStrategy(feed, initialcash, ordersFile, useAdjustedClose)

@@ -54,8 +54,8 @@ def redis_build_CSV_EOD(ticker, stdate, enddate):
 import dateutil.parser
 stdate = dateutil.parser.parse('2005-01-01')
 #stdate = dateutil.parser.parse('2005-06-30T08:00:00.000Z')
-#enddate = dateutil.parser.parse('2014-12-31T08:00:00.000Z')
-enddate = dateutil.parser.parse('2012-02-02')
+enddate = dateutil.parser.parse('2014-12-31T08:00:00.000Z')
+#enddate = dateutil.parser.parse(' 2011-06-29')
 
 #datetime.datetime.combine(datetime.date(2011, 01, 01), datetime.time(10, 23)) ### example for combining date and time...
 
@@ -63,6 +63,8 @@ enddate = dateutil.parser.parse('2012-02-02')
 #redis_build_CSV_EOD("FDX", stdate, enddate)
 
 print stdate, enddate
+
+#print int(mktime(enddate.timetuple()))*1000
 
 #util.Log.info("Got logger handle...")
 #util.Log.info("Testing...")
@@ -75,14 +77,14 @@ print stdate, enddate
 
 
 
-#results_sma_3days = xiQuantStrategyUtil.redis_build_sma_3days("NFLX", stdate, enddate)
+#results_sma_3days = xiQuantStrategyUtil.redis_build_sma_3days("MA", stdate, enddate)
 #print results_sma_3days
 
 #results_moneyflow = xiQuantStrategyUtil.redis_build_moneyflow("MA", stdate, enddate)
 #print results_moneyflow
 
-results_cf_tn = xiQuantStrategyUtil.cashflow_timeseries_TN("MA", stdate, enddate)
-print results_cf_tn
+#results_cf_tn = xiQuantStrategyUtil.cashflow_timeseries_TN("MA", stdate, enddate)
+#print results_cf_tn
 
 #results_earnings_cal = xiQuantStrategyUtil.getEarningsCal("GOOGL")
 #print results_earnings_cal
@@ -98,15 +100,15 @@ print results_cf_tn
 
 #results_momentum_list = xiQuantStrategyUtil.tickersRankByMoneyFlow(enddate)
 #print results_momentum_list
-results = xiQuantStrategyUtil.run_strategy_redis(20, "MA", 100000, stdate, enddate, filterCriteria=5000, indicators=False)
-print results
+#results = xiQuantStrategyUtil.run_strategy_redis(20, "MA", 100000, stdate, enddate, filterCriteria=5000, indicators=False)
+#print results
 
 #results = xiQuantStrategyUtil.run_strategy_redis(20, "NFLX", 100000, stdate, enddate)
 #results = xiQuantStrategyUtil.run_strategy_TN(20, "GOOGL", 100000, stdate, enddate)
 #print results.getPortfolioResult()
 #print results.getOrdersFilteredByMomentumRank(filterCriteria=3000)
 #print results.getOrders()
-'''
+
 dataRows = []
 #tickerList = util.getTickerList()
 tickerList = ['GOOGL']
@@ -132,7 +134,8 @@ fake_csv = util.make_fake_csv(dataRows)
 port_results = xiQuantStrategyUtil.run_master_strategy(100000, fake_csv)
 print port_results.getPortfolioResult()
 #print port_results.getCumulativeReturns() #### to do how to populate more than 3 years
-'''
+
+
 
 '''
 #### read fake_csv as csv file....
