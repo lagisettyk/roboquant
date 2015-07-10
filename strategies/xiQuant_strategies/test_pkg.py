@@ -114,7 +114,7 @@ dataRows = []
 #tickerList = util.getTickerList('Abhi-26')
 tickerList = ['GOOGL']
 for ticker in tickerList:
-    results = xiQuantStrategyUtil.run_strategy_redis(20, ticker, 100000, stdate, enddate, filterCriteria=20, indicators=False)
+    results = xiQuantStrategyUtil.run_strategy_redis(20, ticker, 100000, stdate, enddate, filterCriteria=10000, indicators=False)
     #results = xiQuantStrategyUtil.run_strategy_redis(20, "GOOGL", 100000, stdate, enddate, filterCriteria=100, indicators=False)
     #results = xiQuantStrategyUtil.run_strategy_TN(20, "NFLX", 100000, stdate, enddate, filterCriteria=10000, indicators=False)
     #results = xiQuantStrategyUtil.run_strategy_TN(20, ticker, 100000, stdate, enddate)

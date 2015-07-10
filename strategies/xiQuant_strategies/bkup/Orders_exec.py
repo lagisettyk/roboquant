@@ -11,6 +11,7 @@ from pyalgotrade.utils import stats
 from pyalgotrade.stratanalyzer import returns
 from pyalgotrade.stratanalyzer import sharpe
 from pyalgotrade.broker import backtesting
+from pyalgotrade.broker import Order
 
 import xiquantFuncs
 import xiquantStrategyParams as consts
@@ -73,8 +74,49 @@ class MyStrategy(strategy.BacktestingStrategy):
 		self.__ordersFile = ordersFile
 		self.__longPos = {}
 		self.__shortPos = {}
+		self.__results = {}
+		self.__portfolioCashBefore = 0.0
 		self.setUseAdjustedValues(useAdjustedClose)
 		self.getBroker().setCommission(backtesting.NoCommission())
+
+	def onStart(self):
+		self.__resultsFile = open(consts.RESULTS_FILE, 'w')
+		self.__resultsFile.write("Instrument,Trade-Type,Entry-Date,Entry-Price,Portfolio-Before,Portfolio-After,Exit-Date,Exit-Price,Portfolio-Before,Portfolio-After\n")
+
+	def onFinish(self, bars):
+		self.__resultsFile.close()
+
+	def onEnterOk(self, position):
+		instrument = position.getEntryOrder().getInstrument()
+		execInfo = position.getEntryOrder().getExecutionInfo()
+		execTime = execInfo.getDateTime()
+		cashBefore = "%0.2f" % self.__portfolioCashBefore
+		cashAfter = "%0.2f" % self.getBroker().getCash(includeShort=False)
+		buyPrice = "%0.2f" % execInfo.getPrice()
+		if position.getEntryOrder().getAction() == Order.Action.BUY:
+			action = "LONG"
+		elif position.getEntryOrder().getAction() == Order.Action.SELL:
+			action = "SHORT"
+		elif position.getEntryOrder().getAction() == Order.Action.BUY_TO_COVER:
+			action = "BUY_TO_COVER"
+		elif position.getEntryOrder().getAction() == Order.Action.SELL_SHORT:
+			action = "SHORT"
+		else:
+			action = "ERROR"
+		self.__results[instrument] = instrument + ',' + action + ',' + str(execTime.date()) + ',' + buyPrice + ',' + cashBefore + ',' + cashAfter + ','
+		
+	def onExitOk(self, position):
+		instrument = position.getExitOrder().getInstrument()
+		execInfo = position.getExitOrder().getExecutionInfo()
+		execTime = execInfo.getDateTime()
+		cashBefore = "%0.2f" % self.__portfolioCashBefore
+		cashAfter = "%0.2f" % self.getBroker().getCash(includeShort=False)
+		sellPrice = "%0.2f" % execInfo.getPrice()
+		exitStr = str(execTime.date()) + ',' + sellPrice + ',' + cashBefore + ',' + cashAfter + '\n'
+		if self.__results[instrument] is not None:
+			self.__results[instrument] += exitStr
+			self.__resultsFile.write(self.__results[instrument])
+		self.__results[instrument] = None
 
 	def onOrderUpdated(self, order):
 		if order.isCanceled():
@@ -82,7 +124,8 @@ class MyStrategy(strategy.BacktestingStrategy):
 			pass
 
 	def onBars(self, bars):
-	# Cancel all outstanding entry orders from yesterday
+		self.__portfolioCashBefore = self.getBroker().getCash(includeShort=False)
+		# Cancel all outstanding entry orders from yesterday
 		for instrument in self.__ordersFile.getInstruments():
 			if self.__longPos.get(instrument, None) and self.__longPos[instrument]:
 				self.__longPos[instrument].cancelEntry()

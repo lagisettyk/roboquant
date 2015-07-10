@@ -756,7 +756,6 @@ def getOrdersFiltered(orders, instrument, filterCriteria=20):
     for key, value in orders.iteritems():
 
         if value[0][1] == 'Buy' or value[0][1] == 'Sell':
-
             '''
             dt = datetime.datetime.fromtimestamp(key)
             #dtactual = dt + datetime.timedelta(days=1)
