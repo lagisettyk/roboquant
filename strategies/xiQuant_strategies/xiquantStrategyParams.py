@@ -110,4 +110,9 @@ BB_SPREAD_TRADE_DAY_STOP_LOSS_DELTA_3 = 7.5
 
 
 # Money allocation related
-MAX_ALLOCATED_MONEY_FOR_EACH_TRADE = 0.10
+MAX_ALLOCATED_MONEY_FOR_EACH_TRADE = 0.20
+MAX_EXPECTED_LOSS_PER_SHORT_SHARE = 5
+# This is equivalent to a margin so there could be interest implications which
+# we have to deal with later. Additionally, we will have to consider the 
+# implications of trades taking around 3 days to settle.
+PERCENTAGE_OF_PORTFOLIO_FOR_SHORT = 10 

@@ -22,6 +22,7 @@ import numpy
 import datetime
 #import Image
 from matplotlib import pyplot
+import operator
 #from decimal import getcontext, Decimal
 #getcontext().prec = 2
 
@@ -50,7 +51,6 @@ class BBSpread(strategy.BacktestingStrategy):
 		self.__entryDay = None
 		self.__entryDayStopPrice = 0.0
 		self.__instrument = instrument
-		self.setUseAdjustedValues(True)
 		#self.__priceDS = feed[instrument].getAdjCloseDataSeries()
 		self.__spyDS = feed["SPY"].getCloseDataSeries()
 		self.__priceDS = feed[instrument].getCloseDataSeries()
@@ -99,13 +99,16 @@ class BBSpread(strategy.BacktestingStrategy):
 		self.__inpStrategy = None
 		self.__inpEntry = None
 		self.__inpExit = None
-		self.__ordersFile = None
 		self.__logger = None
 		self.__earningsCal = earningsCal
 		# Orders are stored in a dictionary with datetime as the key and a list of orders
 		# as the value. Each item in the list is a tuple of (instrument, action, price) or
 		# (instrument, action) kinds.
 		self.__orders = {} 
+		self.__entryOrderForFile = None
+		self.__entryOrder = None
+		self._entryOrderTime = None
+		self._entryOrderTuple = None
 		self.__SPYExceptions = consts.SPY_EXCEPTIONS
 		self.__portfolioCashBefore = 0.0
 
@@ -164,12 +167,29 @@ class BBSpread(strategy.BacktestingStrategy):
 		self.__logger.debug("Load the input JSON exit price file.")
 		file_json_exit_price = os.path.join(module_dir, 'json_exit_price')
 		jsonExitPrice = open(file_json_exit_price)
-		self.__ordersFile = open(consts.ORDERS_FILE, 'w')
 		
-
 	def onFinish(self, bars):
 		self.stopLogging()
-		self.__ordersFile.close()
+
+		# Write the in-memory orders to a file.
+		dataRows = []
+		for key, value in self.__orders.iteritems():
+			row = []
+			row.append(key)
+			row.append(value[0][0])
+			row.append(value[0][1])
+			row.append(value[0][2])
+			row.append(value[0][3])
+			dataRows.append(row)
+
+		# This is for ordering orders by timestamp and rank....
+		dataRows.sort(key = operator.itemgetter(0, 1))
+		fake_csv = xiquantFuncs.make_fake_csv(dataRows)
+		self.__realOrdersFile = open(consts.ORDERS_FILE, 'w')
+		for line in fake_csv:
+			self.__realOrdersFile.write(line)
+
+		self.__realOrdersFile.close()
 		return
 
 	def onEnterOk(self, position):
@@ -178,9 +198,15 @@ class BBSpread(strategy.BacktestingStrategy):
 		tInSecs = xiquantFuncs.secondsSinceEpoch(t)
 		if self.__longPos == position:
 			self.__logger.info("%s: BOUGHT %d at $%.2f" % (execInfo.getDateTime(), execInfo.getQuantity(), execInfo.getPrice()))
+			existingOrdersForTime = self.__orders.setdefault(self._entryOrderTime, [])
+			existingOrdersForTime.append(self._entryOrderTuple)
+			self.__orders[self._entryOrderTime] = existingOrdersForTime
 			self.__logger.info("Portfolio cash after BUY: $%.2f" % self.getBroker().getCash(includeShort=False))
 		elif self.__shortPos == position:
 			self.__logger.info("%s: SOLD %d at $%.2f" % (execInfo.getDateTime(), execInfo.getQuantity(), execInfo.getPrice()))
+			existingOrdersForTime = self.__orders.setdefault(self._entryOrderTime, [])
+			existingOrdersForTime.append(self._entryOrderTuple)
+			self.__orders[self._entryOrderTime] = existingOrdersForTime
 			self.__logger.info("Portfolio cash after SELL: $%.2f" % self.getBroker().getCash(includeShort=False))
 
 		# Enter a stop loss order for the entry day
@@ -190,7 +216,6 @@ class BBSpread(strategy.BacktestingStrategy):
 			# gets picked up ONLY after the initial order is picked up during the order
 			# processing phase.
 			tInSecs = xiquantFuncs.secondsSinceEpoch(t + datetime.timedelta(seconds=1))
-			self.__ordersFile.write("%s,%s,Stop-Sell,%.2f\n" % (str(tInSecs), self.__instrument, self.__entryDayStopPrice))
 			existingOrdersForTime = self.__orders.setdefault(tInSecs, [])
 			existingOrdersForTime.append((self.__instrument, 'Stop-Sell', self.__entryDayStopPrice, consts.DUMMY_RANK))
 			self.__orders[tInSecs] = existingOrdersForTime
@@ -201,7 +226,6 @@ class BBSpread(strategy.BacktestingStrategy):
 			# gets picked up ONLY after the initial order is picked up during the order
 			# processing phase.
 			tInSecs = xiquantFuncs.secondsSinceEpoch(t + datetime.timedelta(seconds=1))
-			self.__ordersFile.write("%s,%s,Stop-Buy,%.2f\n" % (str(tInSecs), self.__instrument, self.__entryDayStopPrice))
 			existingOrdersForTime = self.__orders.setdefault(tInSecs, [])
 			existingOrdersForTime.append((self.__instrument, 'Stop-Buy', self.__entryDayStopPrice, consts.DUMMY_RANK))
 			self.__orders[tInSecs] = existingOrdersForTime
@@ -361,7 +385,6 @@ class BBSpread(strategy.BacktestingStrategy):
 			self.__longPos.exitMarket()
 			t = bar.getDateTime()
 			tInSecs = xiquantFuncs.secondsSinceEpoch(t)
-			self.__ordersFile.write("%s,%s,Sell-Market,%.2f,%d\n" % (str(tInSecs), self.__instrument, consts.DUMMY_MARKET_PRICE, consts.DUMMY_RANK))
 			existingOrdersForTime = self.__orders.setdefault(tInSecs, [])
 			existingOrdersForTime.append((self.__instrument, 'Sell-Market', consts.DUMMY_MARKET_PRICE, consts.DUMMY_RANK))
 			self.__orders[tInSecs] = existingOrdersForTime
@@ -373,7 +396,6 @@ class BBSpread(strategy.BacktestingStrategy):
 			self.__shortPos.exitMarket()
 			t = bar.getDateTime()
 			tInSecs = xiquantFuncs.secondsSinceEpoch(t)
-			self.__ordersFile.write("%s,%s,Buy-Market,%.2f,%d\n" % (str(tInSecs), self.__instrument, consts.DUMMY_MARKET_PRICE, consts.DUMMY_RANK))
 			existingOrdersForTime = self.__orders.setdefault(tInSecs, [])
 			existingOrdersForTime.append((self.__instrument, 'Buy-Market' , consts.DUMMY_MARKET_PRICE, consts.DUMMY_RANK))
 			self.__orders[tInSecs] = existingOrdersForTime
@@ -412,10 +434,12 @@ class BBSpread(strategy.BacktestingStrategy):
 				self.__longPos = self.enterLongStop(self.__instrument, entryPrice, sharesToBuy, True)
 				t = bar.getDateTime()
 				tInSecs = xiquantFuncs.secondsSinceEpoch(t)
-				self.__ordersFile.write("%s,%s,Buy,%.2f\n" % (str(tInSecs), self.__instrument, entryPrice))
-				existingOrdersForTime = self.__orders.setdefault(tInSecs, [])
-				existingOrdersForTime.append((self.__instrument, 'Buy', entryPrice, consts.DUMMY_RANK))
-				self.__orders[tInSecs] = existingOrdersForTime
+				self.__entryOrderForFile = "%s,%s,Buy,%.2f\n" % (str(tInSecs), self.__instrument, entryPrice)
+				#existingOrdersForTime = self.__orders.setdefault(tInSecs, [])
+				#existingOrdersForTime.append((self.__instrument, 'Buy', entryPrice, consts.DUMMY_RANK))
+				#self.__orders[tInSecs] = existingOrdersForTime
+				self._entryOrderTime = tInSecs
+				self._entryOrderTuple = (self.__instrument, 'Buy', entryPrice, consts.DUMMY_RANK)
 				if self.__longPos == None:
 					self.__logger.debug("For whatever reason, couldn't go LONG %d shares" % sharesToBuy)
 				else:
@@ -486,10 +510,12 @@ class BBSpread(strategy.BacktestingStrategy):
 				self.__shortPos = self.enterShortStop(self.__instrument, entryPrice, sharesToBuy, True)
 				t = bar.getDateTime()
 				tInSecs = xiquantFuncs.secondsSinceEpoch(t)
-				self.__ordersFile.write("%s,%s,Sell,%.2f\n" % (str(tInSecs), self.__instrument, entryPrice))
-				existingOrdersForTime = self.__orders.setdefault(tInSecs, [])
-				existingOrdersForTime.append((self.__instrument, 'Sell', entryPrice, consts.DUMMY_RANK))
-				self.__orders[tInSecs] = existingOrdersForTime
+				self.__entryOrderForFile = "%s,%s,Sell,%.2f\n" % (str(tInSecs), self.__instrument, entryPrice)
+				#existingOrdersForTime = self.__orders.setdefault(tInSecs, [])
+				#existingOrdersForTime.append((self.__instrument, 'Sell', entryPrice, consts.DUMMY_RANK))
+				#self.__orders[tInSecs] = existingOrdersForTime
+				self._entryOrderTime = tInSecs
+				self._entryOrderTuple = (self.__instrument, 'Sell', entryPrice, consts.DUMMY_RANK)
 				if self.__shortPos == None:
 					self.__logger.debug("For whatever reason, couldn't SHORT %d shares" % sharesToBuy)
 				else:
@@ -1214,7 +1240,6 @@ class BBSpread(strategy.BacktestingStrategy):
 			self.__longPos.exitStop(stopPrice, True)
 			t = bar.getDateTime()
 			tInSecs = xiquantFuncs.secondsSinceEpoch(t + datetime.timedelta(seconds=2))
-			self.__ordersFile.write("%s,%s,Tightened-Stop-Sell,%.2f\n" % (str(tInSecs), self.__instrument, stopPrice))
 			existingOrdersForTime = self.__orders.setdefault(tInSecs, [])
 			existingOrdersForTime.append((self.__instrument, 'Tightened-Stop-Sell', stopPrice, consts.DUMMY_RANK))
 			self.__orders[tInSecs] = existingOrdersForTime
@@ -1229,7 +1254,6 @@ class BBSpread(strategy.BacktestingStrategy):
 				self.__longPos.exitStop(stopPrice, True)
 				t = bar.getDateTime()
 				tInSecs = xiquantFuncs.secondsSinceEpoch(t + datetime.timedelta(seconds=2))
-				self.__ordersFile.write("%s,%s,Stop-Sell,%.2f\n" % (str(tInSecs), self.__instrument, stopPrice))
 				existingOrdersForTime = self.__orders.setdefault(tInSecs, [])
 				existingOrdersForTime.append((self.__instrument, 'Stop-Sell', stopPrice, consts.DUMMY_RANK))
 				self.__orders[tInSecs] = existingOrdersForTime
@@ -1305,7 +1329,6 @@ class BBSpread(strategy.BacktestingStrategy):
 			self.__shortPos.exitStop(stopPrice, True)
 			t = bar.getDateTime()
 			tInSecs = xiquantFuncs.secondsSinceEpoch(t + datetime.timedelta(seconds=2))
-			self.__ordersFile.write("%s,%s,Tightened-Stop-Buy,%.2f\n" % (str(tInSecs), self.__instrument, stopPrice))
 			existingOrdersForTime = self.__orders.setdefault(tInSecs, [])
 			existingOrdersForTime.append((self.__instrument, 'Tightened-Stop-Buy', stopPrice, consts.DUMMY_RANK))
 			self.__orders[tInSecs] = existingOrdersForTime
@@ -1320,7 +1343,6 @@ class BBSpread(strategy.BacktestingStrategy):
 				self.__shortPos.exitStop(stopPrice, True)
 				t = bar.getDateTime()
 				tInSecs = xiquantFuncs.secondsSinceEpoch(t + datetime.timedelta(seconds=2))
-				self.__ordersFile.write("%s,%s,Stop-Buy,%.2f\n" % (str(tInSecs), self.__instrument, stopPrice))
 				existingOrdersForTime = self.__orders.setdefault(tInSecs, [])
 				existingOrdersForTime.append((self.__instrument, 'Stop-Buy', stopPrice, consts.DUMMY_RANK))
 				self.__orders[tInSecs] = existingOrdersForTime

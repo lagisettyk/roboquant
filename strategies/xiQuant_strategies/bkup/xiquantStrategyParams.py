@@ -2,7 +2,7 @@
 
 # This parameter is used to control whether we should go, 'Long' or 'Short' only
 # or 'Both' for a particular strategy.
-BB_SPREAD_LONG_OR_SHORT = 'Both'
+BB_SPREAD_LONG_OR_SHORT = 'Long'
 
 # For these stocks we make an exception to trade against the market.
 SPY_EXCEPTIONS = ['AAPL', 'AMZN', 'PCLN', 'NFLX']
@@ -107,3 +107,7 @@ BB_SPREAD_EXIT_TIGHTEN_PRICE_FACTOR = 0.5
 BB_SPREAD_TRADE_DAY_STOP_LOSS_DELTA_1 = 3.0
 BB_SPREAD_TRADE_DAY_STOP_LOSS_DELTA_2 = 5.0
 BB_SPREAD_TRADE_DAY_STOP_LOSS_DELTA_3 = 7.5
+
+
+# Money allocation related
+MAX_ALLOCATED_MONEY_FOR_EACH_TRADE = 0.10

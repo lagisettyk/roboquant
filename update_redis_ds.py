@@ -1,10 +1,11 @@
 from utils import util
 import datetime
-from time import mktime
+#from time import calendar.timegm
 import dateutil.parser
 from Quandl import Quandl
 import redis
 import os
+import calendar
 
 import sys
 sys.path.append(os.path.dirname(__file__)+'/strategies')
@@ -67,8 +68,8 @@ def populate_redis_eod(redisConn, tickerList, datasource, startdate, enddate):
 		if redisConn.get('history') is not None:
 			#### Let's get the last date available for this ticker and set it to start date
 			### this allows to catch-up EOD data in case certain days EOD feed was not successfully populated...
-			seconds = mktime(datetime.date.today().timetuple())
-			seconds2 = mktime(dateutil.parser.parse(histStartDate).timetuple())
+			seconds = calendar.timegm(datetime.date.today().timetuple())
+			seconds2 = calendar.timegm(dateutil.parser.parse(histStartDate).timetuple())
 			redis_data = redisConn.zrevrangebyscore(tickerList[ticker] +":EOD", int(seconds), int(seconds2), 0, -1, True)
 			if len(redis_data) > 0:
 				list_values, list_keys = zip(*redis_data) ### Returns max score in the data store
@@ -82,7 +83,7 @@ def populate_redis_eod(redisConn, tickerList, datasource, startdate, enddate):
 				trim_start = startdate, trim_end = enddate)
 			if mkt_data.size > 0:
 				for daily_data in mkt_data:
-					redisConn.zadd(tickerList[ticker] +":EOD", mktime(daily_data[0].timetuple()), 
+					redisConn.zadd(tickerList[ticker] +":EOD", calendar.timegm(daily_data[0].timetuple()), 
 					str(daily_data[8]) + "|" + str(daily_data[9]) + "|" + str(daily_data[10]) + "|" + str(daily_data[11]) + "|" + str(daily_data[12]))
 		except Exception,e: 
 			logger.debug(tickerList[ticker] +": " + str(e))
