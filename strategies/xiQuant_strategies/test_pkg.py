@@ -26,8 +26,7 @@ def redis_build_CSV_EOD(ticker, stdate, enddate):
     try:
         redisConn = util.get_redis_conn()
         ### added EOD as data source
-        ticker_data = redisConn.zrangebyscore(ticker + ":EOD", int(seconds), int(seconds2), 0, -1, True)
-        #ticker_data = redisConn.zrangebyscore(ticker + ":EOD_UnAdj", int(seconds), int(seconds2), 0, -1, True)
+        ticker_data = redisConn.zrangebyscore(ticker + ":EODRAW", int(seconds), int(seconds2), 0, -1, True)
         data_dict = xiQuantStrategyUtil.redis_listoflists_to_dict(ticker_data)
         ordered_data_dict = collections.OrderedDict(sorted(data_dict.items(), reverse=False))
     except Exception,e:
@@ -46,11 +45,15 @@ def redis_build_CSV_EOD(ticker, stdate, enddate):
         dataList.append(float("{0:.2f}".format(float(data[2]))))
         dataList.append(float("{0:.2f}".format(float(data[3]))))
         dataList.append(float("{0:.2f}".format(float(data[4]))))
+        dataList.append(float("{0:.2f}".format(float(data[5]))))
+        dataList.append(float("{0:.2f}".format(float(data[6]))))
         bd.append(dataList)
 
-    with open(ticker+'.csv', 'w') as fp:
-    	a = csv.writer(fp, delimiter=',')
-    	a.writerows(bd)
+    with open(ticker+'_EODRAW.csv', 'w') as fp:
+    	writer = csv.writer(fp, delimiter=',')
+        header = ["Ticker", "Date", "Open", "High", "Low", "Close", "Volume", "Dividend", "Split"]
+        writer.writerow(header)
+    	writer.writerows(bd)
 
 import dateutil.parser
 #stdate = dateutil.parser.parse('2010-01-01')
@@ -60,10 +63,15 @@ enddate = dateutil.parser.parse('2014-12-31T08:00:00.000Z')
 
 #datetime.datetime.combine(datetime.date(2011, 01, 01), datetime.time(10, 23)) ### example for combining date and time...
 
+'''
+tickerList = util.getTickerList('Abhi-26')
+#tickerList = ['SPY']
+for ticker in tickerList:
+    redis_build_CSV_EOD(ticker, stdate, enddate)
+    print "Successfuly exported EODRAW data: ", ticker
+'''
 
-#redis_build_CSV_EOD("FDX", stdate, enddate)
-
-print stdate, enddate
+#print stdate, enddate
 
 #print int(calendar.timegm(enddate.timetuple()))*1000
 
@@ -105,12 +113,17 @@ print stdate, enddate
 #print results
 
 
-#results = xiQuantStrategyUtil.run_strategy_redis(20, "GOOGL", 100000, stdate, enddate)
+results = xiQuantStrategyUtil.run_strategy_redis(20, "CVS", 100000, stdate, enddate)
 #results = xiQuantStrategyUtil.run_strategy_TN(20, "GOOGL", 100000, stdate, enddate)
 #print results.getPortfolioResult()
 #print results.getOrdersFilteredByMomentumRank(filterCriteria=3000)
 #print results.getOrders()
+#print results.getMACD()
+#print results.getADX()
+print results.getAdjCloseSeries("CVS")
 
+
+'''
 dataRows = []
 #tickerList = util.getTickerList('Abhi-26')
 tickerList = ['WHR']
@@ -155,7 +168,7 @@ with open('MasterOrders.csv', 'w') as csvfile:
 fake_csv.seek(0)
 port_results = xiQuantStrategyUtil.run_master_strategy(100000, fake_csv, datasource='REDIS')
 print port_results.getPortfolioResult()
-
+'''
 
 
 #print results.getMACD()

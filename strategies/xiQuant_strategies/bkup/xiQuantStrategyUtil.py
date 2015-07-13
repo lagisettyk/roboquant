@@ -1,5 +1,5 @@
 import pyalgotrade.broker 
-from time import mktime
+#from time import calendar.timegm
 from pyalgotrade.barfeed import membf
 from pyalgotrade.technical import ma
 from utils import util
@@ -13,6 +13,7 @@ import os
 from pyalgotrade.stratanalyzer import returns
 from pyalgotrade import dataseries
 import time
+import calendar
 
 
 
@@ -84,7 +85,7 @@ class StrategyResults(object):
     def __onBarsProcessed(self, strat, bars):
         dateTime = bars.getDateTime()
         self.__dateTimes.add(dateTime)
-        seconds = mktime(bars.getDateTime().timetuple())
+        seconds = calendar.timegm(bars.getDateTime().timetuple())
         dtInMilliSeconds = int(seconds * 1000)
     
         ### Populate AdjClose Price series of instruments....
@@ -150,7 +151,7 @@ class StrategyResults(object):
             if action in [pyalgotrade.broker.Order.Action.BUY, pyalgotrade.broker.Order.Action.BUY_TO_COVER]:
                 #self.getSeries("Buy", BuyMarker).addValue(execInfo.getDateTime(), execInfo.getPrice())
                 #print "BUY: ", execInfo.getDateTime(), execInfo.getPrice()
-                seconds = mktime(execInfo.getDateTime().timetuple())
+                seconds = calendar.timegm(execInfo.getDateTime().timetuple())
                 if action == pyalgotrade.broker.Order.Action.BUY:
                     val = {'x':int(seconds * 1000), 'title': 'B', 'text': 'Bought: ' + str(order.getInstrument()) +'  Shares: ' + str(order.getQuantity()) + " Price " +  str(execInfo.getPrice())}
                 else:
@@ -161,7 +162,7 @@ class StrategyResults(object):
             elif action in [pyalgotrade.broker.Order.Action.SELL, pyalgotrade.broker.Order.Action.SELL_SHORT]:
                 #self.getSeries("Sell", SellMarker).addValue(execInfo.getDateTime(), execInfo.getPrice())
                 #print "SELL: ", execInfo.getDateTime(), execInfo.getPrice()
-                seconds = mktime(execInfo.getDateTime().timetuple())
+                seconds = calendar.timegm(execInfo.getDateTime().timetuple())
                 if action == pyalgotrade.broker.Order.Action.SELL:
                     val = {'x':int(seconds * 1000), 'title': 'S', 'text': 'SOLD:' + str(order.getInstrument()) +' Shares:' + str(order.getQuantity()) + " Price " +  str(execInfo.getPrice())}
                 else:
@@ -234,7 +235,7 @@ class StrategyResults(object):
         seq_data = self.__additionalDataSeries[name]
         for x in range(len(dateList)):
             dt =  dateList[x]
-            sec = mktime(dt.timetuple())
+            sec = calendar.timegm(dt.timetuple())
             val = [int(sec * 1000), seq_data.getValueAbsolute(x)]
             dataseries.append(val)
         return dataseries
@@ -270,7 +271,7 @@ class StrategyResults(object):
         dateList.sort()
         for x in range(len(dateList)):
             dt =  dateList[x]
-            sec = mktime(dt.timetuple())
+            sec = calendar.timegm(dt.timetuple())
             val = [int(sec * 1000), returns.getValueAbsolute(x)]
             dataseries.append(val)
         return dataseries
@@ -282,7 +283,7 @@ class StrategyResults(object):
         dateList.sort()
         for x in range(len(dateList)):
             dt =  dateList[x]
-            sec = mktime(dt.timetuple())
+            sec = calendar.timegm(dt.timetuple())
             val = [int(sec * 1000), returns.getValueAbsolute(x)]
             dataseries.append(val)
         return dataseries
@@ -321,7 +322,6 @@ def redis_build_feed_EOD(ticker, stdate, enddate):
 
 def add_feeds_EOD_redis( feed, ticker, stdate, enddate):
     import datetime
-    from time import mktime
     from pyalgotrade.utils import dt
     from pyalgotrade.bar import BasicBar, Frequency
 
@@ -329,8 +329,8 @@ def add_feeds_EOD_redis( feed, ticker, stdate, enddate):
     ######## data series we need to do date arithmetic on passed in data ################
     stdate, enddate = util.getRedisEffectiveDates(stdate, enddate)
 
-    seconds = mktime(stdate.timetuple())
-    seconds2 = mktime(enddate.timetuple())
+    seconds = calendar.timegm(stdate.timetuple())
+    seconds2 = calendar.timegm(enddate.timetuple())
 
     data_dict = {}
     try:
@@ -363,15 +363,14 @@ def ADR(ticker,nDays, date):
 ### Average Daily range....
 def redis_build_ADR_ndays(ticker, nDays, stdate, enddate):
     import datetime
-    from time import mktime
     from pyalgotrade.utils import dt
 
     ###### Please note zrangebyscore returns between values the scores to make it include both start date and end date as part of
     ######## data series we need to do date arithmetic on passed in data ################
     stdate, enddate = util.getRedisEffectiveDates(stdate, enddate)
 
-    seconds = mktime(stdate.timetuple())
-    seconds2 = mktime(enddate.timetuple())
+    seconds = calendar.timegm(stdate.timetuple())
+    seconds2 = calendar.timegm(enddate.timetuple())
     data_dict = {}
     try:
         redisConn = util.get_redis_conn()
@@ -398,7 +397,7 @@ def redis_build_ADR_ndays(ticker, nDays, stdate, enddate):
             data = data_dict[key].split("|")
             Avg += (float(data[1])-float(data[2]))
 
-        seconds = mktime(datetime.datetime.fromtimestamp(timestamp).timetuple())
+        seconds = calendar.timegm(datetime.datetime.fromtimestamp(timestamp).timetuple())
         data_point.append(int(seconds)*1000)
         data_point.append(Avg/nDays)
         sma_ndays.append(data_point)
@@ -412,15 +411,14 @@ def volume(ticker, nDays, date):
 
 def redis_build_volume_sma_ndays(ticker, nDays, stdate, enddate):
     import datetime
-    from time import mktime
     from pyalgotrade.utils import dt
 
     ###### Please note zrangebyscore returns between values the scores to make it include both start date and end date as part of
     ######## data series we need to do date arithmetic on passed in data ################
     stdate, enddate = util.getRedisEffectiveDates(stdate, enddate)
 
-    seconds = mktime(stdate.timetuple())
-    seconds2 = mktime(enddate.timetuple())
+    seconds = calendar.timegm(stdate.timetuple())
+    seconds2 = calendar.timegm(enddate.timetuple())
     data_dict = {}
     try:
         redisConn = util.get_redis_conn()
@@ -447,7 +445,7 @@ def redis_build_volume_sma_ndays(ticker, nDays, stdate, enddate):
             data = data_dict[key].split("|")
             Avg += float(float(data[4]))
 
-        seconds = mktime(datetime.datetime.fromtimestamp(timestamp).timetuple())
+        seconds = calendar.timegm(datetime.datetime.fromtimestamp(timestamp).timetuple())
         data_point.append(int(seconds)*1000)
         data_point.append(Avg/nDays)
         sma_ndays.append(data_point)
@@ -457,7 +455,6 @@ def redis_build_volume_sma_ndays(ticker, nDays, stdate, enddate):
 
 def redis_build_sma_3days(ticker, stdate, enddate):
     import datetime
-    from time import mktime
     from pyalgotrade.utils import dt
 
 
@@ -465,8 +462,8 @@ def redis_build_sma_3days(ticker, stdate, enddate):
     ######## data series we need to do date arithmetic on passed in data ################
     stdate, enddate = util.getRedisEffectiveDates(stdate, enddate)
 
-    seconds = mktime(stdate.timetuple())
-    seconds2 = mktime(enddate.timetuple())
+    seconds = calendar.timegm(stdate.timetuple())
+    seconds2 = calendar.timegm(enddate.timetuple())
     data_dict = {}
     try:
         redisConn = util.get_redis_conn()
@@ -528,8 +525,8 @@ def cashflow_timeseries_TN(ticker, startdate, enddate):
     ######## data series we need to do date arithmetic on passed in data ################
     startdate, enddate = util.getRedisEffectiveDates(startdate, enddate)
 
-    seconds = mktime(startdate.timetuple())
-    seconds2 = mktime(enddate.timetuple())
+    seconds = calendar.timegm(startdate.timetuple())
+    seconds2 = calendar.timegm(enddate.timetuple())
     data_dict = {}
     try:
         redisConn = util.get_redis_conn()
@@ -558,7 +555,7 @@ def cashflow_timeseries_TN(ticker, startdate, enddate):
             volumeList.append(float(data[4]))
 
         cashflow =  (priceList[1] - priceList[0]) * volumeList[1]
-        seconds = mktime(datetime.datetime.fromtimestamp(timestamp).timetuple())
+        seconds = calendar.timegm(datetime.datetime.fromtimestamp(timestamp).timetuple())
         data_point.append(int(seconds)*1000)
         data_point.append(cashflow)
         cashflow_accum.append(data_point)
@@ -580,11 +577,11 @@ def redis_build_moneyflow(ticker, stdate, enddate):
         ### Add first data point null that way cashflow can align with other charts...
         if x==0:
             firstDay = []
-            sec_fd = mktime(datetime.datetime.fromtimestamp(sma_3days[0][0]).timetuple())
+            sec_fd = calendar.timegm(datetime.datetime.fromtimestamp(sma_3days[0][0]).timetuple())
             firstDay.append(int(sec_fd)*1000)
             firstDay.append(None)
             moneyflow.append(firstDay)
-        seconds = mktime(datetime.datetime.fromtimestamp(sma_3days[x+1][0]).timetuple())
+        seconds = calendar.timegm(datetime.datetime.fromtimestamp(sma_3days[x+1][0]).timetuple())
         data_point.append(int(seconds)*1000) ### datetime in milliseconds...
         data_point.append(sma_3days[x+1][1] - sma_3days[x][1])
         #data_point.append(sma_3days[x+1][1])
@@ -599,12 +596,12 @@ def redis_build_moneyflow_percent(ticker, stdate, enddate):
         ### Add first data point null that way cashflow can align with other charts...
         if x==0:
             firstDay = []
-            sec_fd = seconds = mktime(datetime.datetime.fromtimestamp(sma_3days[0][0]).timetuple())
+            sec_fd = seconds = calendar.timegm(datetime.datetime.fromtimestamp(sma_3days[0][0]).timetuple())
             firstDay.append(int(sec_fd)*1000)
             firstDay.append(None)
             moneyflow.append(firstDay)
 
-        seconds = mktime(datetime.datetime.fromtimestamp(sma_3days[x+1][0]).timetuple())
+        seconds = calendar.timegm(datetime.datetime.fromtimestamp(sma_3days[x+1][0]).timetuple())
         data_point.append(int(seconds)*1000)### datetime in milliseconds...
         diff = sma_3days[x+1][1] - sma_3days[x][1]
         #######We should definitely revisit and check this problem...
@@ -657,7 +654,6 @@ def build_feed_TN(ticker, stdate, enddate):
 
 def add_feeds_TN(feed, ticker, stdate, enddate):
     import datetime
-    from time import mktime
     from pyalgotrade.utils import dt
     from pyalgotrade.bar import BasicBar, Frequency
     import csv
@@ -756,7 +752,7 @@ def getOrdersFiltered(orders, instrument, filterCriteria=20):
     for key, value in orders.iteritems():
 
         if value[0][1] == 'Buy' or value[0][1] == 'Sell':
-            '''
+            
             dt = datetime.datetime.fromtimestamp(key)
             #dtactual = dt + datetime.timedelta(days=1)
             if value[0][1] == 'Buy':
@@ -777,7 +773,7 @@ def getOrdersFiltered(orders, instrument, filterCriteria=20):
                 util.Log.info("Filtered Order of: " + instrument + " on date: " + dt.strftime("%B %d, %Y") + " rank: " + str(rank))
             '''
             dt = datetime.datetime.fromtimestamp(key)
-            seconds = mktime(dt.timetuple()) #### please note you need to get money flow of the one day before......
+            seconds = calendar.timegm(dt.timetuple()) #### please note you need to get money flow of the one day before......
             keyString = int(seconds)*1000
             rediskey = "cashflow:"+str(keyString)
             redisConn = util.get_redis_conn()
@@ -798,6 +794,7 @@ def getOrdersFiltered(orders, instrument, filterCriteria=20):
                     filteredOrders[key] = newval
                 else:
                     util.Log.info("Filtered Order of: " + instrument + " on date: " + dt.strftime("%B %d, %Y") + " rank: " + str(rank))
+            '''
         else:
             filteredOrders[key] = value
 
@@ -961,8 +958,9 @@ def run_strategy_TN(bBandsPeriod, instrument, startPortfolio, startdate, enddate
 def run_master_strategy(initialcash, masterFile, datasource='REDIS'):
 
     ordersFile = Orders_exec.OrdersFile(masterFile, fakecsv=True)
-    startdate = datetime.datetime.fromtimestamp(ordersFile.getFirstDate())
-    enddate = datetime.datetime.fromtimestamp(ordersFile.getLastDate())
+    startdate = datetime.datetime.fromtimestamp(ordersFile.getFirstDate()) - datetime.timedelta(days=1)
+    enddate = datetime.datetime.fromtimestamp(ordersFile.getLastDate()) +  datetime.timedelta(days=1)
+    #enddate = dateutil.parser.parse('2014-12-31T08:00:00.000Z')
     print startdate, enddate
 
     #### Instruments in the order file...

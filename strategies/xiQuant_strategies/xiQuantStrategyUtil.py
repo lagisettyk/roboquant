@@ -14,7 +14,7 @@ from pyalgotrade.stratanalyzer import returns
 from pyalgotrade import dataseries
 import time
 import calendar
-
+from pyalgotrade import bar
 
 
 import copy_reg
@@ -297,6 +297,19 @@ class Feed(membf.BarFeed):
 
     def loadBars(self, instrument, bars):
         self.addBarsFromSequence(instrument, bars)
+
+class xiQuantBasicBar(bar.BasicBar):
+    def __init__(self, dateTime, open_, high, low, close, volume, adjClose, frequency, dividend, split):
+        bar.BasicBar.__init__(self, dateTime, open_, high, low, close, volume, adjClose, frequency)
+        self.__dividend = dividend
+        self.__split = split
+
+    def getDividend(self):
+        return self.__dividend
+
+    def getSplit(self):
+        return self.__split
+
 
 class Returns(returns.Returns):
      def __init__(self):
@@ -746,32 +759,13 @@ def processOptionsFile(inputfile, outputfile):
 ##### Orders filtered by momentum rank....
 def getOrdersFiltered(orders, instrument, filterCriteria=20):
 
-    orders = getOrdersFilteredByRules(orders, instrument) ##### Please note this is to filter orders based on ADR Cashflow etc...
+    #orders = getOrdersFilteredByRules(orders, instrument) ##### Please note this is to filter orders based on ADR Cashflow etc...
     filteredOrders = {}
     
     for key, value in orders.iteritems():
 
         if value[0][1] == 'Buy' or value[0][1] == 'Sell':
-            
-            dt = datetime.datetime.fromtimestamp(key)
-            #dtactual = dt + datetime.timedelta(days=1)
-            if value[0][1] == 'Buy':
-                #mom_rank_orderedlist = tickersRankByCashFlow(dt, sortOrder = 'Reverse')
-                mom_rank_orderedlist = tickersRankByMoneyFlow(dt, sortOrder = 'Reverse')
-                rank = mom_rank_orderedlist.values().index(instrument) if instrument in mom_rank_orderedlist.values() else -1 ### Please return high number so that orders do not get filtered..
-            else:
-                #mom_rank_orderedlist = tickersRankByCashFlow(dt, sortOrder = 'Ascending')
-                mom_rank_orderedlist = tickersRankByMoneyFlow(dt, sortOrder = 'Ascending')
-                rank = mom_rank_orderedlist.values().index(instrument) if instrument in mom_rank_orderedlist.values() else -1 ### Please return high number so that orders do not get filtered..
-            print "^^^^^^^^^^^^^^^^^^^^^^^^@@@@@@@@@@@@@: ", dt, rank, mom_rank_orderedlist.keys()[rank]
-            newval = []
-            newval.append((value[0][0], value[0][1], value[0][2], rank))
-            if rank <= filterCriteria:
-                print "***********############^^^^^^^^^^^+++++++++++++++++"
-                filteredOrders[key] =  newval
-            else:
-                util.Log.info("Filtered Order of: " + instrument + " on date: " + dt.strftime("%B %d, %Y") + " rank: " + str(rank))
-            '''
+           
             dt = datetime.datetime.fromtimestamp(key)
             seconds = calendar.timegm(dt.timetuple()) #### please note you need to get money flow of the one day before......
             keyString = int(seconds)*1000
@@ -781,7 +775,6 @@ def getOrdersFiltered(orders, instrument, filterCriteria=20):
                 rank = redisConn.zrevrank(rediskey, instrument) 
             else:
                 rank = redisConn.zrank(rediskey, instrument) 
-            print "^^^^^^^^^^^^^^^^^^^^^^^^@@@@@@@@@@@@@: ", dt, rediskey, rank
             ### update rank based on cashflow for BUY and SELL orders...
             newval = []
             newval.append((value[0][0], value[0][1], value[0][2], rank))
@@ -794,7 +787,6 @@ def getOrdersFiltered(orders, instrument, filterCriteria=20):
                     filteredOrders[key] = newval
                 else:
                     util.Log.info("Filtered Order of: " + instrument + " on date: " + dt.strftime("%B %d, %Y") + " rank: " + str(rank))
-            '''
         else:
             filteredOrders[key] = value
 
@@ -833,13 +825,15 @@ def getOrdersFilteredByRules(orders, instrument):
    
 def run_strategy_redis(bBandsPeriod, instrument, startPortfolio, startdate, enddate, filterCriteria=20, indicators=True):
 
-    feed = redis_build_feed_EOD(instrument, startdate, enddate)
+    #feed = redis_build_feed_EOD(instrument, startdate, enddate)
+    feed = redis_build_feed_EOD_RAW(instrument, startdate, enddate)
     #feed = build_feed_TN(instrument, startdate, enddate)
     #feed = yahoofinance.build_feed([instrument], 2012, 2014, ".")
 
     # Add the SPY bars, which are used to determine if the market is Bullish or Bearish
     # on a particular day.
-    feed = add_feeds_EOD_redis(feed, 'SPY', startdate, enddate)
+    #feed = add_feeds_EOD_redis(feed, 'SPY', startdate, enddate)
+    feed = add_feeds_EOD_redis_RAW(feed, 'SPY', startdate, enddate)
 
     ###Get earnings calendar
     calList = getEarningsCal(instrument)
@@ -884,14 +878,15 @@ def run_strategy_redis(bBandsPeriod, instrument, startPortfolio, startdate, endd
         returnsAnalyzer = Returns()
         results = StrategyResults(strat, instList, returnsAnalyzer, plotSignals=False)
         strat.run()
+
         if filterCriteria == 10000:
             orders = strat.getOrders()
         else:
             orders = getOrdersFiltered(strat.getOrders(), instrument, filterCriteria)
-            
+ 
         return orders
     
-    #return results
+
     
 
 def run_strategy_TN(bBandsPeriod, instrument, startPortfolio, startdate, enddate, filterCriteria=20, indicators=True):
@@ -971,9 +966,11 @@ def run_master_strategy(initialcash, masterFile, datasource='REDIS'):
     for instrument in ordersFile.getInstruments():
         if datasource == 'REDIS':
             if feed is None:
-                feed = redis_build_feed_EOD(instrument, startdate, enddate)
+                #feed = redis_build_feed_EOD(instrument, startdate, enddate)
+                feed = redis_build_feed_EOD_RAW(instrument, startdate, enddate)
             else:
-                feed = add_feeds_EOD_redis(feed, instrument, startdate, enddate)
+                #feed = add_feeds_EOD_redis(feed, instrument, startdate, enddate)
+                feed = add_feeds_EOD_redis_RAW(feed, instrument, startdate, enddate)
         else:
             if feed is None:
                 feed = build_feed_TN(instrument, startdate, enddate)
@@ -991,3 +988,68 @@ def run_master_strategy(initialcash, masterFile, datasource='REDIS'):
     return results
 
     
+def redis_build_feed_EOD_RAW(ticker, stdate, enddate):
+    from pyalgotrade.bar import BasicBar, Frequency
+
+    feed = Feed(Frequency.DAY, 1024)
+    return add_feeds_EOD_redis_RAW(feed, ticker, stdate, enddate)
+    #return add_feeds_EODRAW_CSV(feed, ticker, stdate, enddate)
+
+
+def add_feeds_EOD_redis_RAW( feed, ticker, stdate, enddate):
+    import datetime
+    from pyalgotrade.utils import dt
+    from pyalgotrade.bar import BasicBar, Frequency
+
+    ###### Please note zrangebyscore returns between values the scores to make it include both start date and end date as part of
+    ######## data series we need to do date arithmetic on passed in data ################
+    stdate, enddate = util.getRedisEffectiveDates(stdate, enddate)
+
+    seconds = calendar.timegm(stdate.timetuple())
+    seconds2 = calendar.timegm(enddate.timetuple())
+
+    data_dict = {}
+    try:
+        redisConn = util.get_redis_conn()
+        ### added EOD as data source
+        ticker_data = redisConn.zrangebyscore(ticker + ":EODRAW", int(seconds), int(seconds2), 0, -1, True)
+        #ticker_data = redisConn.zrangebyscore(ticker + ":EOD_UnAdj", int(seconds), int(seconds2), 0, -1, True)
+        data_dict = redis_listoflists_to_dict(ticker_data)
+    except Exception,e:
+        print str(e)
+        pass
+
+    bd = [] ##### initialize bar data.....
+    for key in data_dict:
+        #dateTime = dt.timestamp_to_datetime(key)
+        dateTime = dt.timestamp_to_datetime(key).replace(tzinfo=None) 
+        data = data_dict[key].split("|") ### split pipe delimted values
+        bar = xiQuantBasicBar(dateTime, float(data[0]) , float(data[1]), float(data[2]), float(data[3]), float(data[4]), float(data[3]), Frequency.DAY,float(data[5]), float(data[6]))
+
+        bd.append(bar)
+    #feed = Feed(Frequency.DAY, 1024)
+    feed.loadBars(ticker, bd)
+    return feed
+
+def add_feeds_EODRAW_CSV(feed, ticker, stdate, enddate):
+    import datetime
+    from pyalgotrade.utils import dt
+    from pyalgotrade.bar import BasicBar, Frequency
+    import csv
+    import dateutil.parser
+    import os
+
+
+    bd = [] ##### initialize bar data.....
+    file_EODRAW = os.path.join(os.path.dirname(__file__), ticker+'_EODRAW.csv')
+    with open(file_EODRAW, 'rU') as csvfile:
+        reader = csv.DictReader(csvfile)
+        for row in reader:
+            dateTime = dateutil.parser.parse(row['Date'])
+            ### Let's only populate the dates passed in the feed...
+            if dateTime.date() <= enddate.date() and dateTime.date() >= stdate.date() :
+                bar = xiQuantBasicBar(dateTime, 
+                float(row['Open']) , float(row['High']), float(row['Low']), float(row['Close']), float(row['Volume']), float(row['Close']), Frequency.DAY, float(row['Dividend']), float(row['Split']) )
+                bd.append(bar)
+    feed.loadBars(ticker, bd)
+    return feed

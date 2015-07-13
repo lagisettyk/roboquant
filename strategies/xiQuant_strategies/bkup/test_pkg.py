@@ -3,24 +3,24 @@ import sys
 sys.path.append('/home/parallels/Code/heroku-envbased/roboquant')
 #print sys.path
 import datetime
-from time import mktime
+#from time import calendar.timegm
 import xiQuantStrategyUtil
 from pyalgotrade.technical import ma
 from utils import util
 import csv
 import operator
+import calendar
 
 
 def redis_build_CSV_EOD(ticker, stdate, enddate):
     import datetime
-    from time import mktime
     from pyalgotrade.utils import dt
     from pyalgotrade.bar import BasicBar, Frequency
     import csv
     import collections
 
-    seconds = mktime(stdate.timetuple())
-    seconds2 = mktime(enddate.timetuple())
+    seconds = calendar.timegm(stdate.timetuple())
+    seconds2 = calendar.timegm(enddate.timetuple())
 
     data_dict = {}
     try:
@@ -53,7 +53,7 @@ def redis_build_CSV_EOD(ticker, stdate, enddate):
     	a.writerows(bd)
 
 import dateutil.parser
-#stdate = dateutil.parser.parse('2005-01-01')
+#stdate = dateutil.parser.parse('2010-01-01')
 stdate = dateutil.parser.parse('2005-06-30T08:00:00.000Z')
 enddate = dateutil.parser.parse('2014-12-31T08:00:00.000Z')
 #enddate = dateutil.parser.parse(' 2011-06-29')
@@ -65,7 +65,7 @@ enddate = dateutil.parser.parse('2014-12-31T08:00:00.000Z')
 
 print stdate, enddate
 
-#print int(mktime(enddate.timetuple()))*1000
+#print int(calendar.timegm(enddate.timetuple()))*1000
 
 #util.Log.info("Got logger handle...")
 #util.Log.info("Testing...")
@@ -104,7 +104,8 @@ print stdate, enddate
 #results = xiQuantStrategyUtil.run_strategy_redis(20, "GOOGL", 100000, stdate, enddate, filterCriteria=5000, indicators=False)
 #print results
 
-#results = xiQuantStrategyUtil.run_strategy_redis(20, "NFLX", 100000, stdate, enddate)
+
+#results = xiQuantStrategyUtil.run_strategy_redis(20, "GOOGL", 100000, stdate, enddate)
 #results = xiQuantStrategyUtil.run_strategy_TN(20, "GOOGL", 100000, stdate, enddate)
 #print results.getPortfolioResult()
 #print results.getOrdersFilteredByMomentumRank(filterCriteria=3000)
@@ -112,11 +113,11 @@ print stdate, enddate
 
 dataRows = []
 #tickerList = util.getTickerList('Abhi-26')
-tickerList = ['GOOGL']
+tickerList = ['WHR']
 for ticker in tickerList:
     results = xiQuantStrategyUtil.run_strategy_redis(20, ticker, 100000, stdate, enddate, filterCriteria=10000, indicators=False)
     #results = xiQuantStrategyUtil.run_strategy_redis(20, "GOOGL", 100000, stdate, enddate, filterCriteria=100, indicators=False)
-    #results = xiQuantStrategyUtil.run_strategy_TN(20, "NFLX", 100000, stdate, enddate, filterCriteria=10000, indicators=False)
+    #results = xiQuantStrategyUtil.run_strategy_TN(20, ticker, 100000, stdate, enddate, filterCriteria=10000, indicators=False)
     #results = xiQuantStrategyUtil.run_strategy_TN(20, ticker, 100000, stdate, enddate)
     print results
     orders = results
@@ -145,9 +146,9 @@ fake_csv = util.make_fake_csv(dataRows)
 reader = csv.DictReader(fake_csv, fieldnames=["timeSinceEpoch", "symbol", "action", "stopPrice", "rank"])
 with open('MasterOrders.csv', 'w') as csvfile:
     writer = csv.DictWriter(csvfile, fieldnames=["timeSinceEpoch", "symbol", "action", "stopPrice", "rank"])
-    writer.writeheader()
+    #writer.writeheader()
     for row in reader:
-        print row
+        row["stopPrice"] = round(float(row["stopPrice"]),2)
         writer.writerow(row)
 
 

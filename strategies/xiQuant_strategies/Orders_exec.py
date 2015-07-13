@@ -92,21 +92,23 @@ class MyStrategy(strategy.BacktestingStrategy):
 		execTime = execInfo.getDateTime()
 		cashBefore = "%0.2f" % self.__portfolioCashBefore
 		portfolioBefore = "%0.2f" % self.__portfolioBefore
-		cashAfter = "%0.2f" % self.getBroker().getCash(includeShort=False)
-		portfolioAfter = "%0.2f" % self.getBroker().getEquity()
 		buyPrice = "%0.2f" % execInfo.getPrice()
 		quantity = "%d" % execInfo.getQuantity()
 		if position.getEntryOrder().getAction() == Order.Action.BUY:
 			action = "LONG"
 		elif position.getEntryOrder().getAction() == Order.Action.SELL:
-			action = "SHORT"
+			action = "SELL_TO_CLOSE"
 		elif position.getEntryOrder().getAction() == Order.Action.BUY_TO_COVER:
 			action = "BUY_TO_COVER"
 		elif position.getEntryOrder().getAction() == Order.Action.SELL_SHORT:
 			action = "SHORT"
 		else:
 			action = "ERROR"
+
+		portfolioAfter = "%0.2f" % self.getBroker().getEquity()
+		cashAfter = "%0.2f" % self.getBroker().getCash(includeShort=False)
 		self.__results[instrument] = instrument + ',' + action + ',' + str(execTime.date()) + ',' + buyPrice + ',' + quantity + ',' + portfolioBefore + ',' + cashBefore + ',' + portfolioAfter + ',' + cashAfter + ','
+		self.info("Entry: %s" % self.__results[instrument])
 		
 	def onExitOk(self, position):
 		instrument = position.getExitOrder().getInstrument()
@@ -114,21 +116,18 @@ class MyStrategy(strategy.BacktestingStrategy):
 		execTime = execInfo.getDateTime()
 		cashBefore = "%0.2f" % self.__portfolioCashBefore
 		portfolioBefore = "%0.2f" % self.__portfolioBefore
-		cashAfter = "%0.2f" % self.getBroker().getCash(includeShort=False)
-		portfolioAfter = "%0.2f" % self.getBroker().getEquity()
 		sellPrice = "%0.2f" % execInfo.getPrice()
-		profitOrLoss = "%0.2f" % position.getPnL()
 		currPos = self.getBroker().getPositions()
 		listOfCurrInstrs = list(currPos.keys())
+
+		cashAfter = "%0.2f" % self.getBroker().getCash(includeShort=False)
+		portfolioAfter = "%0.2f" % self.getBroker().getEquity()
+		profitOrLoss = "%0.2f" % position.getPnL()
 		exitStr = str(execTime.date()) + ',' + sellPrice + ',' + portfolioBefore + ',' + cashBefore + ',' + portfolioAfter + ',' + cashAfter + ',' + profitOrLoss + ',' + str(listOfCurrInstrs) + '\n'
 		self.__results[instrument] += exitStr
 		self.__resultsFile.write(self.__results[instrument])
 		self.__results[instrument] = None
-
-		# Adjust the portfolio cash if we closed a short position.
-		if position.getEntryOrder().getAction() == Order.Action.BUY_TO_COVER:
-			cashAdjustment = execInfo.getQuantity() * consts.MAX_EXPECTED_LOSS_PER_SHORT_SHARE
-			self.getBroker().setCash(cashAfter + cashAdjustment)
+		self.info("Exit: %s" % exitStr)
 
 	def onOrderUpdated(self, order):
 		if order.isCanceled():
@@ -163,9 +162,7 @@ class MyStrategy(strategy.BacktestingStrategy):
 
 		for instrument, action, stopPrice in self.__ordersFile.getOrders(barDateTimeinSecs):
 			if action.lower() == "buy":
-				cashForInstrument = float(cashAvailable / noOfOrders)
-				if cashForInstrument > float(cashAvailable * consts.MAX_ALLOCATED_MONEY_FOR_EACH_TRADE):
-					cashForInstrument = float(cashAvailable * consts.MAX_ALLOCATED_MONEY_FOR_EACH_TRADE)
+				cashForInstrument = float(cashAvailable * consts.MAX_ALLOCATED_MONEY_FOR_EACH_TRADE)
 				sharesToBuy = int(cashForInstrument / stopPrice)
 				self.info("Shares to buy: %d" % sharesToBuy)
 				if sharesToBuy < 1:
@@ -183,11 +180,10 @@ class MyStrategy(strategy.BacktestingStrategy):
 						continue 
 				self.info("%s %d of %s at $%.2f" % (action, sharesToBuy, instrument, stopPrice))
 				self.__longPos[instrument] = self.enterLongStop(instrument, stopPrice, sharesToBuy, True)
+				cashAvailable -= cashForInstrument
 			elif action.lower() == "sell":
-				portfolioValue = self.getBroker().getEquity()
-				cashAvailableforShort = float(portfolioValue * (consts.PERCENTAGE_OF_PORTFOLIO_FOR_SHORT / 100))
-				#sharesToBuy = int(cashForInstrument / stopPrice)
-				sharesToBuy = int(cashAvailableforShort / consts.MAX_EXPECTED_LOSS_PER_SHORT_SHARE)
+				cashForInstrument = float(cashAvailable * consts.MAX_ALLOCATED_MONEY_FOR_EACH_TRADE)
+				sharesToBuy = int(cashForInstrument / stopPrice)
 				self.info("Shares to sell: %d" % sharesToBuy)
 				if sharesToBuy < 1:
 					# Buy at least 1 share
@@ -204,6 +200,7 @@ class MyStrategy(strategy.BacktestingStrategy):
 						continue 
 				self.info("%s %d of %s at $%.2f" % (action, sharesToBuy, instrument, stopPrice))
 				self.__shortPos[instrument] = self.enterShortStop(instrument, stopPrice, sharesToBuy, True)
+				cashAvailable -= cashForInstrument
 			elif action.lower() == "tightened-stop-buy" or action.lower() == "stop-buy":
 				if self.__shortPos.get(instrument, None) and self.__shortPos[instrument]:
 					self.__shortPos[instrument].cancelExit()

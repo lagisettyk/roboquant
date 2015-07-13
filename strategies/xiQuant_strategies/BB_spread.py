@@ -43,7 +43,7 @@ class BBSpread(strategy.BacktestingStrategy):
 		strategy.BacktestingStrategy.__init__(self, feed, startPortfolio)
 
 		# We want to use adjusted prices.
-		self.setUseAdjustedValues(True)
+		#self.setUseAdjustedValues(True)
 		self.__feed = feed
 		self.__bullishOrBearish = 0
 		self.__longPos = None
@@ -58,6 +58,7 @@ class BBSpread(strategy.BacktestingStrategy):
 		self.__closeDS = feed[instrument].getCloseDataSeries()
 		self.__volumeDS = feed[instrument].getVolumeDataSeries()
 		self.__bbands = bollinger.BollingerBands(feed[instrument].getCloseDataSeries(), bBandsPeriod, 2)
+		#self.__bbands = bollinger.BollingerBands(feed[instrument].getAdjCloseDataSeries(), bBandsPeriod, 2)
 		self.__spyBBands = bollinger.BollingerBands(self.__spyDS, bBandsPeriod, 2)
 		self.__lowerBBDataSeries = self.__bbands.getLowerBand()
 		self.__upperBBDataSeries = self.__bbands.getUpperBand()
@@ -67,7 +68,8 @@ class BBSpread(strategy.BacktestingStrategy):
 		self.__bb_middle = 0
 		self.__bb_upper = 0
 		self.__bb_period = bBandsPeriod
-		self.__rsi = rsi.RSI(feed[instrument].getPriceDataSeries(), consts.RSI_SETTING)
+		#self.__rsi = rsi.RSI(feed[instrument].getPriceDataSeries(), consts.RSI_SETTING)
+		self.__rsi = rsi.RSI(feed[instrument].getCloseDataSeries(), consts.RSI_SETTING)
 		self.__lowPriceDS = feed[instrument].getLowDataSeries()
 		self.__highPriceDS = feed[instrument].getHighDataSeries()
 		self.__emaFast = ma.EMA(self.__priceDS, consts.MACD_FAST_FASTPERIOD)

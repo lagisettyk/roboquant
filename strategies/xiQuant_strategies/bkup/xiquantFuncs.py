@@ -1,6 +1,8 @@
 #!/usr/bin/python
 
 import numpy
+import StringIO
+import csv
 
 from pyalgotrade import dataseries
 from pyalgotrade.talibext import indicator
@@ -78,3 +80,11 @@ def isEarnings(earningsCalList, date):
 	else:
 		date = date + datetime.timedelta(days=1)
 	return date in earningsCalList
+
+def make_fake_csv(data):
+	"""Returns a populdated fake csv file object """
+	fake_csv = StringIO.StringIO()
+	fake_writer = csv.writer(fake_csv, delimiter=',')
+	fake_writer.writerows(data) ########## data is nothing but list of lists....
+	fake_csv.seek(0)
+	return fake_csv

@@ -127,6 +127,17 @@ def backtest(request):
 	results = {
 		"seriesData":job.result.getPortfolioResult(),
 		"flagData": job.result.getTradeDetails(),
+		"upper": job.result.getSeries("upper"),
+		"middle": job.result.getSeries("middle"),
+		"lower": job.result.getSeries("lower"),
+		"price": job.result.getAdjCloseSeries(ticker)
+
+		}
+
+	'''
+	results = {
+		"seriesData":job.result.getPortfolioResult(),
+		"flagData": job.result.getTradeDetails(),
 		"upper": job.result.getSeries("upper"), 
 		"middle": job.result.getSeries("middle"),
 		"lower": job.result.getSeries("lower"),
@@ -143,6 +154,7 @@ def backtest(request):
 		"cashflow_3days": xiQuantStrategyUtil.redis_build_moneyflow(ticker, start_date, end_date),
 		"volsma5days": xiQuantStrategyUtil.redis_build_volume_sma_ndays(ticker, 5, start_date, end_date) ### 5days...
 		}
+	'''
 	
     ### This is important to note json.dumps() convert python data structure to JSON form
 	return HttpResponse(json.dumps(results), content_type='application/json')
@@ -167,7 +179,7 @@ def simulatepotfolio(redisURL, amount, strategy, startdate, enddate, filterRank)
 
 	jobList = []
 	for ticker in tickerList:
-		jobList.append(q.enqueue(xiQuantStrategyUtil.run_strategy_redis, 20, ticker, int(amount), startdate, enddate, filterRank, indicators=False, result_ttl=5000))
+		jobList.append(q.enqueue(xiQuantStrategyUtil.run_strategy_redis, 20, ticker, int(amount), startdate, enddate, int(filterRank), indicators=False, result_ttl=5000))
 		#jobList.append(q.enqueue(xiQuantStrategyUtil.run_strategy_redis, 20, ticker, int(amount), startdate, enddate,  filterRank, indicators=False))
 
 	#### Wait in loop until all of them are successfull
@@ -183,6 +195,7 @@ def simulatepotfolio(redisURL, amount, strategy, startdate, enddate, filterRank)
 					sleep = False
 			if job.get_status() == 'finished' and any(job.result):
 				master_orders.append(job.result)
+				print "Successfully processing job id: ", jobID, len(job.result)
 				#master_orders.append(job.result.getOrdersFilteredByMomentumRank(filterCriteria=rank))
 				#master_orders.append(job.result.getOrdersFilteredByRules())
 			jobID +=1
@@ -215,6 +228,7 @@ def simulatepotfolio(redisURL, amount, strategy, startdate, enddate, filterRank)
 	#########################################################################################################################
 	#########################################################################################################################
 	################# Only apply these if the filterrank is less than 20 ####################################################
+	'''
 	if filterRank < 20:
 		uniqueKeys = sorted(uniqueKeys)
 		modifiedDataRows = []
@@ -233,8 +247,9 @@ def simulatepotfolio(redisURL, amount, strategy, startdate, enddate, filterRank)
 
 		fake_csv = util.make_fake_csv(dataRows)	
 		print  "Successfully processed tickers"	
+	'''
 
-	#fake_csv = util.make_fake_csv(dataRows)
+	fake_csv = util.make_fake_csv(dataRows)
 	#fake_csv = util.make_fake_csv(modifiedDataRows)
 	#print  "Orders filtered due to rank: ", len(dataRows) - len(modifiedDataRows)
 

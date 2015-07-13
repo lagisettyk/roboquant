@@ -22,7 +22,7 @@ class OrdersFile:
 		self.__firstDate = 0
 		self.__lastDate = 0
 		self.__instruments = []
-# Load orders from the file.
+
 		if fakecsv:
 			reader = csv.DictReader(ordersFile, fieldnames=["timeSinceEpoch", "symbol", "action", "stopPrice"])
 		else:
@@ -81,7 +81,7 @@ class MyStrategy(strategy.BacktestingStrategy):
 
 	def onStart(self):
 		self.__resultsFile = open(consts.RESULTS_FILE, 'w')
-		self.__resultsFile.write("Instrument,Trade-Type,Entry-Date,Entry-Price,Portfolio-Value-Before,Portfolio-Cash-Before,Portfolio-Value-After,Portfolio-Cash-After,Exit-Date,Exit-Price,Portfolio-Value-Before,Portfolio-Cash-Before,Portfolio-Value-After,Portfolio-Cash-After\n")
+		self.__resultsFile.write("Instrument,Trade-Type,Entry-Date,Entry-Price,Quantity,Portfolio-Value-Pre,Portfolio-Cash-Pre,Portfolio-Value-Post,Portfolio-Cash-Post,Exit-Date,Exit-Price,Portfolio-Value-Pre,Portfolio-Cash-Pre,Portfolio-Value-Post,Portfolio-Cash-Post,PorL,Current-Pos\n")
 
 	def onFinish(self, bars):
 		self.__resultsFile.close()
@@ -95,6 +95,7 @@ class MyStrategy(strategy.BacktestingStrategy):
 		cashAfter = "%0.2f" % self.getBroker().getCash(includeShort=False)
 		portfolioAfter = "%0.2f" % self.getBroker().getEquity()
 		buyPrice = "%0.2f" % execInfo.getPrice()
+		quantity = "%d" % execInfo.getQuantity()
 		if position.getEntryOrder().getAction() == Order.Action.BUY:
 			action = "LONG"
 		elif position.getEntryOrder().getAction() == Order.Action.SELL:
@@ -105,7 +106,7 @@ class MyStrategy(strategy.BacktestingStrategy):
 			action = "SHORT"
 		else:
 			action = "ERROR"
-		self.__results[instrument] = instrument + ',' + action + ',' + str(execTime.date()) + ',' + buyPrice + ',' + portfolioBefore + ',' + cashBefore + ',' + portfolioAfter + ',' + cashAfter + ','
+		self.__results[instrument] = instrument + ',' + action + ',' + str(execTime.date()) + ',' + buyPrice + ',' + quantity + ',' + portfolioBefore + ',' + cashBefore + ',' + portfolioAfter + ',' + cashAfter + ','
 		
 	def onExitOk(self, position):
 		instrument = position.getExitOrder().getInstrument()
@@ -116,8 +117,10 @@ class MyStrategy(strategy.BacktestingStrategy):
 		cashAfter = "%0.2f" % self.getBroker().getCash(includeShort=False)
 		portfolioAfter = "%0.2f" % self.getBroker().getEquity()
 		sellPrice = "%0.2f" % execInfo.getPrice()
-		profiOrLoss = "%0.2f" % position.getPnL()
-		exitStr = str(execTime.date()) + ',' + sellPrice + ',' + portfolioBefore + ',' + cashBefore + ',' + portfolioAfter + ',' + cashAfter + ',' + profiOrLoss + '\n'
+		profitOrLoss = "%0.2f" % position.getPnL()
+		currPos = self.getBroker().getPositions()
+		listOfCurrInstrs = list(currPos.keys())
+		exitStr = str(execTime.date()) + ',' + sellPrice + ',' + portfolioBefore + ',' + cashBefore + ',' + portfolioAfter + ',' + cashAfter + ',' + profitOrLoss + ',' + str(listOfCurrInstrs) + '\n'
 		self.__results[instrument] += exitStr
 		self.__resultsFile.write(self.__results[instrument])
 		self.__results[instrument] = None

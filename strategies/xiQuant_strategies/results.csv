@@ -1,3 +1,0 @@
-Instrument,Trade-Type,Entry-Date,Entry-Price,Quantity,Portfolio-Value-Pre,Portfolio-Cash-Pre,Portfolio-Value-Post,Portfolio-Cash-Post,Exit-Date,Exit-Price,Portfolio-Value-Pre,Portfolio-Cash-Pre,Portfolio-Value-Post,Portfolio-Cash-Post,PorL,Current-Pos
-WHR,LONG,2009-09-17,64.09,1482,100000.00,100000.00,98621.34,5025.14,2009-09-24,60.98,96143.87,5025.14,95402.87,95402.87,-4597.13,[]
-WHR,LONG,2013-03-05,113.23,801,95402.87,95402.87,96117.96,4708.94,2013-03-07,113.26,95833.46,4708.94,95432.96,95432.96,30.09,[]
