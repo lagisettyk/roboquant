@@ -2,7 +2,7 @@
 
 # This parameter is used to control whether we should go, 'Long' or 'Short' only
 # or 'Both' for a particular strategy.
-BB_SPREAD_LONG_OR_SHORT = 'Both'
+BB_SPREAD_LONG_OR_SHORT = 'Long'
 
 # For these stocks we make an exception to trade against the market.
 SPY_EXCEPTIONS = ['AAPL', 'AMZN', 'PCLN', 'NFLX']

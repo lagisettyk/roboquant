@@ -152,13 +152,14 @@ def populate_redis_eod_raw(redisConn, tickerList, datasource, startdate, enddate
 					Low = daily_data[3]
 					Close = daily_data[4]
 					Volume = daily_data[5]
+					AdjClose = daily_data[11] #### Adjusted close
 					Dividend = daily_data[6]
 					Split = daily_data[7]
 
 					if (not math.isnan(Open)) and (not math.isnan(High)) and (not math.isnan(Low)) and (not math.isnan(Close)) and (not math.isnan(Volume)):
 						redisConn.zadd(tickerList[ticker] +":EODRAW", calendar.timegm(dateStr.timetuple()), 
 							str(Open) + "|" + str(High) + "|" + str(Low) + "|" + str(Close) 
-					 			+ "|" + str(Volume)+ "|" + str(Dividend) +"|" + str(Split))
+					 			+ "|" + str(Volume) +"|"+str(AdjClose) +"|" + str(Dividend) +"|" + str(Split))
 		except Exception,e: 
 			logger.debug(tickerList[ticker] +": " + str(e))
 			pass

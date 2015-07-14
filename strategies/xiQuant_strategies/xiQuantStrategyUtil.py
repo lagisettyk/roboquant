@@ -15,6 +15,8 @@ from pyalgotrade import dataseries
 import time
 import calendar
 from pyalgotrade import bar
+import collections
+from pyalgotrade.bar import BasicBar, Frequency
 
 
 import copy_reg
@@ -289,14 +291,73 @@ class StrategyResults(object):
         return dataseries
 
 class Feed(membf.BarFeed):
+
     def __init__(self, frequency, maxLen=1024):
         membf.BarFeed.__init__(self, frequency, maxLen)
+        self.__barSeries = {}
 
     def barsHaveAdjClose(self):
         return True
 
     def loadBars(self, instrument, bars):
-        self.addBarsFromSequence(instrument, bars)
+        self.addBarsFromSequence(instrument, bars) #### this is for raw values...
+        self.__barSeries[instrument] = bars
+
+    def getBarSeries(self, instrument):
+        return self.__barSeries[instrument]
+
+
+def adjustBars(instrument, bars, startdate, enddate):
+
+    bars = []
+    bars_in_dtrange = [bar for bar in bars if startdate.replace(tzinfo=None) <= bar.getDateTime() <= enddate.replace(tzinfo=None)]
+    bars_in_dtrange.sort(key=lambda bar: bar.getDateTime(), reverse=True)
+    k = 0
+    splitdataList = []
+    dividendList = []
+    for bar in bars_in_dtrange:
+        splitdata = bar.getSplit()
+        dividend = bar.getDividend()
+        if splitdata != 1.0:
+            splitdataList.append(bar.getSplit())
+        if dividend != 0.0:
+            adjFactor = (bar.getClose() + bar.getDividend()) / bar.getClose()
+            dividendList.append(adjFactor)
+        #### Special case.... end date / analysis date nothing to do..
+        if (k==0):
+            bar = BasicBar(bar.getDateTime(), 
+                    bar.getOpen() , bar.getHigh(), bar.getLow(), bar.getClose(), bar.getVolume(), bar.getClose(), Frequency.DAY)
+            bars.append(bar)
+        else:
+            #### Adjust OHLC & Volume data for split adjustments and dividend adjustments
+            Open = bar.getOpen()
+            High = bar.getHigh()
+            Low  = bar.getLow()
+            Close = bar.getClose()
+            Volume = bar.getVolume()
+            ### adjust data for splits
+            for split in splitdataList:
+                Open = Open / split
+                High = High / split
+                Low  = Low / split
+                Close = Close /split
+                Volume = Volume * split
+
+            ### adjust data for dividends
+            for adjFactor in dividendList:
+                Open = Open / adjFactor
+                High = High / adjFactor
+                Low  = Low / adjFactor
+                Close = Close / adjFactor
+                Volume = Volume * adjFactor
+
+            bar = BasicBar(bar.getDateTime(), 
+                    Open , High, Low, Close, Volume, Close, Frequency.DAY)
+            bars.append(bar)
+        k +=1
+        feed = Feed(Frequency.DAY, 1024)
+        return feed.loadBars(instrument+"_adjusted", bars)
+    
 
 class xiQuantBasicBar(bar.BasicBar):
     def __init__(self, dateTime, open_, high, low, close, volume, adjClose, frequency, dividend, split):
@@ -834,6 +895,8 @@ def run_strategy_redis(bBandsPeriod, instrument, startPortfolio, startdate, endd
     # on a particular day.
     #feed = add_feeds_EOD_redis(feed, 'SPY', startdate, enddate)
     feed = add_feeds_EOD_redis_RAW(feed, 'SPY', startdate, enddate)
+    #feed.adjustBars(instrument, startdate, enddate)
+    #feed.adjustBars('SPY', startdate, enddate)
 
     ###Get earnings calendar
     calList = getEarningsCal(instrument)
@@ -1013,7 +1076,6 @@ def add_feeds_EOD_redis_RAW( feed, ticker, stdate, enddate):
         redisConn = util.get_redis_conn()
         ### added EOD as data source
         ticker_data = redisConn.zrangebyscore(ticker + ":EODRAW", int(seconds), int(seconds2), 0, -1, True)
-        #ticker_data = redisConn.zrangebyscore(ticker + ":EOD_UnAdj", int(seconds), int(seconds2), 0, -1, True)
         data_dict = redis_listoflists_to_dict(ticker_data)
     except Exception,e:
         print str(e)
@@ -1024,7 +1086,7 @@ def add_feeds_EOD_redis_RAW( feed, ticker, stdate, enddate):
         #dateTime = dt.timestamp_to_datetime(key)
         dateTime = dt.timestamp_to_datetime(key).replace(tzinfo=None) 
         data = data_dict[key].split("|") ### split pipe delimted values
-        bar = xiQuantBasicBar(dateTime, float(data[0]) , float(data[1]), float(data[2]), float(data[3]), float(data[4]), float(data[3]), Frequency.DAY,float(data[5]), float(data[6]))
+        bar = xiQuantBasicBar(dateTime, float(data[0]) , float(data[1]), float(data[2]), float(data[3]), float(data[4]), float(data[5]), Frequency.DAY,float(data[6]), float(data[7]))
 
         bd.append(bar)
     #feed = Feed(Frequency.DAY, 1024)
@@ -1049,7 +1111,7 @@ def add_feeds_EODRAW_CSV(feed, ticker, stdate, enddate):
             ### Let's only populate the dates passed in the feed...
             if dateTime.date() <= enddate.date() and dateTime.date() >= stdate.date() :
                 bar = xiQuantBasicBar(dateTime, 
-                float(row['Open']) , float(row['High']), float(row['Low']), float(row['Close']), float(row['Volume']), float(row['Close']), Frequency.DAY, float(row['Dividend']), float(row['Split']) )
+                float(row['Open']) , float(row['High']), float(row['Low']), float(row['Close']), float(row['Volume']), float(row['AdjClose']), Frequency.DAY, float(row['Dividend']), float(row['Split']) )
                 bd.append(bar)
     feed.loadBars(ticker, bd)
     return feed
