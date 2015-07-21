@@ -1,5 +1,4 @@
 import pyalgotrade.broker 
-#from time import calendar.timegm
 from pyalgotrade.barfeed import membf
 from pyalgotrade.technical import ma
 from utils import util
@@ -14,8 +13,17 @@ from pyalgotrade.stratanalyzer import returns
 from pyalgotrade import dataseries
 import time
 import calendar
+from pyalgotrade import bar
+import collections
+from pyalgotrade.bar import BasicBar, Frequency
 
 
+import xiquantPlatform
+
+
+####=========================================================================================================################
+#######            Special methods for pickle/serialization support any instance methods....
+########======================================================================================================###############
 
 import copy_reg
 import types
@@ -52,10 +60,15 @@ def _unpickle_method(func_name, obj, cls):
 copy_reg.pickle(types.MethodType, _pickle_method, _unpickle_method)
 
 
+
+####=========================================================================================================################
+#######            Classes override/extended pyalgo base calsses to support BBSpread strategy...
+########======================================================================================================###############
+
+
 class StrategyResults(object):
     """Class responsible for extracting results of a strategy execution.
     """
-
     def __init__(self, strat, instList, returnsAnalyzer, plotAllInstruments=True, plotBuySell=True, plotPortfolio=True, plotSignals=False):
         self.__dateTimes = set()
 
@@ -177,47 +190,6 @@ class StrategyResults(object):
     def getOrders(self):
         return self.__orders
 
-    '''
-    def getOrdersFilteredByMomentumRank(self, filterCriteria=25):
-        filteredOrders = {}
-        for key, value in self.__orders.iteritems():
-
-            if value[0][1] == 'Buy' or value[0][1] == 'Sell':
-                dt = datetime.datetime.fromtimestamp(key)
-                #mom_rank_orderedlist = tickersRankByMoneyFlowPercent(dt)
-                mom_rank_orderedlist = tickersRankByMoneyFlow(dt)
-                rank = mom_rank_orderedlist.values().index(self.__instList[0]) ### Please note first in the list is the stock details..
-                if rank <= filterCriteria:
-                    filteredOrders[key] = value
-                else:
-                    util.Log.info("Filtered Order of: " + self.__instList[0] + " on date: " + dt.strftime("%B %d, %Y") + " rank: " + str(rank))
-            else:
-                filteredOrders[key] = value
-
-        return filteredOrders
-    '''
-
-    '''
-    def getOrdersFilteredByRules(self, filterCriteria=25):
-        filteredOrders = {}
-        for key, value in self.__orders.iteritems():
-
-            if value[0][1] == 'Buy' or value[0][1] == 'Sell':
-                dt = datetime.datetime.fromtimestamp(key)
-                ADR_5days = ADR(self.__instList[0], 5, dt)
-                vol_5days = volume(self.__instList[0], 5, dt)
-                mf = moneyflow(self.__instList[0],  dt)
-                if (ADR_5days >=1) and (vol_5days >= 1000000) and mf >= 2000000:
-                    filteredOrders[key] = value
-                else:
-                    util.getLogger().info("Filtered Order of: " + self.__instList[0] + " on date: " + dt.strftime("%B %d, %Y") 
-                        + " ADR :", ADR_5days + " volume: " + vol_5days + " moneyflow: " + mf)
-            else:
-                filteredOrders[key] = value
-
-        return filteredOrders
-    '''
-
     def getAdjCloseSeries(self, instrument):
         return self.__AdjPrices[instrument]
 
@@ -289,14 +261,32 @@ class StrategyResults(object):
         return dataseries
 
 class Feed(membf.BarFeed):
+
     def __init__(self, frequency, maxLen=1024):
         membf.BarFeed.__init__(self, frequency, maxLen)
+        self.__barSeries = {}
 
     def barsHaveAdjClose(self):
         return True
 
     def loadBars(self, instrument, bars):
-        self.addBarsFromSequence(instrument, bars)
+        self.addBarsFromSequence(instrument, bars) #### this is for raw values...
+        self.__barSeries[instrument] = bars
+
+    def getBarSeries(self, instrument):
+        return self.__barSeries[instrument]
+
+class xiQuantBasicBar(bar.BasicBar):
+    def __init__(self, dateTime, open_, high, low, close, volume, adjClose, frequency, dividend, split):
+        bar.BasicBar.__init__(self, dateTime, open_, high, low, close, volume, adjClose, frequency)
+        self.__dividend = dividend
+        self.__split = split
+
+    def getDividend(self):
+        return self.__dividend
+
+    def getSplit(self):
+        return self.__split
 
 class Returns(returns.Returns):
      def __init__(self):
@@ -305,56 +295,65 @@ class Returns(returns.Returns):
         self.__netReturns.setMaxLen(5000)
         self.__cumReturns = dataseries.SequenceDataSeries()
         self.__cumReturns.setMaxLen(5000)
+
+
+def adjustBars(instrument, bars, startdate, enddate):
+
+    bars = []
+    bars_in_dtrange = [bar for bar in bars if startdate.replace(tzinfo=None) <= bar.getDateTime() <= enddate.replace(tzinfo=None)]
+    bars_in_dtrange.sort(key=lambda bar: bar.getDateTime(), reverse=True)
+    k = 0
+    splitdataList = []
+    dividendList = []
+    for bar in bars_in_dtrange:
+        splitdata = bar.getSplit()
+        dividend = bar.getDividend()
+        if splitdata != 1.0:
+            splitdataList.append(bar.getSplit())
+        if dividend != 0.0:
+            adjFactor = (bar.getClose() + bar.getDividend()) / bar.getClose()
+            dividendList.append(adjFactor)
+        #### Special case.... end date / analysis date nothing to do..
+        if (k==0):
+            bar = BasicBar(bar.getDateTime(), 
+                    bar.getOpen() , bar.getHigh(), bar.getLow(), bar.getClose(), bar.getVolume(), bar.getClose(), Frequency.DAY)
+            bars.append(bar)
+        else:
+            #### Adjust OHLC & Volume data for split adjustments and dividend adjustments
+            Open = bar.getOpen()
+            High = bar.getHigh()
+            Low  = bar.getLow()
+            Close = bar.getClose()
+            Volume = bar.getVolume()
+            ### adjust data for splits
+            for split in splitdataList:
+                Open = Open / split
+                High = High / split
+                Low  = Low / split
+                Close = Close /split
+                Volume = Volume * split
+
+            ### adjust data for dividends
+            for adjFactor in dividendList:
+                Open = Open / adjFactor
+                High = High / adjFactor
+                Low  = Low / adjFactor
+                Close = Close / adjFactor
+                Volume = Volume * adjFactor
+
+            bar = BasicBar(bar.getDateTime(), 
+                    Open , High, Low, Close, Volume, Close, Frequency.DAY)
+            bars.append(bar)
+        k +=1
+        feed = Feed(Frequency.DAY, 1024)
+        return feed.loadBars(instrument+"_adjusted", bars)
+    
+
+
+####=========================================================================================================################
+#######            Helper methods related to running BBSpread strategy.....
+########======================================================================================================###############
        
-       
-
-def redis_listoflists_to_dict(redis_list):
-    list_values, list_keys = zip(*redis_list)
-    return dict(zip(list_keys, list_values))
-
-def redis_build_feed_EOD(ticker, stdate, enddate):
-    from pyalgotrade.bar import BasicBar, Frequency
-
-    feed = Feed(Frequency.DAY, 1024)
-    return add_feeds_EOD_redis(feed, ticker, stdate, enddate)
-
-
-
-def add_feeds_EOD_redis( feed, ticker, stdate, enddate):
-    import datetime
-    from pyalgotrade.utils import dt
-    from pyalgotrade.bar import BasicBar, Frequency
-
-    ###### Please note zrangebyscore returns between values the scores to make it include both start date and end date as part of
-    ######## data series we need to do date arithmetic on passed in data ################
-    stdate, enddate = util.getRedisEffectiveDates(stdate, enddate)
-
-    seconds = calendar.timegm(stdate.timetuple())
-    seconds2 = calendar.timegm(enddate.timetuple())
-
-    data_dict = {}
-    try:
-        redisConn = util.get_redis_conn()
-        ### added EOD as data source
-        ticker_data = redisConn.zrangebyscore(ticker + ":EOD", int(seconds), int(seconds2), 0, -1, True)
-        #ticker_data = redisConn.zrangebyscore(ticker + ":EOD_UnAdj", int(seconds), int(seconds2), 0, -1, True)
-        data_dict = redis_listoflists_to_dict(ticker_data)
-    except Exception,e:
-        print str(e)
-        pass
-
-    bd = [] ##### initialize bar data.....
-    for key in data_dict:
-        #dateTime = dt.timestamp_to_datetime(key)
-        dateTime = dt.timestamp_to_datetime(key).replace(tzinfo=None) 
-        data = data_dict[key].split("|") ### split pipe delimted values
-        bar = BasicBar(dateTime, 
-            float(data[0]) , float(data[1]), float(data[2]), float(data[3]), float(data[4]), float(data[3]), Frequency.DAY)
-            #float(data[0]) , float(data[1]), float(data[2]), float(data[3]), float(data[5]), float(data[4]), Frequency.DAY)
-        bd.append(bar)
-    #feed = Feed(Frequency.DAY, 1024)
-    feed.loadBars(ticker, bd)
-    return feed
 
 def ADR(ticker,nDays, date):
     adr_series = redis_build_ADR_ndays(ticker, nDays, (date - datetime.timedelta(days=10)), date)
@@ -374,7 +373,7 @@ def redis_build_ADR_ndays(ticker, nDays, stdate, enddate):
     data_dict = {}
     try:
         redisConn = util.get_redis_conn()
-        ticker_data = redisConn.zrangebyscore(ticker + ":EOD", int(seconds), int(seconds2), 0, -1, True)
+        ticker_data = redisConn.zrangebyscore(ticker + ":EODRAW", int(seconds), int(seconds2), 0, -1, True)
         if(len(ticker_data) > 1):
             data_dict = redis_listoflists_to_dict(ticker_data)
         #data_dict = redis_listoflists_to_dict(ticker_data)
@@ -422,7 +421,7 @@ def redis_build_volume_sma_ndays(ticker, nDays, stdate, enddate):
     data_dict = {}
     try:
         redisConn = util.get_redis_conn()
-        ticker_data = redisConn.zrangebyscore(ticker + ":EOD", int(seconds), int(seconds2), 0, -1, True)
+        ticker_data = redisConn.zrangebyscore(ticker + ":EODRAW", int(seconds), int(seconds2), 0, -1, True)
         if(len(ticker_data) > 1):
             data_dict = redis_listoflists_to_dict(ticker_data)
         #data_dict = redis_listoflists_to_dict(ticker_data)
@@ -467,7 +466,7 @@ def redis_build_sma_3days(ticker, stdate, enddate):
     data_dict = {}
     try:
         redisConn = util.get_redis_conn()
-        ticker_data = redisConn.zrangebyscore(ticker + ":EOD", int(seconds), int(seconds2), 0, -1, True)
+        ticker_data = redisConn.zrangebyscore(ticker + ":EODRAW", int(seconds), int(seconds2), 0, -1, True)
         if(len(ticker_data) > 1):
             data_dict = redis_listoflists_to_dict(ticker_data)
         #data_dict = redis_listoflists_to_dict(ticker_data)
@@ -496,7 +495,6 @@ def redis_build_sma_3days(ticker, stdate, enddate):
         j +=1
     return sma_3days
 
-
 def tickersRankByCashFlow(date, sortOrder):
     import collections
 
@@ -517,8 +515,6 @@ def cashflow(ticker, date):
     cashflow = cashflow_timeseries_TN(ticker, (date - datetime.timedelta(days=10)), date)
     return cashflow[-1]
     
-
-
 def cashflow_timeseries_TN(ticker, startdate, enddate):
 
     ###### Please note zrangebyscore returns between values the scores to make it include both start date and end date as part of
@@ -530,7 +526,7 @@ def cashflow_timeseries_TN(ticker, startdate, enddate):
     data_dict = {}
     try:
         redisConn = util.get_redis_conn()
-        ticker_data = redisConn.zrangebyscore(ticker + ":EOD", int(seconds), int(seconds2), 0, -1, True)
+        ticker_data = redisConn.zrangebyscore(ticker + ":EODRAW", int(seconds), int(seconds2), 0, -1, True)
         if(len(ticker_data) > 1):
             data_dict = redis_listoflists_to_dict(ticker_data)
     except Exception,e:
@@ -545,7 +541,6 @@ def cashflow_timeseries_TN(ticker, startdate, enddate):
         data_point = []
         cashflow = 0
         timestamp = keys[j-1]
-        #timestamp = keys[j]
         keyList = keys[i:j]
         priceList = []
         volumeList = []
@@ -563,116 +558,6 @@ def cashflow_timeseries_TN(ticker, startdate, enddate):
         j +=1
 
     return cashflow_accum
-
-
-def moneyflow(ticker, date):
-    moneyflow = redis_build_moneyflow(ticker, (date - datetime.timedelta(days=10)), date)
-    return moneyflow[-1]
-
-def redis_build_moneyflow(ticker, stdate, enddate):
-    moneyflow = []
-    sma_3days = redis_build_sma_3days(ticker, stdate, enddate)
-    for x in range(len(sma_3days)-1):
-        data_point = []
-        ### Add first data point null that way cashflow can align with other charts...
-        if x==0:
-            firstDay = []
-            sec_fd = calendar.timegm(datetime.datetime.fromtimestamp(sma_3days[0][0]).timetuple())
-            firstDay.append(int(sec_fd)*1000)
-            firstDay.append(None)
-            moneyflow.append(firstDay)
-        seconds = calendar.timegm(datetime.datetime.fromtimestamp(sma_3days[x+1][0]).timetuple())
-        data_point.append(int(seconds)*1000) ### datetime in milliseconds...
-        data_point.append(sma_3days[x+1][1] - sma_3days[x][1])
-        #data_point.append(sma_3days[x+1][1])
-        moneyflow.append(data_point)
-    return moneyflow
-
-def redis_build_moneyflow_percent(ticker, stdate, enddate):
-    moneyflow = []
-    sma_3days = redis_build_sma_3days(ticker, stdate, enddate)
-    for x in range(len(sma_3days)-1):
-        data_point = []
-        ### Add first data point null that way cashflow can align with other charts...
-        if x==0:
-            firstDay = []
-            sec_fd = seconds = calendar.timegm(datetime.datetime.fromtimestamp(sma_3days[0][0]).timetuple())
-            firstDay.append(int(sec_fd)*1000)
-            firstDay.append(None)
-            moneyflow.append(firstDay)
-
-        seconds = calendar.timegm(datetime.datetime.fromtimestamp(sma_3days[x+1][0]).timetuple())
-        data_point.append(int(seconds)*1000)### datetime in milliseconds...
-        diff = sma_3days[x+1][1] - sma_3days[x][1]
-        #######We should definitely revisit and check this problem...
-        if sma_3days[x][1] != 0:
-            data_point.append(diff/sma_3days[x][1] * 100)
-        else:
-            data_point.append(-9999.00) ### Please note for now to make sure we are not facing divide by zero issue
-        moneyflow.append(data_point)
-    return moneyflow
-
-def tickersRankByMoneyFlowPercent(date, sortOrder):
-    import collections
-
-    momentum_rank = {}
-    tickerList = util.getMasterTickerList()
-    for x in range(len(tickerList)):
-        moneyflow = redis_build_moneyflow_percent(tickerList[x], (date - datetime.timedelta(days=10)), date)
-        if len(moneyflow) > 1:
-            data_point = moneyflow[len(moneyflow)-1]
-            #data_point = moneyflow[len(moneyflow)-2]
-            momentum_rank[data_point[1]] = tickerList[x]
-        time.sleep(0.0001)
-
-    if sortOrder == 'Reverse':
-        return collections.OrderedDict(sorted(momentum_rank.items(), reverse=True))
-    else:
-        return collections.OrderedDict(sorted(momentum_rank.items(), reverse=False))
-
-def tickersRankByMoneyFlow(date, sortOrder):
-    import collections
-
-    momentum_rank = {}
-    tickerList = util.getMasterTickerList()
-    for x in range(len(tickerList)):
-        moneyflow = redis_build_moneyflow(tickerList[x], (date - datetime.timedelta(days=10)), date)
-        if len(moneyflow) > 1:
-            data_point = moneyflow[len(moneyflow)-1]
-            momentum_rank[data_point[1]] = tickerList[x]
-    if sortOrder == 'Reverse':
-        return collections.OrderedDict(sorted(momentum_rank.items(), reverse=True))
-    else:
-        return collections.OrderedDict(sorted(momentum_rank.items(), reverse=False))
-
-def build_feed_TN(ticker, stdate, enddate):
-    from pyalgotrade.bar import BasicBar, Frequency
-
-    feed = Feed(Frequency.DAY, 1024)
-    return add_feeds_TN(feed, ticker, stdate, enddate)
-
-
-def add_feeds_TN(feed, ticker, stdate, enddate):
-    import datetime
-    from pyalgotrade.utils import dt
-    from pyalgotrade.bar import BasicBar, Frequency
-    import csv
-    import dateutil.parser
-
-
-    bd = [] ##### initialize bar data.....
-    file_TN = util.getRelativePath(ticker+'_TN.csv')
-    with open(file_TN, 'rU') as csvfile:
-        reader = csv.DictReader(csvfile)
-        for row in reader:
-            dateTime = dateutil.parser.parse(row['Date'])
-            ### Let's only populate the dates passed in the feed...
-            if dateTime.date() <= enddate.date() and dateTime.date() >= stdate.date() :
-                bar = BasicBar(dateTime, 
-                float(row['Open']) , float(row['High']), float(row['Low']), float(row['Close']), float(row['Volume']), float(row['Close']), Frequency.DAY)
-                bd.append(bar)
-    feed.loadBars(ticker, bd)
-    return feed
 
 def getEarningsCal(instrument):
     import csv
@@ -696,6 +581,255 @@ def getEarningsCal(instrument):
                 cal.append(dateTime.date())
     return cal
 
+
+####=========================================================================================================################
+#######            Methods related to BB_SPread strategy..........
+########======================================================================================================###############
+
+##### Orders filtered by momentum rank....
+def getOrdersFiltered(orders, instrument, filterCriteria=20):
+
+    #orders = getOrdersFilteredByRules(orders, instrument) ##### Please note this is to filter orders based on ADR Cashflow etc...
+    filteredOrders = {}
+    
+    for key, value in orders.iteritems():
+
+        if value[0][1] == 'Buy' or value[0][1] == 'Sell':
+           
+            dt = datetime.datetime.fromtimestamp(key)
+            seconds = calendar.timegm(dt.timetuple()) #### please note you need to get money flow of the one day before......
+            keyString = int(seconds)*1000
+            rediskey = "cashflow:"+str(keyString)
+            redisConn = util.get_redis_conn()
+            if value[0][1] == 'Buy':
+                rank = redisConn.zrevrank(rediskey, instrument) 
+            else:
+                rank = redisConn.zrank(rediskey, instrument) 
+            ### update rank based on cashflow for BUY and SELL orders...
+            newval = []
+            newval.append((value[0][0], value[0][1], value[0][2], rank))
+            ########## Please note we are just appending relevant cashflow ranks and relevant filter rules will be applied 
+            ########## during portfolio simulation rules...
+            if filterCriteria < 20:
+                filteredOrders[key] = newval
+            else:
+                if rank <= filterCriteria:
+                    filteredOrders[key] = newval
+                else:
+                    util.Log.info("Filtered Order of: " + instrument + " on date: " + dt.strftime("%B %d, %Y") + " rank: " + str(rank))
+        else:
+            filteredOrders[key] = value
+
+    return filteredOrders
+
+def getOrdersFilteredByRules(orders, instrument):
+        filteredOrders = {}
+        for key, value in orders.iteritems():
+
+            if value[0][1] == 'Buy' or value[0][1] == 'Sell':
+                dt = datetime.datetime.fromtimestamp(key)
+                ADR_5days = ADR(instrument, 5, dt)
+                vol_5days = volume(instrument, 5, dt)
+                mf = cashflow(instrument,  dt)
+                newval = []
+                newval.append((value[0][0], value[0][1], value[0][2], -1))
+                #if (ADR_5days[1] >=1) and (vol_5days[1] >= 1000000) and mf[1] >= 2000000:
+                if mf[1] >= 2000000 and value[0][1] == 'Buy':
+                    print "Data:  ", dt, ADR_5days, vol_5days, mf
+                    filteredOrders[key] = newval
+                elif mf[1] <= -2000000 and value[0][1] == 'Sell':
+                    print "Data:  ", ADR_5days, vol_5days, mf
+                    filteredOrders[key] = newval
+                else:
+                    print "Data:  ", dt, ADR_5days, vol_5days, mf
+                    print "In the else loop....................########"
+                    util.Log.info("Filtered Order of: " + instrument + " on date: " + dt.strftime("%B %d, %Y") 
+                        + " ADR :", str(ADR_5days[1]) + " volume: " + str(vol_5days[1]) + " moneyflow: " + str(mf[1]))
+            else:
+                filteredOrders[key] = value
+
+        return filteredOrders
+
+
+def run_strategy_redis(bBandsPeriod, instrument, startPortfolio, startdate, enddate, filterCriteria=20, indicators=True):
+
+    
+    feed = redis_build_feed_EOD_RAW(instrument, startdate, enddate)
+    # Add the SPY bars, which are used to determine if the market is Bullish or Bearish
+    # on a particular day.
+    feed = add_feeds_EOD_redis_RAW(feed, 'SPY', startdate, enddate)
+    
+
+    ###Get earnings calendar
+    calList = getEarningsCal(instrument)
+
+    barsDictForCurrAdj = {}
+    barsDictForCurrAdj[instrument] = feed.getBarSeries(instrument)
+    barsDictForCurrAdj['SPY'] = feed.getBarSeries('SPY')
+    feedAdjustedToEndDate = xiquantPlatform.adjustBars(barsDictForCurrAdj, startdate, enddate)
+
+    strat = BB_spread.BBSpread(feedAdjustedToEndDate, feed, instrument, bBandsPeriod, calList, startPortfolio)
+
+    instList = [instrument, 'SPY']
+
+    if indicators:
+        # Attach a returns analyzers to the strategy.
+        returnsAnalyzer = Returns()
+        results = StrategyResults(strat, instList, returnsAnalyzer, plotSignals=True)
+
+        ###Initialize the bands to maxlength of 5000 for 10 years backtest..
+        #strat.getBollingerBands().getMiddleBand().setMaxLen(5000)
+        #strat.getBollingerBands().getUpperBand().setMaxLen(5000)
+        #strat.getBollingerBands().getLowerBand().setMaxLen(5000) 
+        #strat.getRSI().setMaxLen(5000)
+        #strat.getEMAFast().setMaxLen(5000)
+        #strat.getEMASlow().setMaxLen(5000)
+        #strat.getEMASignal().setMaxLen(5000)
+        #### Add boilingerbands series....
+        strat.run()
+
+        ####Populate orders from the backtest run...
+        results.addOrders(strat.getOrders())
+       
+       
+        #results.addSeries("upper", strat.getBollingerBands().getUpperBand())
+        #results.addSeries("middle", strat.getBollingerBands().getMiddleBand())
+        #results.addSeries("lower", strat.getBollingerBands().getLowerBand())
+        #results.addSeries("RSI", strat.getRSI())
+        #results.addSeries("EMA Fast", strat.getEMAFast())
+        #results.addSeries("EMA Slow", strat.getEMASlow())
+        #results.addSeries("EMA Signal", strat.getEMASignal())
+        return results
+    else:
+        # This is to ensue we consume less memory on the portfolio simulation case ... main thread.......
+        returnsAnalyzer = Returns()
+        results = StrategyResults(strat, instList, returnsAnalyzer, plotSignals=False)
+        strat.run()
+
+        if filterCriteria == 10000:
+            orders = strat.getOrders()
+        else:
+            orders = getOrdersFiltered(strat.getOrders(), instrument, filterCriteria)
+ 
+        return orders
+
+
+def run_master_strategy(initialcash, masterFile, datasource='REDIS'):
+
+    ordersFile = Orders_exec.OrdersFile(masterFile, fakecsv=True)
+    startdate = datetime.datetime.fromtimestamp(ordersFile.getFirstDate()) - datetime.timedelta(days=1)
+    enddate = datetime.datetime.fromtimestamp(ordersFile.getLastDate()) +  datetime.timedelta(days=1)
+    #enddate = dateutil.parser.parse('2014-12-31T08:00:00.000Z')
+    print startdate, enddate
+
+    #### Instruments in the order file...
+    instList = ordersFile.getInstruments()
+   
+    feed = None
+    #### Provide bars for all the instruments in the strategy...
+    for instrument in ordersFile.getInstruments():
+        if feed is None:
+            feed = redis_build_feed_EOD_RAW(instrument, startdate, enddate)
+        else:
+            feed = add_feeds_EOD_redis_RAW(feed, instrument, startdate, enddate)
+
+    barsDictForCurrAdj = {}
+    for instrument in ordersFile.getInstruments():
+        barsDictForCurrAdj[instrument] = feed.getBarSeries(instrument)
+    feedAdjustedToEndDate = xiquantPlatform.adjustBars(barsDictForCurrAdj, startdate, enddate, keyFlag=False)
+
+    cash = 100000
+    useAdjustedClose = True
+    myStrategy = Orders_exec.MyStrategy(feed, initialcash, ordersFile, useAdjustedClose)
+
+    returnsAnalyzer = Returns()
+    results = StrategyResults( myStrategy, instList, returnsAnalyzer)
+
+    myStrategy.run()
+
+    return results
+
+####=========================================================================================================################
+#######            Methods related to OHLC EODRAW values....
+########======================================================================================================###############
+
+
+def redis_listoflists_to_dict(redis_list):
+    list_values, list_keys = zip(*redis_list)
+    return dict(zip(list_keys, list_values))
+
+    
+def redis_build_feed_EOD_RAW(ticker, stdate, enddate):
+    from pyalgotrade.bar import BasicBar, Frequency
+
+    feed = Feed(Frequency.DAY, 1024)
+    return add_feeds_EOD_redis_RAW(feed, ticker, stdate, enddate)
+    #return add_feeds_EODRAW_CSV(feed, ticker, stdate, enddate)
+
+
+def add_feeds_EOD_redis_RAW( feed, ticker, stdate, enddate):
+    import datetime
+    from pyalgotrade.utils import dt
+    from pyalgotrade.bar import BasicBar, Frequency
+
+    ###### Please note zrangebyscore returns between values the scores to make it include both start date and end date as part of
+    ######## data series we need to do date arithmetic on passed in data ################
+    stdate, enddate = util.getRedisEffectiveDates(stdate, enddate)
+
+    seconds = calendar.timegm(stdate.timetuple())
+    seconds2 = calendar.timegm(enddate.timetuple())
+
+    data_dict = {}
+    try:
+        redisConn = util.get_redis_conn()
+        ### added EOD as data source
+        ticker_data = redisConn.zrangebyscore(ticker + ":EODRAW", int(seconds), int(seconds2), 0, -1, True)
+        data_dict = redis_listoflists_to_dict(ticker_data)
+    except Exception,e:
+        print str(e)
+        pass
+
+    bd = [] ##### initialize bar data.....
+    for key in data_dict:
+        #dateTime = dt.timestamp_to_datetime(key)
+        dateTime = dt.timestamp_to_datetime(key).replace(tzinfo=None) 
+        data = data_dict[key].split("|") ### split pipe delimted values
+        bar = xiQuantBasicBar(dateTime, float(data[0]) , float(data[1]), float(data[2]), float(data[3]), float(data[4]), float(data[5]), Frequency.DAY,float(data[6]), float(data[7]))
+
+        bd.append(bar)
+    #feed = Feed(Frequency.DAY, 1024)
+    feed.loadBars(ticker, bd)
+    return feed
+
+'''
+def add_feeds_EODRAW_CSV(feed, ticker, stdate, enddate):
+    import datetime
+    from pyalgotrade.utils import dt
+    from pyalgotrade.bar import BasicBar, Frequency
+    import csv
+    import dateutil.parser
+    import os
+
+
+    bd = [] ##### initialize bar data.....
+    file_EODRAW = os.path.join(os.path.dirname(__file__), ticker+'_EODRAW.csv')
+    with open(file_EODRAW, 'rU') as csvfile:
+        reader = csv.DictReader(csvfile)
+        for row in reader:
+            dateTime = dateutil.parser.parse(row['Date'])
+            ### Let's only populate the dates passed in the feed...
+            if dateTime.date() <= enddate.date() and dateTime.date() >= stdate.date() :
+                bar = xiQuantBasicBar(dateTime, 
+                float(row['Open']) , float(row['High']), float(row['Low']), float(row['Close']), float(row['Volume']), float(row['AdjClose']), Frequency.DAY, float(row['Dividend']), float(row['Split']) )
+                bd.append(bar)
+    feed.loadBars(ticker, bd)
+    return feed
+'''
+
+
+####=========================================================================================================################
+#######            Methods related to Options processing files............
+########======================================================================================================###############
 
 def processOptionsFile(inputfile, outputfile):
     header = True
@@ -742,252 +876,3 @@ def processOptionsFile(inputfile, outputfile):
                     )
                     keyList.append(key) ### to track specific ticker option has been populated...
     return "Successfully processed"
-
-##### Orders filtered by momentum rank....
-def getOrdersFiltered(orders, instrument, filterCriteria=20):
-
-    orders = getOrdersFilteredByRules(orders, instrument) ##### Please note this is to filter orders based on ADR Cashflow etc...
-    filteredOrders = {}
-    
-    for key, value in orders.iteritems():
-
-        if value[0][1] == 'Buy' or value[0][1] == 'Sell':
-            
-            dt = datetime.datetime.fromtimestamp(key)
-            #dtactual = dt + datetime.timedelta(days=1)
-            if value[0][1] == 'Buy':
-                #mom_rank_orderedlist = tickersRankByCashFlow(dt, sortOrder = 'Reverse')
-                mom_rank_orderedlist = tickersRankByMoneyFlow(dt, sortOrder = 'Reverse')
-                rank = mom_rank_orderedlist.values().index(instrument) if instrument in mom_rank_orderedlist.values() else -1 ### Please return high number so that orders do not get filtered..
-            else:
-                #mom_rank_orderedlist = tickersRankByCashFlow(dt, sortOrder = 'Ascending')
-                mom_rank_orderedlist = tickersRankByMoneyFlow(dt, sortOrder = 'Ascending')
-                rank = mom_rank_orderedlist.values().index(instrument) if instrument in mom_rank_orderedlist.values() else -1 ### Please return high number so that orders do not get filtered..
-            print "^^^^^^^^^^^^^^^^^^^^^^^^@@@@@@@@@@@@@: ", dt, rank, mom_rank_orderedlist.keys()[rank]
-            newval = []
-            newval.append((value[0][0], value[0][1], value[0][2], rank))
-            if rank <= filterCriteria:
-                print "***********############^^^^^^^^^^^+++++++++++++++++"
-                filteredOrders[key] =  newval
-            else:
-                util.Log.info("Filtered Order of: " + instrument + " on date: " + dt.strftime("%B %d, %Y") + " rank: " + str(rank))
-            '''
-            dt = datetime.datetime.fromtimestamp(key)
-            seconds = calendar.timegm(dt.timetuple()) #### please note you need to get money flow of the one day before......
-            keyString = int(seconds)*1000
-            rediskey = "cashflow:"+str(keyString)
-            redisConn = util.get_redis_conn()
-            if value[0][1] == 'Buy':
-                rank = redisConn.zrevrank(rediskey, instrument) 
-            else:
-                rank = redisConn.zrank(rediskey, instrument) 
-            print "^^^^^^^^^^^^^^^^^^^^^^^^@@@@@@@@@@@@@: ", dt, rediskey, rank
-            ### update rank based on cashflow for BUY and SELL orders...
-            newval = []
-            newval.append((value[0][0], value[0][1], value[0][2], rank))
-            ########## Please note we are just appending relevant cashflow ranks and relevant filter rules will be applied 
-            ########## during portfolio simulation rules...
-            if filterCriteria < 20:
-                filteredOrders[key] = newval
-            else:
-                if rank <= filterCriteria:
-                    filteredOrders[key] = newval
-                else:
-                    util.Log.info("Filtered Order of: " + instrument + " on date: " + dt.strftime("%B %d, %Y") + " rank: " + str(rank))
-            '''
-        else:
-            filteredOrders[key] = value
-
-    return filteredOrders
-
-def getOrdersFilteredByRules(orders, instrument):
-        filteredOrders = {}
-        for key, value in orders.iteritems():
-
-            if value[0][1] == 'Buy' or value[0][1] == 'Sell':
-                dt = datetime.datetime.fromtimestamp(key)
-                ADR_5days = ADR(instrument, 5, dt)
-                vol_5days = volume(instrument, 5, dt)
-                mf = cashflow(instrument,  dt)
-                newval = []
-                newval.append((value[0][0], value[0][1], value[0][2], -1))
-                #if (ADR_5days[1] >=1) and (vol_5days[1] >= 1000000) and mf[1] >= 2000000:
-                if mf[1] >= 2000000 and value[0][1] == 'Buy':
-                    print "Data:  ", dt, ADR_5days, vol_5days, mf
-                    filteredOrders[key] = newval
-                elif mf[1] <= -2000000 and value[0][1] == 'Sell':
-                    print "Data:  ", ADR_5days, vol_5days, mf
-                    filteredOrders[key] = newval
-                else:
-                    print "Data:  ", dt, ADR_5days, vol_5days, mf
-                    print "In the else loop....................########"
-                    util.Log.info("Filtered Order of: " + instrument + " on date: " + dt.strftime("%B %d, %Y") 
-                        + " ADR :", str(ADR_5days[1]) + " volume: " + str(vol_5days[1]) + " moneyflow: " + str(mf[1]))
-            else:
-                filteredOrders[key] = value
-
-        return filteredOrders
-
-
-    
-   
-def run_strategy_redis(bBandsPeriod, instrument, startPortfolio, startdate, enddate, filterCriteria=20, indicators=True):
-
-    feed = redis_build_feed_EOD(instrument, startdate, enddate)
-    #feed = build_feed_TN(instrument, startdate, enddate)
-    #feed = yahoofinance.build_feed([instrument], 2012, 2014, ".")
-
-    # Add the SPY bars, which are used to determine if the market is Bullish or Bearish
-    # on a particular day.
-    feed = add_feeds_EOD_redis(feed, 'SPY', startdate, enddate)
-
-    ###Get earnings calendar
-    calList = getEarningsCal(instrument)
-
-    strat = BB_spread.BBSpread(feed, instrument, bBandsPeriod, calList, startPortfolio)
-
-    instList = [instrument, 'SPY']
-
-    if indicators:
-        # Attach a returns analyzers to the strategy.
-        returnsAnalyzer = Returns()
-        results = StrategyResults(strat, instList, returnsAnalyzer, plotSignals=True)
-
-        ###Initialize the bands to maxlength of 5000 for 10 years backtest..
-        strat.getBollingerBands().getMiddleBand().setMaxLen(5000)
-        strat.getBollingerBands().getUpperBand().setMaxLen(5000)
-        strat.getBollingerBands().getLowerBand().setMaxLen(5000) 
-        strat.getRSI().setMaxLen(5000)
-        strat.getEMAFast().setMaxLen(5000)
-        strat.getEMASlow().setMaxLen(5000)
-        strat.getEMASignal().setMaxLen(5000)
-        #### Add boilingerbands series....
-        strat.run()
-
-        ####Populate orders from the backtest run...
-        #filteredOrders = getOrdersFiltered(strat.getOrders(), instrument, filterCriteria = 20)
-        results.addOrders(strat.getOrders())
-        #results.addOrders(filteredOrders)
-       
-
-        results.addSeries("upper", strat.getBollingerBands().getUpperBand())
-        results.addSeries("middle", strat.getBollingerBands().getMiddleBand())
-        results.addSeries("lower", strat.getBollingerBands().getLowerBand())
-        results.addSeries("RSI", strat.getRSI())
-        results.addSeries("EMA Fast", strat.getEMAFast())
-        results.addSeries("EMA Slow", strat.getEMASlow())
-        results.addSeries("EMA Signal", strat.getEMASignal())
-        #results.addSeries("macd", strat.getMACD())
-        return results
-    else:
-        # This is to ensue we consume less memory on the portfolio simulation case ... main thread.......
-        returnsAnalyzer = Returns()
-        results = StrategyResults(strat, instList, returnsAnalyzer, plotSignals=False)
-        strat.run()
-        if filterCriteria == 10000:
-            orders = strat.getOrders()
-        else:
-            orders = getOrdersFiltered(strat.getOrders(), instrument, filterCriteria)
-            
-        return orders
-    
-    #return results
-    
-
-def run_strategy_TN(bBandsPeriod, instrument, startPortfolio, startdate, enddate, filterCriteria=20, indicators=True):
-
-    #feed = redis_build_feed_EOD(instrument, startdate, enddate)
-    feed = build_feed_TN(instrument, startdate, enddate)
-    #feed = yahoofinance.build_feed([instrument], 2012, 2014, ".")
-
-    # Add the SPY bars, which are used to determine if the market is Bullish or Bearish
-    # on a particular day.
-    feed = add_feeds_TN(feed, 'SPY', startdate, enddate)
-
-    ###Get earnings calendar
-    calList = getEarningsCal(instrument)
-
-    strat = BB_spread.BBSpread(feed, instrument, bBandsPeriod, calList, startPortfolio)
-
-    instList = [instrument, 'SPY']
-
-    if indicators:
-
-        # Attach a returns analyzers to the strategy.
-        returnsAnalyzer = Returns()
-        results = StrategyResults(strat, instList, returnsAnalyzer, plotSignals=True)
-
-        ###Initialize the bands to maxlength of 5000 for 10 years backtest..
-        strat.getBollingerBands().getMiddleBand().setMaxLen(5000)
-        strat.getBollingerBands().getUpperBand().setMaxLen(5000)
-        strat.getBollingerBands().getLowerBand().setMaxLen(5000) 
-        strat.getRSI().setMaxLen(5000)
-        strat.getEMAFast().setMaxLen(5000)
-        strat.getEMASlow().setMaxLen(5000)
-        strat.getEMASignal().setMaxLen(5000)
-        #### Add boilingerbands series....
-        strat.run()
-
-        ####Populate orders from the backtest run...
-        results.addOrders(strat.getOrders())
-
-        results.addSeries("upper", strat.getBollingerBands().getUpperBand())
-        results.addSeries("middle", strat.getBollingerBands().getMiddleBand())
-        results.addSeries("lower", strat.getBollingerBands().getLowerBand())
-        results.addSeries("RSI", strat.getRSI())
-        results.addSeries("EMA Fast", strat.getEMAFast())
-        results.addSeries("EMA Slow", strat.getEMASlow())
-        results.addSeries("EMA Signal", strat.getEMASignal())
-        #results.addSeries("macd", strat.getMACD())
-        
-        return results
-
-    else:
-        # This is to ensue we consume less memory on the portfolio simulation case ... main thread.......
-        returnsAnalyzer = Returns()
-        results = StrategyResults(strat, instList, returnsAnalyzer, plotSignals=False)
-        strat.run()
-        if filterCriteria == 10000:
-            orders = strat.getOrders()
-        else:
-            orders = getOrdersFiltered(strat.getOrders(), instrument, filterCriteria)
-            #orders = getOrdersFilteredByRules(strat.getOrders(), instrument)
-            
-        return orders
-
-def run_master_strategy(initialcash, masterFile, datasource='REDIS'):
-
-    ordersFile = Orders_exec.OrdersFile(masterFile, fakecsv=True)
-    startdate = datetime.datetime.fromtimestamp(ordersFile.getFirstDate()) - datetime.timedelta(days=1)
-    enddate = datetime.datetime.fromtimestamp(ordersFile.getLastDate()) +  datetime.timedelta(days=1)
-    #enddate = dateutil.parser.parse('2014-12-31T08:00:00.000Z')
-    print startdate, enddate
-
-    #### Instruments in the order file...
-    instList = ordersFile.getInstruments()
-   
-    feed = None
-    #### Provide bars for all the instruments in the strategy...
-    for instrument in ordersFile.getInstruments():
-        if datasource == 'REDIS':
-            if feed is None:
-                feed = redis_build_feed_EOD(instrument, startdate, enddate)
-            else:
-                feed = add_feeds_EOD_redis(feed, instrument, startdate, enddate)
-        else:
-            if feed is None:
-                feed = build_feed_TN(instrument, startdate, enddate)
-            else:
-                feed = add_feeds_TN(feed, instrument, startdate, enddate)
-        
-    useAdjustedClose = True
-    myStrategy = Orders_exec.MyStrategy(feed, initialcash, ordersFile, useAdjustedClose)
-
-    returnsAnalyzer = Returns()
-    results = StrategyResults( myStrategy, instList, returnsAnalyzer)
-
-    myStrategy.run()
-
-    return results
-
-    

@@ -26,8 +26,7 @@ def redis_build_CSV_EOD(ticker, stdate, enddate):
     try:
         redisConn = util.get_redis_conn()
         ### added EOD as data source
-        ticker_data = redisConn.zrangebyscore(ticker + ":EOD", int(seconds), int(seconds2), 0, -1, True)
-        #ticker_data = redisConn.zrangebyscore(ticker + ":EOD_UnAdj", int(seconds), int(seconds2), 0, -1, True)
+        ticker_data = redisConn.zrangebyscore(ticker + ":EODRAW", int(seconds), int(seconds2), 0, -1, True)
         data_dict = xiQuantStrategyUtil.redis_listoflists_to_dict(ticker_data)
         ordered_data_dict = collections.OrderedDict(sorted(data_dict.items(), reverse=False))
     except Exception,e:
@@ -46,24 +45,36 @@ def redis_build_CSV_EOD(ticker, stdate, enddate):
         dataList.append(float("{0:.2f}".format(float(data[2]))))
         dataList.append(float("{0:.2f}".format(float(data[3]))))
         dataList.append(float("{0:.2f}".format(float(data[4]))))
+        dataList.append(float("{0:.2f}".format(float(data[5]))))
+        dataList.append(float("{0:.2f}".format(float(data[6]))))
+        dataList.append(float("{0:.2f}".format(float(data[7]))))
         bd.append(dataList)
 
-    with open(ticker+'.csv', 'w') as fp:
-    	a = csv.writer(fp, delimiter=',')
-    	a.writerows(bd)
+    with open(ticker+'_EODRAW.csv', 'w') as fp:
+    	writer = csv.writer(fp, delimiter=',')
+        header = ["Ticker", "Date", "Open", "High", "Low", "Close", "Volume", "AdjClose", "Dividend", "Split"]
+        writer.writerow(header)
+    	writer.writerows(bd)
 
 import dateutil.parser
 #stdate = dateutil.parser.parse('2010-01-01')
 stdate = dateutil.parser.parse('2005-06-30T08:00:00.000Z')
 enddate = dateutil.parser.parse('2014-12-31T08:00:00.000Z')
+#date1 = dateutil.parser.parse('2014-10-28T08:00:00.000Z')
+#date2 = dateutil.parser.parse('2014-11-10T08:00:00.000Z')
 #enddate = dateutil.parser.parse(' 2011-06-29')
 
 #datetime.datetime.combine(datetime.date(2011, 01, 01), datetime.time(10, 23)) ### example for combining date and time...
 
+'''
+#tickerList = util.getTickerList('Abhi-26')
+tickerList = ['SPY']
+for ticker in tickerList:
+    redis_build_CSV_EOD(ticker, stdate, enddate)
+    print "Successfuly exported EODRAW data: ", ticker
+'''
 
-#redis_build_CSV_EOD("FDX", stdate, enddate)
-
-print stdate, enddate
+#print stdate, enddate
 
 #print int(calendar.timegm(enddate.timetuple()))*1000
 
@@ -105,17 +116,74 @@ print stdate, enddate
 #print results
 
 
-#results = xiQuantStrategyUtil.run_strategy_redis(20, "GOOGL", 100000, stdate, enddate)
-#results = xiQuantStrategyUtil.run_strategy_TN(20, "GOOGL", 100000, stdate, enddate)
+#results = xiQuantStrategyUtil.run_strategy_redis(20, "NFLX", 100000, stdate, enddate)
 #print results.getPortfolioResult()
 #print results.getOrdersFilteredByMomentumRank(filterCriteria=3000)
 #print results.getOrders()
+#print results.getMACD()
+#print results.getADX()
+#print results.getAdjCloseSeries("CVS")
+
+'''
+feed = xiQuantStrategyUtil.redis_build_feed_EOD_RAW("AAPL", stdate, enddate)
+bars = feed.getBarSeries("AAPL")
+bars = [bar for bar in bars if date1.replace(tzinfo=None) <= bar.getDateTime() <= date2.replace(tzinfo=None)]
+bars.sort(key=lambda bar: bar.getDateTime(), reverse=True)
+for bar in bars:
+    print bar.getDividend(), bar.getSplit(), bar.getOpen(), bar.getHigh(), bar.getVolume(), bar.getClose(), bar.getDateTime()
+
+print "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
+
+k = 0
+splitdataList = []
+dividendList = []
+for bar in bars:
+    splitdata = bar.getSplit()
+    dividend = bar.getDividend()
+    if splitdata != 1.0:
+        splitdataList.append(bar.getSplit())
+    if dividend != 0.0:
+        adjFactor = (bar.getClose() + bar.getDividend()) / bar.getClose()
+        dividendList.append(adjFactor)
+    #### Special case.... end date / analysis date nothing to do..
+    if (k==0):
+        #bar = BasicBar(bar.getDateTime(), bar.getOpen() , bar.getHigh(), bar.getLow(), bar.getClose(), bar.getVolume(), bar.getClose(), Frequency.DAY)
+        #bars.append(bar)
+        print bar.getOpen(), bar.getHigh(), bar.getVolume(), bar.getClose(), bar.getDateTime()
+    else:
+        #### Adjust OHLC & Volume data for split adjustments and dividend adjustments
+        Open = bar.getOpen()
+        High = bar.getHigh()
+        Low  = bar.getLow()
+        Close = bar.getClose()
+        Volume = bar.getVolume()
+        ### adjust data for splits
+        for split in splitdataList:
+            Open = Open / split
+            High = High / split
+            Low  = Low / split
+            Close = Close /split
+            Volume = Volume * split
+
+        ### adjust data for dividends
+        for adjFactor in dividendList:
+            Open = Open / adjFactor
+            High = High / adjFactor
+            Low  = Low / adjFactor
+            Close = Close / adjFactor
+            Volume = Volume * adjFactor
+
+        #bar = BasicBar(bar.getDateTime(),  Open , High, Low, Close, Volume, Close, Frequency.DAY)
+        #bars.append(bar)
+        print Open, High, Volume, Close, bar.getDateTime()
+    k +=1
+'''
 
 dataRows = []
-#tickerList = util.getTickerList('Abhi-26')
-tickerList = ['WHR']
+tickerList = util.getTickerList('Abhi-26')
+#tickerList = ['NFLX']
 for ticker in tickerList:
-    results = xiQuantStrategyUtil.run_strategy_redis(20, ticker, 100000, stdate, enddate, filterCriteria=10000, indicators=False)
+    results = xiQuantStrategyUtil.run_strategy_redis(20, ticker, 100000, stdate, enddate, filterCriteria=10, indicators=False)
     #results = xiQuantStrategyUtil.run_strategy_redis(20, "GOOGL", 100000, stdate, enddate, filterCriteria=100, indicators=False)
     #results = xiQuantStrategyUtil.run_strategy_TN(20, ticker, 100000, stdate, enddate, filterCriteria=10000, indicators=False)
     #results = xiQuantStrategyUtil.run_strategy_TN(20, ticker, 100000, stdate, enddate)
@@ -157,7 +225,7 @@ port_results = xiQuantStrategyUtil.run_master_strategy(100000, fake_csv, datasou
 print port_results.getPortfolioResult()
 
 
-
+'''
 #print results.getMACD()
 #print results.getADX()
 #print results.getDMIPlus()
@@ -171,7 +239,7 @@ print port_results.getPortfolioResult()
 #print results.getTradeDetails()
 #print results.getCumulativeReturns()
 #print results.getSeries("EMA Signal")
-
+'''
 
 
 

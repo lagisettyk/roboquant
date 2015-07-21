@@ -40,59 +40,6 @@ WIKI_DICT = {
     'Adj. Volume':  "12",
 }
 	
-
-def populate_redis_eod_today(datasource, tickerList):
-
-	redisConn = util.get_redis_conn()
-	populate_redis_eod(redisConn, tickerList, datasource, startdate=datetime.date.today(), 
-			  enddate = datetime.date.today())
-	### set last available data date in the data store...
-	redisConn.set('eod_latest', datetime.date.today())
-
-	logger.info("Successfully populated eod data for: " + datetime.date.today().strftime("%B %d, %Y")) 
-
-
-def populate_redis_eod_history(datasource, tickerList):
-
-	redisConn = util.get_redis_conn()
-	if redisConn.get('history') is None:
-		populate_redis_eod(redisConn, tickerList, datasource, startdate=dateutil.parser.parse(histStartDate), 
-			  enddate=(datetime.date.today() - datetime.timedelta(days=1)))
-		logger.info("successfully populated history...")
-	else:
-		logger.info("History is already populated...")
-
-def populate_redis_eod(redisConn, tickerList, datasource, startdate, enddate):
-
-	for ticker in range(len(tickerList)):
-		if redisConn.get('history') is not None:
-			#### Let's get the last date available for this ticker and set it to start date
-			### this allows to catch-up EOD data in case certain days EOD feed was not successfully populated...
-			seconds = calendar.timegm(datetime.date.today().timetuple())
-			seconds2 = calendar.timegm(dateutil.parser.parse(histStartDate).timetuple())
-			redis_data = redisConn.zrevrangebyscore(tickerList[ticker] +":EOD", int(seconds), int(seconds2), 0, -1, True)
-			if len(redis_data) > 0:
-				list_values, list_keys = zip(*redis_data) ### Returns max score in the data store
-				startdate = datetime.datetime.fromtimestamp(list_keys[0]) ### convert max score to date range...
-			else:
-				### New ticker populate entire history.... set start date to historical start date
-				startdate = dateutil.parser.parse(histStartDate)
-		try:
-			mkt_data  = Quandl.get(
-				datasource +"/" + tickerList[ticker], returns="numpy", sort_order="asc", authtoken="L5A6rmU9FGvyss9F7Eym",  
-				trim_start = startdate, trim_end = enddate)
-			if mkt_data.size > 0:
-				for daily_data in mkt_data:
-					redisConn.zadd(tickerList[ticker] +":EOD", calendar.timegm(daily_data[0].timetuple()), 
-					str(daily_data[8]) + "|" + str(daily_data[9]) + "|" + str(daily_data[10]) + "|" + str(daily_data[11]) + "|" + str(daily_data[12]))
-		except Exception,e: 
-			logger.debug(tickerList[ticker] +": " + str(e))
-			pass
-		logger.info("populated EOD time series: " + tickerList[ticker] + " " + startdate.strftime("%B %d, %Y") + " : " + enddate.strftime("%B %d, %Y"))	
-	redisConn.set('history', "TRUE")
-	status = "successfully populated redis store...."
-	return status
-
 def populate_redis_moneyflow(redisConn, tickerList, startdate, enddate):
 
 	for ticker in range(len(tickerList)):

@@ -1,6 +1,6 @@
 from rq import Queue
 import redis
-from update_redis_ds import populate_redis_eod_history, populate_redis_eod_today, populate_redis_moneyflow_history, populate_redis_eod_today_raw
+from update_redis_ds import populate_redis_moneyflow_history, populate_redis_eod_today_raw
 import time
 import datetime
 from apscheduler.schedulers.blocking import BlockingScheduler
@@ -9,8 +9,8 @@ import dateutil.parser
 
 
 #tickerList = util.getTickerListWithSPY()
-#tickerList = util.getTickerList('CBOE-ALL')
-tickerList = util.getTickerList('Abhi-26')
+tickerList = util.getTickerList('CBOE-ALL')
+#tickerList = util.getTickerList('Abhi-26')
 #tickerList = ['MA', 'CVS', 'SPY']
 
 def get_redis_conn():
@@ -43,7 +43,7 @@ def scheduled_job():
 	print job.result   # => 889
 
 
-#@sched.scheduled_job('date')
+@sched.scheduled_job('date')
 #@sched.scheduled_job('cron', day_of_week='mon-fri', hour=17)
 def populate_moneyflow():
 	print('This job is to populate cashflow')
@@ -54,7 +54,7 @@ def populate_moneyflow():
 	time.sleep(10)
 	print job.result   # => 889
 
-@sched.scheduled_job('date')
+#@sched.scheduled_job('date')
 #@sched.scheduled_job('cron', day_of_week='mon-fri', hour=17)
 def populate_rawEOD():
 	print('This job is run every weekday at 7pm.')

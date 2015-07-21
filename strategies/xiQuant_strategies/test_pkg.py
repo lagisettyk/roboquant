@@ -60,8 +60,8 @@ import dateutil.parser
 #stdate = dateutil.parser.parse('2010-01-01')
 stdate = dateutil.parser.parse('2005-06-30T08:00:00.000Z')
 enddate = dateutil.parser.parse('2014-12-31T08:00:00.000Z')
-date1 = dateutil.parser.parse('2014-10-28T08:00:00.000Z')
-date2 = dateutil.parser.parse('2014-11-10T08:00:00.000Z')
+#date1 = dateutil.parser.parse('2014-10-28T08:00:00.000Z')
+#date2 = dateutil.parser.parse('2014-11-10T08:00:00.000Z')
 #enddate = dateutil.parser.parse(' 2011-06-29')
 
 #datetime.datetime.combine(datetime.date(2011, 01, 01), datetime.time(10, 23)) ### example for combining date and time...
@@ -116,9 +116,8 @@ for ticker in tickerList:
 #print results
 
 
-results = xiQuantStrategyUtil.run_strategy_redis(20, "AAPL", 100000, stdate, enddate)
-#results = xiQuantStrategyUtil.run_strategy_TN(20, "GOOGL", 100000, stdate, enddate)
-print results.getPortfolioResult()
+#results = xiQuantStrategyUtil.run_strategy_redis(20, "NFLX", 100000, stdate, enddate)
+#print results.getPortfolioResult()
 #print results.getOrdersFilteredByMomentumRank(filterCriteria=3000)
 #print results.getOrders()
 #print results.getMACD()
@@ -180,12 +179,11 @@ for bar in bars:
     k +=1
 '''
 
-'''
 dataRows = []
-#tickerList = util.getTickerList('Abhi-26')
-tickerList = ['WHR']
+tickerList = util.getTickerList('Abhi-26')
+#tickerList = ['NFLX']
 for ticker in tickerList:
-    results = xiQuantStrategyUtil.run_strategy_redis(20, ticker, 100000, stdate, enddate, filterCriteria=10000, indicators=False)
+    results = xiQuantStrategyUtil.run_strategy_redis(20, ticker, 100000, stdate, enddate, filterCriteria=10, indicators=False)
     #results = xiQuantStrategyUtil.run_strategy_redis(20, "GOOGL", 100000, stdate, enddate, filterCriteria=100, indicators=False)
     #results = xiQuantStrategyUtil.run_strategy_TN(20, ticker, 100000, stdate, enddate, filterCriteria=10000, indicators=False)
     #results = xiQuantStrategyUtil.run_strategy_TN(20, ticker, 100000, stdate, enddate)
@@ -225,9 +223,9 @@ with open('MasterOrders.csv', 'w') as csvfile:
 fake_csv.seek(0)
 port_results = xiQuantStrategyUtil.run_master_strategy(100000, fake_csv, datasource='REDIS')
 print port_results.getPortfolioResult()
+
+
 '''
-
-
 #print results.getMACD()
 #print results.getADX()
 #print results.getDMIPlus()
@@ -241,7 +239,7 @@ print port_results.getPortfolioResult()
 #print results.getTradeDetails()
 #print results.getCumulativeReturns()
 #print results.getSeries("EMA Signal")
-
+'''
 
 
 

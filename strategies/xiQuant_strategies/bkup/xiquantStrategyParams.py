@@ -20,7 +20,6 @@ BB_CROC_SLOPE = 8
 # A small wick is defined as not being a long wick
 # A long wick is defined as being more than 40% of the candle.
 BB_LONG_WICK = 40
-PERCENT_OF_CASH_BALANCE_FOR_ENTRY = 0.95
 
 # For computing the percentage increase from the previous close
 # when the price breaches the band.
@@ -49,6 +48,7 @@ SMA_COMPARE_LOOKBACK = 2
 
 PRICE_DELTA = 0.20
 RESISTANCE_LOOKBACK_WINDOW = 792
+TRADE_DAYS_IN_RESISTANCE_LOOKBACK_WINDOW = 541
 RESISTANCE_RECENT_LOOKBACK_WINDOW = 198
 RESISTANCE_DELTA = 2
 SUPPORT_LOOKBACK_WINDOW = 792
@@ -72,6 +72,7 @@ ADX_PERIOD = 12
 ADX_COUNT = 24
 DMI_PERIOD = 28
 DMI_COUNT = 29
+TALIB_MA_T3 = 3
 
 MACD_FAST_FASTPERIOD = 8
 MACD_FAST_SLOWPERIOD = 18
@@ -110,7 +111,8 @@ BB_SPREAD_TRADE_DAY_STOP_LOSS_DELTA_3 = 7.5
 
 
 # Money allocation related
-MAX_ALLOCATED_MONEY_FOR_EACH_TRADE = 0.20
+PERCENT_OF_CASH_BALANCE_FOR_ENTRY = 0.95
+MAX_ALLOCATED_MONEY_FOR_EACH_TRADE = 1.0
 MAX_EXPECTED_LOSS_PER_SHORT_SHARE = 5
 # This is equivalent to a margin so there could be interest implications which
 # we have to deal with later. Additionally, we will have to consider the 

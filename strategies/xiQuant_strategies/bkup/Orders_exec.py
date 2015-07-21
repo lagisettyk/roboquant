@@ -15,6 +15,7 @@ from pyalgotrade.broker import Order
 
 import xiquantFuncs
 import xiquantStrategyParams as consts
+import xiquantPlatform
 
 class OrdersFile:
 	def __init__(self, ordersFile, fakecsv=False):
@@ -121,8 +122,9 @@ class MyStrategy(strategy.BacktestingStrategy):
 		currPos = self.getBroker().getPositions()
 		listOfCurrInstrs = list(currPos.keys())
 		exitStr = str(execTime.date()) + ',' + sellPrice + ',' + portfolioBefore + ',' + cashBefore + ',' + portfolioAfter + ',' + cashAfter + ',' + profitOrLoss + ',' + str(listOfCurrInstrs) + '\n'
-		self.__results[instrument] += exitStr
-		self.__resultsFile.write(self.__results[instrument])
+		if self.__results[instrument] is not None:
+			self.__results[instrument] += exitStr
+			self.__resultsFile.write(self.__results[instrument])
 		self.__results[instrument] = None
 
 		# Adjust the portfolio cash if we closed a short position.
@@ -251,14 +253,54 @@ class MyStrategy(strategy.BacktestingStrategy):
 		self.info("Portfolio value: $%.2f" % (portfolioValue))
 
 def main():
+	import dateutil.parser
+	startPeriod = dateutil.parser.parse('2005-06-30T08:00:00.000Z')
+	endPeriod = dateutil.parser.parse('2014-12-31T08:00:00.000Z')
 	# Load the orders file.
 	ordersFile = OrdersFile("orders.csv")
-	startPeriod = yearFromTimeSinceEpoch(ordersFile.getFirstDate())
-	endPeriod = yearFromTimeSinceEpoch(ordersFile.getLastDate())
+	#startPeriod = yearFromTimeSinceEpoch(ordersFile.getFirstDate())
+	#endPeriod = yearFromTimeSinceEpoch(ordersFile.getLastDate())
 	print "First Year", startPeriod
 	print "Last Year", endPeriod
 	print "Instruments", ordersFile.getInstruments()
+	#instrument = ordersFile.getInstruments()[0]
 
+	k = 0
+	feed = None
+	for instrument in ordersFile.getInstruments():
+		if k == 0:
+			feed = xiquantPlatform.redis_build_feed_EOD_RAW(instrument, startPeriod, endPeriod)
+		else:
+			feed = xiquantPlatform.add_feeds_EODRAW_CSV(feed, instrument, startPeriod, endPeriod)
+		k += 1
+
+	barsDictForCurrAdj = {}
+	for instrument in ordersFile.getInstruments():
+		barsDictForCurrAdj[instrument] = feed.getBarSeries(instrument)
+	#barsDictForCurrAdj['SPY'] = feed.getBarSeries('SPY')
+	feedAdjustedToEndDate = xiquantPlatform.adjustBars(barsDictForCurrAdj, startPeriod, endPeriod, keyFlag=False)
+
+	cash = 100000
+	useAdjustedClose = True
+	#myStrategy = MyStrategy(feedAdjustedToEndDate, cash, ordersFile, useAdjustedClose)
+	myStrategy = MyStrategy(feedAdjustedToEndDate, cash, ordersFile, useAdjustedClose)
+	# Attach returns and sharpe ratio analyzers.
+	retAnalyzer = returns.Returns()
+	myStrategy.attachAnalyzer(retAnalyzer)
+	sharpeRatioAnalyzer = sharpe.SharpeRatio()
+	myStrategy.attachAnalyzer(sharpeRatioAnalyzer)
+
+	myStrategy.run()
+
+	# Print the results.
+	print "Final portfolio value: $%.2f" % myStrategy.getResult()
+	print "Anual return: %.2f %%" % (retAnalyzer.getCumulativeReturns()[-1] * 100)
+	print "Average daily return: %.2f %%" % (stats.mean(retAnalyzer.getReturns()) * 100)
+	print "Std. dev. daily return: %.4f" % (stats.stddev(retAnalyzer.getReturns()))
+	print "Sharpe ratio: %.2f" % (sharpeRatioAnalyzer.getSharpeRatio(0))
+
+
+	'''
 	# Download the CSV files from Yahoo Finance
 	for instrument in ordersFile.getInstruments():
 		tempFeed = yahoofinance.build_feed([instrument], startPeriod, endPeriod, ".")
@@ -288,5 +330,6 @@ def main():
 	print "Average daily return: %.2f %%" % (stats.mean(retAnalyzer.getReturns()) * 100)
 	print "Std. dev. daily return: %.4f" % (stats.stddev(retAnalyzer.getReturns()))
 	print "Sharpe ratio: %.2f" % (sharpeRatioAnalyzer.getSharpeRatio(0))
+	'''
 
 #main()
