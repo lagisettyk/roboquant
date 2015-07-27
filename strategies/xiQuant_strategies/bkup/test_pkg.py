@@ -10,7 +10,9 @@ from utils import util
 import csv
 import operator
 import calendar
+import time
 
+#import 
 
 def redis_build_CSV_EOD(ticker, stdate, enddate):
     import datetime
@@ -59,20 +61,28 @@ def redis_build_CSV_EOD(ticker, stdate, enddate):
 import dateutil.parser
 #stdate = dateutil.parser.parse('2010-01-01')
 stdate = dateutil.parser.parse('2005-06-30T08:00:00.000Z')
-enddate = dateutil.parser.parse('2014-12-31T08:00:00.000Z')
+#stdate = dateutil.parser.parse('2010-06-30T08:00:00.000Z')
+enddate = dateutil.parser.parse('2014-12-30T08:00:00.000Z')
 #date1 = dateutil.parser.parse('2014-10-28T08:00:00.000Z')
 #date2 = dateutil.parser.parse('2014-11-10T08:00:00.000Z')
-#enddate = dateutil.parser.parse(' 2011-06-29')
+specdate1 = dateutil.parser.parse(' 2014-04-02')
+specdate3 = dateutil.parser.parse(' 2014-04-03')
+specdate2 = dateutil.parser.parse(' 2014-04-04')
 
 #datetime.datetime.combine(datetime.date(2011, 01, 01), datetime.time(10, 23)) ### example for combining date and time...
+#timestamp = time.mktime(specdate.timetuple())
+
+#print calendar.timegm(specdate1.timetuple()), calendar.timegm(specdate2.timetuple()), calendar.timegm(specdate3.timetuple())
+
 
 '''
 #tickerList = util.getTickerList('Abhi-26')
-tickerList = ['SPY']
+tickerList = ['KRFT']
 for ticker in tickerList:
     redis_build_CSV_EOD(ticker, stdate, enddate)
     print "Successfuly exported EODRAW data: ", ticker
 '''
+
 
 #print stdate, enddate
 
@@ -116,13 +126,17 @@ for ticker in tickerList:
 #print results
 
 
-#results = xiQuantStrategyUtil.run_strategy_redis(20, "NFLX", 100000, stdate, enddate)
+results = xiQuantStrategyUtil.run_strategy_redis(20, "AAPL", 100000, stdate, enddate)
 #print results.getPortfolioResult()
 #print results.getOrdersFilteredByMomentumRank(filterCriteria=3000)
 #print results.getOrders()
 #print results.getMACD()
 #print results.getADX()
-#print results.getAdjCloseSeries("CVS")
+#print results.getAdjCloseSeries("SPY_adjusted")
+#print results.getSeries("middle")
+#print results.getSeries("upper")
+#print results.getSeries("lower")
+
 
 '''
 feed = xiQuantStrategyUtil.redis_build_feed_EOD_RAW("AAPL", stdate, enddate)
@@ -179,9 +193,10 @@ for bar in bars:
     k +=1
 '''
 
+'''
 dataRows = []
-tickerList = util.getTickerList('Abhi-26')
-#tickerList = ['NFLX']
+#tickerList = util.getTickerList('Abhi-26')
+tickerList = ['AGN']
 for ticker in tickerList:
     results = xiQuantStrategyUtil.run_strategy_redis(20, ticker, 100000, stdate, enddate, filterCriteria=10, indicators=False)
     #results = xiQuantStrategyUtil.run_strategy_redis(20, "GOOGL", 100000, stdate, enddate, filterCriteria=100, indicators=False)
@@ -221,9 +236,9 @@ with open('MasterOrders.csv', 'w') as csvfile:
 
 
 fake_csv.seek(0)
-port_results = xiQuantStrategyUtil.run_master_strategy(100000, fake_csv, datasource='REDIS')
+port_results = xiQuantStrategyUtil.run_master_strategy(100000, fake_csv, stdate, enddate)
 print port_results.getPortfolioResult()
-
+'''
 
 '''
 #print results.getMACD()
@@ -240,6 +255,13 @@ print port_results.getPortfolioResult()
 #print results.getCumulativeReturns()
 #print results.getSeries("EMA Signal")
 '''
+
+#port_results = xiQuantStrategyUtil.run_master_strategy(100000, 'MasterOrders_Both_Abhi-26.csv', stdate, enddate, filterAction='both', rank=10000)
+#port_results = xiQuantStrategyUtil.run_master_strategy(100000, 'MasterOrders_Both_SP-500.csv', stdate, enddate, filterAction='both', rank=250)
+#port_results = xiQuantStrategyUtil.run_master_strategy(100000, 'MasterOrders_Both_CBOE-r1000.csv', stdate, enddate, filterAction='sell', rank=50)
+#port_results = xiQuantStrategyUtil.run_master_strategy(100000, 'MasterOrders_Both_SP500_CBOE1000.csv', stdate, enddate, filterAction='both', rank=10000)
+#port_results = xiQuantStrategyUtil.run_master_strategy(100000, 'orders.csv', stdate, enddate, filterAction='both', rank=10000)
+#print port_results.getPortfolioResult()
 
 
 

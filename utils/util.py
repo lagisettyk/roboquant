@@ -63,6 +63,8 @@ def getTickerList(strategy):
 			file_tickerlist = getRelativePath('cboesymbol_master.csv')
 		if strategy == 'Abhi-26':
 			file_tickerlist = getRelativePath('Abhi_26.csv')
+		if strategy == 'SP-100':
+			file_tickerlist = getRelativePath('SP100.csv')
 		with open(file_tickerlist, 'rU') as csvfile:
 			reader = csv.DictReader(csvfile)
 			for row in reader:

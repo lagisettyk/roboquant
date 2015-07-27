@@ -37,6 +37,7 @@
                     {% if user.is_authenticated %}
                         <li><a href="{% url 'account_email' %}">Profile</a></li>
                         <li><a href="{% url 'account_logout' %}?next=/strategies/">Log Out</a>
+                        <li><a href="{% url 'display_indicators' %}">Indicators</a></li>
                         <li><a href="{% url 'display_backtest' %}">Backtesting</a></li>
                         <li><a href="{% url 'display_portfolio' %}">PortfolioSimulation</a></li>
                         </li>

@@ -1,0 +1,77 @@
+{% extends 'strategies/base.html' %}
+
+{% load staticfiles %}
+
+{% load bootstrap_toolkit %}
+
+{% block title %}Technical Indicators{% endblock %}
+
+{% block body_block %}
+	<div class="page-header">
+		<h3>Display Technical Indicators</h3>
+	</div>
+    <form class="form-inline"> 
+       <div id= "Ticker" class="form-group">
+         <input type="text" class="typeahead" placeholder="Ticker">
+        </div>
+       <div id="reportrange2" class="btn" style="display: inline-block; background: #fff; cursor: pointer; padding: 5px 10px; border: 1px solid #ccc">
+          <i class="glyphicon glyphicon-calendar fa fa-calendar"></i>
+          <span></span> <b class="caret"></b>
+       </div>
+	       <div id="tickerList" class="btn-group">
+            <button type="button" id="dLabel" data-toggle="dropdown" class="btn btn-primary dropdown-toggle">Display Indicators<span class="caret"></span></button>
+            <ul class="dropdown-menu" id="showList">
+                <li><a href="#" id="simulate-1">ticker1</a></li>
+            </ul>
+        </div>
+     </form>
+	<pre>
+	<!--<div id="content"></div>-->
+      <div id="slider1_container" style="position: relative; top: 0px; left: 0px; width: 1200px; height: 600px;">
+          <div u="slides" style="cursor: move; position: absolute; overflow: hidden; left: 10px; top: 0px; width: 1175px; height: 600px;">
+             <div class="container-fluid" id="container" ></div>
+             <div class="container-fluid" id="container3"></div>
+             <div class="container-fluid" id="container2"></div>
+             <div class="container-fluid" id="container4"></div>
+          </div>
+          <!--#region Arrow Navigator Skin Begin -->
+          <!-- Help: http://www.jssor.com/development/slider-with-arrow-navigator-jquery.html -->
+          <style>
+              /* jssor slider arrow navigator skin 11 css */
+              /*
+              .jssora11l                  (normal)
+              .jssora11r                  (normal)
+              .jssora11l:hover            (normal mouseover)
+              .jssora11r:hover            (normal mouseover)
+              .jssora11l.jssora11ldn      (mousedown)
+              .jssora11r.jssora11rdn      (mousedown)
+              */
+              .jssora11l, .jssora11r {
+                  display: block;
+                  position: absolute;
+                  /* size of arrow element */
+                  width: 37px;
+                  height: 37px;
+                  cursor: pointer;
+                  background: url({% static "images/a11.png" %}) no-repeat;
+                  overflow: hidden;
+              }
+              .jssora11l { background-position: -11px -41px; }
+              .jssora11r { background-position: -71px -41px; }
+              .jssora11l:hover { background-position: -131px -41px; }
+              .jssora11r:hover { background-position: -191px -41px; }
+              .jssora11l.jssora11ldn { background-position: -251px -41px; }
+              .jssora11r.jssora11rdn { background-position: -311px -41px; }
+          </style>
+          <!-- Arrow Left -->
+          <span u="arrowleft" class="jssora11l" style="top: 123px; left: 4px;">
+          </span>
+          <!-- Arrow Right -->
+          <span u="arrowright" class="jssora11r" style="top: 123px; right: 4px;">
+          </span>
+          <!--#endregion Arrow Navigator Skin End -->
+          <a style="display: none" href="http://www.jssor.com">Bootstrap Slider</a>
+    </div>
+  
+  </pre>
+{% endblock %}

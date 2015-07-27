@@ -81,6 +81,8 @@ $(document).ready( function() {
                          +'</li><li><a href="#" id="port_simulate">SP-500</a></li>'
                          +'</li><li><a href="#" id="port_simulate">CBOE-r1000</a></li>'
                          +'</li><li><a href="#" id="port_simulate">CBOE-ALL</a></li>'
+                         +'</li><li><a href="#" id="port_simulate">SP-500-CBOE-r1000</a></li>'
+                         +'</li><li><a href="#" id="port_simulate">SP-100</a></li>'
                         );
   });
 
@@ -285,6 +287,191 @@ $(document).ready( function() {
          });
 
   }
+
+  $('#indicatorList').on('click', '#dLabel', function(){
+    console.log("inside dLabel")
+    $('#showList').empty()
+    $('#showList').html('<li><a href="#" id="indicator-1">BBands</a>'
+                         +'</li><li><a href="#" id="indicator-1">RSI</a></li>'
+                        );
+  });
+
+  $('#indicatorList').on('click','#indicator-1',function(){
+      var stkticker = $('input.typeahead.tt-input').val();
+      var drp = $('#reportrange2').data('daterangepicker');
+      var indicator = $(this).text();
+      $.ajax({
+              url: '/strategies/backtest_indicators/?Ticker='+stkticker+'&indicator='+indicator+"&stdate="+drp.startDate.toISOString()+"&enddate="+drp.endDate.toISOString(),
+              type: 'GET',
+              async: true,
+              dataType: "json",
+              beforeSend: function( xhr, status ) {
+               //alert( "Before calling function" + stkticker);
+               //Indicates progress bar...
+               $("*").css("cursor", "progress");
+              }, 
+              success: function (data) {
+                console.log("Inside Success")
+                bbseries = []
+                bbseries[0] = {name: "price", data: data.price};
+                bbseries[1] = {name: "upper", data: data.upper};
+                bbseries[2] = {name: "middle", data: data.middle};
+                bbseries[3] = {name: "lower", data: data.lower};
+                displayIndicatorData(bbseries,stkticker)
+              },
+              // Code to run if the request fails; the raw request and
+      // status codes are passed to the function
+              error: function( xhr, status, errorThrown ) {
+                    alert( "Sorry, there was a problem!" );
+                    console.log( "Error: " + errorThrown );
+                    console.log( "Status: " + status );
+                    console.dir( xhr );
+              },
+              // Code to run regardless of success or failure
+              complete: function( xhr, status ) {
+               //alert( "The request is complete!" );
+               //Change back cursor to normal...
+               $("*").css("cursor", "default");
+              } 
+        });
+  });
+
+
+function displayIndicatorData (dataList, ticker) {
+      var chartIndicator = new Highcharts.StockChart({
+             chart: {
+                        renderTo: $('#container')[0]
+              },
+             /*xAxis: {
+                events: {
+                             afterSetExtremes: function() {
+                              //alert( "Inside the event box....");
+                              if (!this.chart.options.chart.isZoomed) {
+                                    var xMin = this.chart.xAxis[0].min;
+                                    var xMax = this.chart.xAxis[0].max;
+                                    
+                                     chart2.options.chart.isZoomed = true;
+                                     chart1.options.chart.isZoomed = true;
+                                     chart4.options.chart.isZoomed = true;
+
+                                    chart2.xAxis[0].setExtremes(xMin, xMax, true);
+                                    chart1.xAxis[0].setExtremes(xMin, xMax, true);
+                                    chart4.xAxis[0].setExtremes(xMin, xMax, true);
+                                    //alert( "Inside the event box...." + xMin + " " + xMax); 
+
+                                     chart2.options.chart.isZoomed = false;
+                                     chart1.options.chart.isZoomed = false;
+                                     chart4.options.chart.isZoomed = false;                                   
+                                }
+                             }
+                        }
+             },*/
+
+             legend: {
+                    enabled: true,
+                    align: 'right',
+                    backgroundColor: '#FCFFC5',
+                    borderColor: 'black',
+                    borderWidth: 2,
+                    layout: 'vertical',
+                    verticalAlign: 'top',
+                    y: 100,
+                    shadow: true
+              },
+              rangeSelector : {
+                  selected : 0
+              },
+
+              title : {
+                  text : ticker + ": Bollinger Bands",
+                  floating: true,
+                  align: 'left',
+                  x: 75,
+                  y: 70
+              },
+
+               /*yAxis: [ { //--- primary yAxis
+                          title: {
+                              text: 'Price'
+                          },
+                          height: '45%'
+              },{ //--- secondary yAxis
+                     title : {
+                        text : 'RSI'
+                     },
+                      min: 0,
+                      max: 100,
+                      top: '45%',
+                      height: '35%',
+                      lineWidth: 2,
+                      plotLines : [{
+                              value : 30,
+                              color : 'red',
+                              dashStyle : 'shortdash',
+                              width : 2,
+                              label : {
+                                  text : 'minimum'
+                              }
+                        }, {
+                            value : 70,
+                            color : 'red',
+                            dashStyle : 'shortdash',
+                            width : 2,
+                            label : {
+                                text : 'maximum'
+                            }
+                      }],
+                      //opposite: true
+              },{ //--- terinary yAxis
+                      title: {
+                          text: 'MACD'
+                      },
+                      //min: 0,
+                      top: '85%',
+                      height: '20%',
+                      opposite: true
+              }],*/
+
+              //series: data,
+              series : [{
+                type: 'candlestick',
+                color: '#000000',
+                name : dataList[0].name,
+                data : dataList[0].data,
+                turboThreshold: 0, ///Speed up and make sure it supports more points
+                tooltip: {
+                    valueDecimals: 2
+                },
+                id : 'dataseries1'
+               },{
+                color: '#CC00CC',
+                name : dataList[1].name,
+                data : dataList[1].data,
+                turboThreshold: 0, ///Speed up and make sure it supports more points
+                tooltip: {
+                    valueDecimals: 2
+                },
+                id : 'dataseries2'
+               },{
+                color: '#CC0000',
+                name : dataList[2].name,
+                data : dataList[2].data,
+                turboThreshold: 0, ///Speed up and make sure it supports more points
+                tooltip: {
+                    valueDecimals: 2
+                },
+                id : 'dataseries3'
+               },{
+                color: '#CC00CC',
+                name : dataList[3].name,
+                data : dataList[3].data,
+                tooltip: {
+                    valueDecimals: 2
+                },
+                id : 'dataseries4'
+               }]
+            });
+    }
 
 
   

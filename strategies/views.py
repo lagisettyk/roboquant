@@ -28,6 +28,11 @@ def display_backtest(request):
 	context_dict = {'backtestmessage': "display_backtest"}
 	return render(request, 'strategies/backtest.html', context_dict)
 
+def display_indicators(request):
+	print ">>>>> entered display_indicators"
+	context_dict = {'indicatorsmessage': "display_indicators"}
+	return render(request, 'strategies/indicators.html', context_dict)
+
 def display_portfolio(request):
 	print ">>>>> entered display_backtest"
 	context_dict = {'backtestmessage': "display_portfolio"}
@@ -85,6 +90,33 @@ def hichart_redis(request):
 	
 
 
+def computeIndicators(request):
+	import dateutil.parser
+	from xiQuant_strategies import xiQuantStrategyUtil
+	import json
+
+	if request.method == 'GET':
+		ticker = request.GET['Ticker']
+		stdate = request.GET['stdate']
+		enddate = request.GET['enddate']
+
+	start_date = dateutil.parser.parse(stdate)
+	end_date = dateutil.parser.parse(enddate)
+	upper, middle, lower, adjOHLCSeries = xiQuantStrategyUtil.compute_BBands(ticker, start_date, end_date)
+
+	results = {
+		"upper": upper,
+		"middle": middle,
+		"lower": lower,
+		"price": adjOHLCSeries
+		}
+
+	### This is important to note json.dumps() convert python data structure to JSON form
+	return HttpResponse(json.dumps(results), content_type='application/json')
+
+
+
+
 def backtest(request):
 	import redis
 	import json
@@ -130,8 +162,7 @@ def backtest(request):
 		"upper": job.result.getSeries("upper"),
 		"middle": job.result.getSeries("middle"),
 		"lower": job.result.getSeries("lower"),
-		"price": job.result.getAdjCloseSeries(ticker)
-
+		"price": job.result.getAdjCloseSeries(ticker+"_adjusted")
 		}
 
 	'''
@@ -158,7 +189,7 @@ def backtest(request):
 	
     ### This is important to note json.dumps() convert python data structure to JSON form
 	return HttpResponse(json.dumps(results), content_type='application/json')
-
+'''
 def simulatepotfolio(redisURL, amount, strategy, startdate, enddate, filterRank):
 	import redis
 	import json
@@ -228,33 +259,13 @@ def simulatepotfolio(redisURL, amount, strategy, startdate, enddate, filterRank)
 	#########################################################################################################################
 	#########################################################################################################################
 	################# Only apply these if the filterrank is less than 20 ####################################################
-	'''
-	if filterRank < 20:
-		uniqueKeys = sorted(uniqueKeys)
-		modifiedDataRows = []
-		for key in uniqueKeys:
-			orders = 0
-			for k in range(len(dataRows)):
-				if dataRows[k][0] == key:
-					orders += 1
-					if orders <= filterRank:
-						modifiedDataRows.append(dataRows[k])
-		
-		fake_csv = util.make_fake_csv(modifiedDataRows)
-		print  "Orders filtered due to rank: ", len(dataRows) - len(modifiedDataRows)
-
-	else:
-
-		fake_csv = util.make_fake_csv(dataRows)	
-		print  "Successfully processed tickers"	
-	'''
-
+	
 	fake_csv = util.make_fake_csv(dataRows)
 	#fake_csv = util.make_fake_csv(modifiedDataRows)
 	#print  "Orders filtered due to rank: ", len(dataRows) - len(modifiedDataRows)
 
 	############### Run the master order for computing portfolio#########
-	jobPortfolio = q.enqueue(xiQuantStrategyUtil.run_master_strategy,int(amount), fake_csv)
+	jobPortfolio = q.enqueue(xiQuantStrategyUtil.run_master_strategy,int(amount), fake_csv, startdate, enddate)
 
 	sleep = True
 	while(sleep):
@@ -265,6 +276,49 @@ def simulatepotfolio(redisURL, amount, strategy, startdate, enddate, filterRank)
 	print  "Successfully simulated portfolio"
 
 	return jobPortfolio.result
+'''
+
+
+
+def simulatepotfolio(redisURL, amount, strategy, startdate, enddate, filterRank):
+	import redis
+	import json
+	import urlparse
+	from django.conf import settings
+	from rq import Queue
+	import time
+	import dateutil.parser
+	from utils import util
+	from xiQuant_strategies import xiQuantStrategyUtil
+	import operator
+
+	if strategy == 'SP-500':
+		filename = 'MasterOrders_Both_SP-500.csv'
+	if strategy == 'Abhi-26':
+		filename = 'MasterOrders_Both_Abhi-26.csv'
+	if strategy == 'SP-500-CBOE-r1000':
+		filename = 'MasterOrders_Both_SP500_CBOE1000.csv'
+	if strategy == 'SP-100':
+		filename = 'MasterOrders_Both_SP-100.csv'
+	if strategy == 'CBOE-r1000':
+		filename = 'MasterOrders_Both_CBOE-r1000.csv'
+
+	redisConn = util.get_redis_conn(redisURL)
+	q = Queue(connection=redisConn, default_timeout=15000)  # no args implies the default queue
+
+	############### Run the master order for computing portfolio#########
+	jobPortfolio = q.enqueue(xiQuantStrategyUtil.run_master_strategy,int(amount), filename, startdate, enddate, filterAction='both', rank=filterRank)
+
+	sleep = True
+	while(sleep):
+		time.sleep(1)
+		if jobPortfolio.get_status() == 'failed' or jobPortfolio.get_status()=='finished':
+			sleep = False
+
+	print  "Successfully simulated portfolio"
+
+	return jobPortfolio.result
+
 
 
 def backtestPortfolio(request):

@@ -26,6 +26,7 @@ def dsToNumpyArray(ds, count):
 
 def normalize(value, mean, stdDev):
 	return float((value - mean) / stdDev)
+	
 
 def slope(val1, val2):
 	return numpy.arctan(float((val1 - val2) / 2)) * 180 / numpy.pi
@@ -88,3 +89,39 @@ def make_fake_csv(data):
 	fake_writer.writerows(data) ########## data is nothing but list of lists....
 	fake_csv.seek(0)
 	return fake_csv
+
+def computeStopPriceDelta(closePrice):
+	stopPriceDelta = 0.0
+	if closePrice < consts.BB_SPREAD_EXIT_PRICE_RANGE_HIGH_1:
+		stopPriceDelta = consts.BB_SPREAD_EXIT_PRICE_DELTA_1
+	if closePrice >= consts.BB_SPREAD_EXIT_PRICE_RANGE_HIGH_1 and closePrice < consts.BB_SPREAD_EXIT_PRICE_RANGE_HIGH_2:
+		stopPriceDelta = consts.BB_SPREAD_EXIT_PRICE_DELTA_2
+	if closePrice >= consts.BB_SPREAD_EXIT_PRICE_RANGE_HIGH_2 and closePrice < consts.BB_SPREAD_EXIT_PRICE_RANGE_HIGH_3:
+		stopPriceDelta = consts.BB_SPREAD_EXIT_PRICE_DELTA_3
+	if closePrice >= consts.BB_SPREAD_EXIT_PRICE_RANGE_HIGH_3 and closePrice < consts.BB_SPREAD_EXIT_PRICE_RANGE_HIGH_4:
+		stopPriceDelta = consts.BB_SPREAD_EXIT_PRICE_DELTA_4
+	if closePrice >= consts.BB_SPREAD_EXIT_PRICE_RANGE_HIGH_4:
+		stopPriceDelta = consts.BB_SPREAD_EXIT_PRICE_DELTA_5
+	return stopPriceDelta
+
+def computeStopPrice(candleLen, bullishOrBearish, openPrice, closePrice, stopPriceDelta):
+	stopPrice = 0.0
+	if bullishOrBearish.lower() == "bullish":
+		if candleLen <= consts.BB_SPREAD_TRADE_DAY_STOP_LOSS_DELTA_1:
+			stopPrice = openPrice - stopPriceDelta
+		if candleLen > consts.BB_SPREAD_TRADE_DAY_STOP_LOSS_DELTA_1 and candleLen <= consts.BB_SPREAD_TRADE_DAY_STOP_LOSS_DELTA_2:
+			stopPrice = openPrice + candleLen / 3
+		if candleLen > consts.BB_SPREAD_TRADE_DAY_STOP_LOSS_DELTA_2 and candleLen <= consts.BB_SPREAD_TRADE_DAY_STOP_LOSS_DELTA_3:
+			stopPrice = openPrice + candleLen / 2
+		if candleLen > consts.BB_SPREAD_TRADE_DAY_STOP_LOSS_DELTA_3:
+			stopPrice = openPrice + (candleLen * 2) / 3
+	elif bullishOrBearish.lower() == "bearish":
+		if candleLen <= consts.BB_SPREAD_TRADE_DAY_STOP_LOSS_DELTA_1:
+			stopPrice = openPrice + stopPriceDelta
+		if candleLen > consts.BB_SPREAD_TRADE_DAY_STOP_LOSS_DELTA_1 and candleLen <= consts.BB_SPREAD_TRADE_DAY_STOP_LOSS_DELTA_2:
+			stopPrice = openPrice - candleLen / 3
+		if candleLen > consts.BB_SPREAD_TRADE_DAY_STOP_LOSS_DELTA_2 and candleLen <= consts.BB_SPREAD_TRADE_DAY_STOP_LOSS_DELTA_3:
+			stopPrice = openPrice - candleLen / 2
+		if candleLen > consts.BB_SPREAD_TRADE_DAY_STOP_LOSS_DELTA_3:
+			stopPrice = openPrice - (candleLen * 2) / 3
+	return stopPrice

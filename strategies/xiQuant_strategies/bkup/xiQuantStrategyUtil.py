@@ -16,6 +16,7 @@ import calendar
 from pyalgotrade import bar
 import collections
 from pyalgotrade.bar import BasicBar, Frequency
+import math
 
 
 import xiquantPlatform
@@ -116,12 +117,15 @@ class StrategyResults(object):
                     adj_Close_Series = [] ### Initialize the value list...
                     adj_Vol_Series = [] ### Initialize the value list...
                 bar_val = bars.getBar(instrument)
-               
+
                 #### Please note we are already populating them with adjusted values so we do not need to set to true...
+                #adjPrice_val = [dtInMilliSeconds, bar_val.getOpen(), bar_val.getHigh(), \
+                #       bar_val.getLow(), bar_val.getAdjClose()]
                 adjPrice_val = [dtInMilliSeconds, bar_val.getOpen(), bar_val.getHigh(), \
-                        bar_val.getLow(), bar_val.getAdjClose()]
+                        bar_val.getLow(), bar_val.getClose()]
                 adj_Close_Series.append(adjPrice_val)
                 self.__AdjPrices[instrument] = adj_Close_Series
+
                 ### Populate volume series... as points to display in highchart as columns
                 ##### Color green indicates Close higher then open and red indicates lower
                 
@@ -205,12 +209,20 @@ class StrategyResults(object):
         dateList = list(self.__dateTimes)
         dateList.sort()
         seq_data = self.__additionalDataSeries[name]
-        for x in range(len(dateList)):
-            dt =  dateList[x]
+        #for x in range(len(dateList)):
+        dtIndex = -1
+        for x in reversed(seq_data):
+            dt =  dateList[dtIndex]
             sec = calendar.timegm(dt.timetuple())
-            val = [int(sec * 1000), seq_data.getValueAbsolute(x)]
-            dataseries.append(val)
-        return dataseries
+            #val = [int(sec * 1000), seq_data.getValueAbsolute(x)]
+            ############## This is to avoid JSON Parser not able to deal with double.NaN's...
+            if math.isnan(x):
+                pass #### Do nothing
+            else:
+                val = [int(sec * 1000), x]
+                dataseries.append(val)
+            dtIndex = dtIndex - 1
+        return list(reversed(dataseries))
 
     def getPortfolioResult(self):
         return self.__portfolioValues
@@ -586,6 +598,34 @@ def getEarningsCal(instrument):
 #######            Methods related to BB_SPread strategy..........
 ########======================================================================================================###############
 
+####################### Populate momentum rank field ########################################################################
+def updateOrdersRank(orders, instrument):
+
+    updatedOrders = {}
+    for key, value in orders.iteritems():
+
+        if value[0][1] == 'Buy' or value[0][1] == 'Sell':
+           
+            dt = datetime.datetime.fromtimestamp(key)
+            seconds = calendar.timegm(dt.timetuple()) #### please note you need to get money flow of the one day before......
+            keyString = int(seconds)*1000
+            rediskey = "cashflow:"+str(keyString)
+            redisConn = util.get_redis_conn()
+            if value[0][1] == 'Buy':
+                rank = redisConn.zrevrank(rediskey, instrument) 
+            else:
+                rank = redisConn.zrank(rediskey, instrument) 
+            ### update rank based on cashflow for BUY and SELL orders...
+            newval = []
+            newval.append((value[0][0], value[0][1], value[0][2], rank))
+            ########## Please note we are just appending relevant cashflow ranks and relevant filter rules will be applied 
+            ########## during portfolio simulation rules...
+            updatedOrders[key] = newval
+        else:
+            updatedOrders[key] = value
+
+    return updatedOrders
+
 ##### Orders filtered by momentum rank....
 def getOrdersFiltered(orders, instrument, filterCriteria=20):
 
@@ -658,6 +698,7 @@ def run_strategy_redis(bBandsPeriod, instrument, startPortfolio, startdate, endd
     # Add the SPY bars, which are used to determine if the market is Bullish or Bearish
     # on a particular day.
     feed = add_feeds_EOD_redis_RAW(feed, 'SPY', startdate, enddate)
+    feed = add_feeds_EOD_redis_RAW(feed, 'QQQ', startdate, enddate)
     
 
     ###Get earnings calendar
@@ -666,11 +707,12 @@ def run_strategy_redis(bBandsPeriod, instrument, startPortfolio, startdate, endd
     barsDictForCurrAdj = {}
     barsDictForCurrAdj[instrument] = feed.getBarSeries(instrument)
     barsDictForCurrAdj['SPY'] = feed.getBarSeries('SPY')
+    barsDictForCurrAdj['QQQ'] = feed.getBarSeries('QQQ')
     feedAdjustedToEndDate = xiquantPlatform.adjustBars(barsDictForCurrAdj, startdate, enddate)
 
     strat = BB_spread.BBSpread(feedAdjustedToEndDate, feed, instrument, bBandsPeriod, calList, startPortfolio)
 
-    instList = [instrument, 'SPY']
+    instList = [instrument+"_adjusted", 'SPY'+"_adjusted", 'QQQ'+"_adjusted"]
 
     if indicators:
         # Attach a returns analyzers to the strategy.
@@ -690,9 +732,13 @@ def run_strategy_redis(bBandsPeriod, instrument, startPortfolio, startdate, endd
 
         ####Populate orders from the backtest run...
         results.addOrders(strat.getOrders())
+
+        #print "Upper: ...........", strat.getUpperBollingerBands()
        
        
-        #results.addSeries("upper", strat.getBollingerBands().getUpperBand())
+        results.addSeries("upper", strat.getUpperBollingerBands())
+        results.addSeries("middle", strat.getMiddleBollingerBands())
+        results.addSeries("lower", strat.getLowerBollingerBands())
         #results.addSeries("middle", strat.getBollingerBands().getMiddleBand())
         #results.addSeries("lower", strat.getBollingerBands().getLowerBand())
         #results.addSeries("RSI", strat.getRSI())
@@ -706,19 +752,28 @@ def run_strategy_redis(bBandsPeriod, instrument, startPortfolio, startdate, endd
         results = StrategyResults(strat, instList, returnsAnalyzer, plotSignals=False)
         strat.run()
 
+        updatedOrders = updateOrdersRank(strat.getOrders(), instrument)
+
+        return updatedOrders
+
+        '''
         if filterCriteria == 10000:
             orders = strat.getOrders()
         else:
             orders = getOrdersFiltered(strat.getOrders(), instrument, filterCriteria)
  
         return orders
+        '''
 
 
-def run_master_strategy(initialcash, masterFile, datasource='REDIS'):
+def run_master_strategy(initialcash, masterFile, startdate, enddate, filterAction='Both', rank=10000):
 
-    ordersFile = Orders_exec.OrdersFile(masterFile, fakecsv=True)
-    startdate = datetime.datetime.fromtimestamp(ordersFile.getFirstDate()) - datetime.timedelta(days=1)
-    enddate = datetime.datetime.fromtimestamp(ordersFile.getLastDate()) +  datetime.timedelta(days=1)
+    #ordersFile = Orders_exec.OrdersFile(masterFile, fakecsv=True)
+
+    filePath = os.path.join(os.path.dirname(__file__), masterFile)
+    ordersFile = Orders_exec.OrdersFile(filePath, filterAction, rank)
+    #startdate = datetime.datetime.fromtimestamp(ordersFile.getFirstDate()) - datetime.timedelta(days=1)
+    #enddate = datetime.datetime.fromtimestamp(ordersFile.getLastDate()) +  datetime.timedelta(days=1)
     #enddate = dateutil.parser.parse('2014-12-31T08:00:00.000Z')
     print startdate, enddate
 
@@ -740,7 +795,7 @@ def run_master_strategy(initialcash, masterFile, datasource='REDIS'):
 
     cash = 100000
     useAdjustedClose = True
-    myStrategy = Orders_exec.MyStrategy(feed, initialcash, ordersFile, useAdjustedClose)
+    myStrategy = Orders_exec.MyStrategy(feedAdjustedToEndDate, initialcash, ordersFile, useAdjustedClose)
 
     returnsAnalyzer = Returns()
     results = StrategyResults( myStrategy, instList, returnsAnalyzer)

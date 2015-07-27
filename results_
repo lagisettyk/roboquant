@@ -1,3 +1,0 @@
-Instrument,Trade-Type,Entry-Date,Entry-Price,Portfolio-Value-Before,Portfolio-Cash-Before,Portfolio-Value-After,Portfolio-Cash-After,Exit-Date,Exit-Price,Portfolio-Value-Before,Portfolio-Cash-Before,Portfolio-Value-After,Portfolio-Cash-After
-WHR,LONG,2009-09-17,64.09,106613.73,89892.80,106378.93,81369.42,2009-09-24,60.98,105716.93,81369.42,105446.80,89480.24,-412.56
-WHR,LONG,2013-03-05,113.23,119109.69,89480.24,119560.40,80988.30,2013-03-07,113.26,119440.35,80988.30,118789.35,89483.06,2.82

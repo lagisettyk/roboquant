@@ -1,0 +1,20 @@
+1220486400,AAPL,Sell,21.73,6,,,,
+1220572801,AAPL,Stop-Buy,22.23,-1,,,,
+1241395200,AAPL,Buy,17.92,12,,,,
+1241481601,AAPL,Stop-Sell,17.52,-1,,,,
+1253059200,AAPL,Buy,24.75,3,,,Total No of Trades,6
+1253145601,AAPL,Stop-Sell,24.25,-1,,,,
+1253577602,AAPL,Tightened-Stop-Sell,24.89,-1,,,Buys,5
+1253664002,AAPL,Tightened-Stop-Sell,25.01,-1,,,Sells,1
+1261612800,AAPL,Buy,28.35,0,,,,
+1261958401,AAPL,Stop-Sell,27.91,-1,,,,
+1262044802,AAPL,Tightened-Stop-Sell,28.2,-1,,,,
+1324944000,AAPL,Buy,55.19,0,,,,
+1325030401,AAPL,Stop-Sell,54.68,-1,,,,
+1385424000,AAPL,Buy,75.04,0,,,,
+1385510401,AAPL,Stop-Sell,74.2,-1,,,,
+1385683202,AAPL,Stop-Sell,10.85,-1,,,,
+1385942402,AAPL,Tightened-Stop-Sell,77.04,-1,,,,
+1386028802,AAPL,Tightened-Stop-Sell,78.03,-1,,,,
+1386115202,AAPL,Tightened-Stop-Sell,78.97,-1,,,,
+1386201602,AAPL,Tightened-Stop-Sell,79.37,-1,,,,

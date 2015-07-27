@@ -39,33 +39,7 @@ class xiQuantBasicBar(bar.BasicBar):
 		return self.__split
 
 
-def redis_build_feed_EOD_RAW(ticker, stdate, enddate):
-	from pyalgotrade.bar import BasicBar, Frequency
 
-	feed = Feed(Frequency.DAY, 1024)
-	return add_feeds_EODRAW_CSV(feed, ticker, stdate, enddate)
-
-def add_feeds_EODRAW_CSV(feed, ticker, stdate, enddate):
-	import datetime
-	from pyalgotrade.utils import dt
-	from pyalgotrade.bar import BasicBar, Frequency
-	import csv
-	import dateutil.parser
-	import os
-
-	bd = [] ##### initialize bar data.....
-	file_EODRAW = os.path.join(os.path.dirname(__file__), ticker+'_EODRAW.csv')
-	with open(file_EODRAW, 'rU') as csvfile:
-		reader = csv.DictReader(csvfile)
-		for row in reader:
-			dateTime = dateutil.parser.parse(row['Date'])
-			### Let's only populate the dates passed in the feed...
-			if dateTime.date() <= enddate.date() and dateTime.date() >= stdate.date() :
-				bar = xiQuantBasicBar(dateTime, 
-				float(row['Open']) , float(row['High']), float(row['Low']), float(row['Close']), float(row['Volume']), float(row['AdjClose']), Frequency.DAY, float(row['Dividend']), float(row['Split']) )
-				bd.append(bar)
-	feed.loadBars(ticker, bd)
-	return feed
 
 
 class xiQuantAdjustBars():
@@ -79,6 +53,7 @@ class xiQuantAdjustBars():
 		self.__LowDataSeries = {}
 		self.__CloseDataSeries = {}
 		self.__VolumeDataSeries = {}
+		self.__TypicalDataSeries = {}
 		self.__barSeries = {}
 
 
@@ -140,6 +115,7 @@ class xiQuantAdjustBars():
 			LowSeries =  SequenceDataSeries(4000)
 			CloseSeries = SequenceDataSeries(4000)
 			VolumeSeries = SequenceDataSeries(4000)
+			TypicalSeries = SequenceDataSeries(4000)
 			barSeries = BarDataSeries(4000)
 			basicbars.sort(key=lambda bar: bar.getDateTime(), reverse=False)
 			
@@ -150,6 +126,7 @@ class xiQuantAdjustBars():
 				LowSeries.appendWithDateTime(bar.getDateTime(), bar.getLow())
 				CloseSeries.appendWithDateTime(bar.getDateTime(), bar.getClose())
 				VolumeSeries.appendWithDateTime(bar.getDateTime(), bar.getVolume())
+				TypicalSeries.appendWithDateTime(bar.getDateTime(), (bar.getOpen()+bar.getHigh()+bar.getLow())/3.0)
 				barSeries.appendWithDateTime(bar.getDateTime(), bar)
 
 
@@ -158,6 +135,7 @@ class xiQuantAdjustBars():
 			self.__LowDataSeries[key+"_adjusted"] =  LowSeries
 			self.__CloseDataSeries[key+"_adjusted"] = CloseSeries
 			self.__VolumeDataSeries[key+"_adjusted"] = VolumeSeries
+			self.__TypicalDataSeries[key+"_adjusted"] = TypicalSeries
 			self.__barSeries[key+"_adjusted"] = barSeries
 
 
@@ -175,6 +153,9 @@ class xiQuantAdjustBars():
 
 	def getVolumeDataSeries(self, instrument):
 		return self.__VolumeDataSeries[instrument]
+
+	def getTypicalDataSeries(self, instrument):
+		return self.__TypicalDataSeries[instrument]
 
 	def getBarSeries(self, instrument):
 		return self.__barSeries[instrument]
@@ -244,3 +225,35 @@ def adjustBars(barsDict, startdate, enddate, keyFlag=True):
 			feed.loadBars(key, basicbars)
 
 	return feed
+
+######################################### Feed for accessing the redis/quandl OHLC data via CSV files #############################
+
+def redis_build_feed_EOD_RAW(ticker, stdate, enddate):
+	from pyalgotrade.bar import BasicBar, Frequency
+
+	feed = Feed(Frequency.DAY, 1024)
+	return add_feeds_EODRAW_CSV(feed, ticker, stdate, enddate)
+
+def add_feeds_EODRAW_CSV(feed, ticker, stdate, enddate):
+	import datetime
+	from pyalgotrade.utils import dt
+	from pyalgotrade.bar import BasicBar, Frequency
+	import csv
+	import dateutil.parser
+	import os
+
+	bd = [] ##### initialize bar data.....
+	file_EODRAW = os.path.join(os.path.dirname(__file__), ticker+'_EODRAW.csv')
+	with open(file_EODRAW, 'rU') as csvfile:
+		reader = csv.DictReader(csvfile)
+		for row in reader:
+			dateTime = dateutil.parser.parse(row['Date'])
+			### Let's only populate the dates passed in the feed...
+			if dateTime.date() <= enddate.date() and dateTime.date() >= stdate.date() :
+				bar = xiQuantBasicBar(dateTime, 
+				float(row['Open']) , float(row['High']), float(row['Low']), float(row['Close']), float(row['Volume']), float(row['AdjClose']), Frequency.DAY, float(row['Dividend']), float(row['Split']) )
+				bd.append(bar)
+	feed.loadBars(ticker, bd)
+	return feed
+
+######################################### Feed for accessing the redis/quandl OHLC data via CSV files #############################
