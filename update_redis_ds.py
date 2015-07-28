@@ -10,7 +10,6 @@ import calendar
 import sys
 sys.path.append(os.path.dirname(__file__)+'/strategies')
 
-#print sys.path
 
 from xiQuant_strategies import xiQuantStrategyUtil
 
