@@ -10,8 +10,8 @@ import dateutil.parser
 
 #tickerList = util.getTickerListWithSPY()
 #tickerList = util.getTickerList('CBOE-ALL')
-#tickerList = util.getTickerList('Abhi-26')
-tickerList = ['AGN', 'QQQ']
+tickerList = util.getTickerList('Abhi-26')
+#tickerList = ['AGN', 'QQQ']
 
 def get_redis_conn():
 	return util.get_redis_conn_nopool()
@@ -43,7 +43,7 @@ def scheduled_job():
 	print job.result   # => 889
 
 
-@sched.scheduled_job('date')
+#@sched.scheduled_job('date')
 #@sched.scheduled_job('cron', day_of_week='mon-fri', hour=17)
 def populate_moneyflow():
 	print('This job is to populate cashflow')
@@ -54,7 +54,7 @@ def populate_moneyflow():
 	time.sleep(10)
 	print job.result   # => 889
 
-#@sched.scheduled_job('date')
+@sched.scheduled_job('date')
 #@sched.scheduled_job('cron', day_of_week='mon-fri', hour=17)
 def populate_rawEOD():
 	print('This job is run every weekday at 7pm.')
