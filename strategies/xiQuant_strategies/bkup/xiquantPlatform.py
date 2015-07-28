@@ -48,6 +48,7 @@ class xiQuantAdjustBars():
 		self.__barsDict = barsDict
 		self.__startdate = startdate
 		self.__enddate = enddate
+		self.__DateTimes = {}
 		self.__OpenDataSeries = {}
 		self.__HighDataSeries = {}
 		self.__LowDataSeries = {}
@@ -110,6 +111,8 @@ class xiQuantAdjustBars():
 					basicbars.append(bar)
 				k +=1
 
+
+			DateTimes = []
 			OpenSeries = SequenceDataSeries(4000)
 			HighSeries = SequenceDataSeries(4000)
 			LowSeries =  SequenceDataSeries(4000)
@@ -121,6 +124,7 @@ class xiQuantAdjustBars():
 			
 
 			for bar in basicbars:
+				DateTimes.append(bar.getDateTime())
 				OpenSeries.appendWithDateTime(bar.getDateTime(), bar.getOpen())
 				HighSeries.appendWithDateTime(bar.getDateTime(), bar.getHigh())
 				LowSeries.appendWithDateTime(bar.getDateTime(), bar.getLow())
@@ -130,6 +134,7 @@ class xiQuantAdjustBars():
 				barSeries.appendWithDateTime(bar.getDateTime(), bar)
 
 
+			self.__DateTimes[key+"_adjusted"] = DateTimes
 			self.__OpenDataSeries[key+"_adjusted"] = OpenSeries
 			self.__HighDataSeries[key+"_adjusted"] = HighSeries
 			self.__LowDataSeries[key+"_adjusted"] =  LowSeries
@@ -138,6 +143,10 @@ class xiQuantAdjustBars():
 			self.__TypicalDataSeries[key+"_adjusted"] = TypicalSeries
 			self.__barSeries[key+"_adjusted"] = barSeries
 
+
+
+	def getDateTimes(self, instrument):
+		return self.__DateTimes[instrument]
 
 	def getOpenDataSeries(self, instrument):
 		return self.__OpenDataSeries[instrument]

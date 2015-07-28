@@ -90,7 +90,7 @@ class MyStrategy(strategy.BacktestingStrategy):
 
 	def onStart(self):
 		self.__resultsFile = open(consts.RESULTS_FILE, 'w')
-		self.__resultsFile.write("Instrument,Trade-Type,Entry-Date,Entry-Price,Quantity,Portfolio-Value-Pre,Portfolio-Cash-Pre,Portfolio-Value-Post,Portfolio-Cash-Post,Entry-Day-Exit-PorL,Exit-Date,Exit-Price,Portfolio-Value-Pre,Portfolio-Cash-Pre,Portfolio-Value-Post,Portfolio-Cash-Post,PorL,Current-Pos\n")
+		self.__resultsFile.write("Instrument,Trade-Type,Entry-Date,Entry-Price,Quantity,Portfolio-Value-Pre,Portfolio-Cash-Pre,Portfolio-Value-Post,Portfolio-Cash-Post,Intra-Day-Exit-PorL,Intra-Day-Exit-Date,Exit-Date,Exit-Price,Portfolio-Value-Pre,Portfolio-Cash-Pre,Portfolio-Value-Post,Portfolio-Cash-Post,PorL,Current-Pos\n")
 
 	def onFinish(self, bars):
 		self.__resultsFile.close()
@@ -264,7 +264,7 @@ class MyStrategy(strategy.BacktestingStrategy):
 				# or loss accordingly.
 				actualPorL =  0.0
 				exitPrice = 0.0
-				if self.__longPos[instrument].entryActive():
+				if not self.__longPos[instrument].entryActive():
 					self.__lowDS = self.__feed[instrument].getLowDataSeries()
 					self.__highDS = self.__feed[instrument].getHighDataSeries()
 					if self.__highDS[-1] <= stopLossPrice:
@@ -275,7 +275,7 @@ class MyStrategy(strategy.BacktestingStrategy):
 					if exitPrice != 0:
 						actualPorL =  (exitPrice - execInfo.getPrice()) * execInfo.getQuantity()
 						self.info("Actual P or L for long %s %d shares is %0.2f" % (instrument, execInfo.getQuantity(), actualPorL))
-				self.__results[instrument] += str(actualPorL) + ','
+					self.__results[instrument] += str(actualPorL) + ',' + str(bars.getDateTime().date()) + ','
 			if self.__shortPos.get(instrument, None) and self.__shortPos[instrument]:
 				self.__shortPos[instrument].cancelExit()
 				self.__shortPos[instrument].exitStop(stopLossPrice, True)
@@ -283,7 +283,7 @@ class MyStrategy(strategy.BacktestingStrategy):
 				# or loss accordingly.
 				actualPorL =  0.0
 				exitPrice = 0.0
-				if self.__shortPos[instrument].entryActive():
+				if not self.__shortPos[instrument].entryActive():
 					self.__lowDS = self.__feed[instrument].getLowDataSeries()
 					self.__highDS = self.__feed[instrument].getHighDataSeries()
 					if self.__lowDS[-1] >= stopLossPrice:
@@ -294,7 +294,7 @@ class MyStrategy(strategy.BacktestingStrategy):
 					if exitPrice != 0:
 						actualPorL =  (execInfo.getPrice() - exitPrice) * execInfo.getQuantity()
 						self.info("Actual P or L for short %s %d shares is %0.2f" % (instrument, execInfo.getQuantity(), actualPorL))
-				self.__results[instrument] += str(actualPorL) + ','
+					self.__results[instrument] += str(actualPorL) + ','  + str(bars.getDateTime().date()) + ','
 		# Process any tightened stop loss orders or ones to lock profit
 		#stopLossDateTime = int((bars.getDateTime() + datetime.timedelta(seconds=2) - datetime.datetime(1970,1,1,0,0,0)).total_seconds())
 		stopLossDateTime = xiquantFuncs.secondsSinceEpoch(bars.getDateTime() + datetime.timedelta(seconds=2))
@@ -314,8 +314,8 @@ def main():
 	startPeriod = dateutil.parser.parse('2005-06-30T08:00:00.000Z')
 	endPeriod = dateutil.parser.parse('2014-12-31T08:00:00.000Z')
 	# Load the orders file.
-	ordersFile = OrdersFile("MasterOrders_Both_Abhi-26.csv", filterAction='both', rank=500)
-	#ordersFile = OrdersFile("orders.csv", filterAction='both', rank=20)
+	#ordersFile = OrdersFile("MasterOrders_Both_Abhi-26.csv", filterAction='buy', rank=500)
+	ordersFile = OrdersFile("orders.csv", filterAction='both', rank=20)
 	#startPeriod = yearFromTimeSinceEpoch(ordersFile.getFirstDate())
 	#endPeriod = yearFromTimeSinceEpoch(ordersFile.getLastDate())
 	print "First Year", startPeriod
@@ -392,4 +392,4 @@ def main():
 	print "Sharpe ratio: %.2f" % (sharpeRatioAnalyzer.getSharpeRatio(0))
 	'''
 
-#main()
+main()

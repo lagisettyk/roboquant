@@ -691,6 +691,56 @@ def getOrdersFilteredByRules(orders, instrument):
         return filteredOrders
 
 
+def numpy_to_highchartds(datetimes, data, startdate, enddate):
+    dataseries = []
+    dateList = list(datetimes)
+    dateList.sort()
+    dtIndex = -1
+    for x in reversed(data):
+        dt = dateList[dtIndex]
+        sec = calendar.timegm(dt.timetuple())
+        if math.isnan(x):
+            pass #### Do nothing
+        else:
+            val = [int(sec * 1000), x]
+            dataseries.append(val)
+        dtIndex = dtIndex - 1
+
+    return list(reversed(dataseries))
+
+
+def compute_BBands(instrument, startdate, enddate ):
+    from pyalgotrade.talibext import indicator
+
+    bBandsPeriod = 20 #### No of periods.....
+    feed = redis_build_feed_EOD_RAW(instrument, startdate, enddate)
+    barsDictForCurrAdj = {}
+    barsDictForCurrAdj[instrument] = feed.getBarSeries(instrument)
+    feedLookbackEndAdj = xiquantPlatform.xiQuantAdjustBars(barsDictForCurrAdj, startdate, enddate)
+    feedLookbackEndAdj.adjustBars()
+    closeDS = feedLookbackEndAdj.getCloseDataSeries(instrument + "_adjusted")
+    upper, middle, lower = indicator.BBANDS(closeDS, len(closeDS), bBandsPeriod, 2, 2)
+
+    dateTimes = feedLookbackEndAdj.getDateTimes(instrument + "_adjusted")
+    upperDS = numpy_to_highchartds(dateTimes, upper, startdate, enddate)
+    middleDS = numpy_to_highchartds(dateTimes, middle, startdate, enddate)
+    lowerDS = numpy_to_highchartds(dateTimes, lower, startdate, enddate)
+
+    ##########Display price seriesin the center of Bolinger bands......##################
+    barDS = feedLookbackEndAdj.getBarSeries(instrument + "_adjusted")
+    adj_Close_Series = []
+    for bar in barDS:
+        dt = bar.getDateTime()
+        sec = calendar.timegm(dt.timetuple())
+        dtInMilliSeconds = int(sec * 1000)
+        adjPrice_val = [dtInMilliSeconds, bar.getOpen(), bar.getHigh(), \
+                        bar.getLow(), bar.getClose()]
+        adj_Close_Series.append(adjPrice_val)
+
+
+    return upperDS, middleDS, lowerDS, adj_Close_Series
+    
+
 def run_strategy_redis(bBandsPeriod, instrument, startPortfolio, startdate, enddate, filterCriteria=20, indicators=True):
 
     

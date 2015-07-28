@@ -25,6 +25,7 @@ def redis_build_CSV_EOD(ticker, stdate, enddate):
     seconds2 = calendar.timegm(enddate.timetuple())
 
     data_dict = {}
+    ordered_data_dict = None
     try:
         redisConn = util.get_redis_conn()
         ### added EOD as data source
@@ -36,27 +37,29 @@ def redis_build_CSV_EOD(ticker, stdate, enddate):
         pass
 
     bd = [] ##### initialize bar data.....
-    for key in ordered_data_dict:
-        dateTime = dt.timestamp_to_datetime(key).strftime('%m/%d/%Y')
-        data = data_dict[key].split("|") ### split pipe delimted values
-        dataList = []
-        dataList.append(ticker)
-        dataList.append(str(dateTime))
-        dataList.append(float("{0:.2f}".format(float(data[0]))))
-        dataList.append(float("{0:.2f}".format(float(data[1]))))
-        dataList.append(float("{0:.2f}".format(float(data[2]))))
-        dataList.append(float("{0:.2f}".format(float(data[3]))))
-        dataList.append(float("{0:.2f}".format(float(data[4]))))
-        dataList.append(float("{0:.2f}".format(float(data[5]))))
-        dataList.append(float("{0:.2f}".format(float(data[6]))))
-        dataList.append(float("{0:.2f}".format(float(data[7]))))
-        bd.append(dataList)
+    if ordered_data_dict is not None:
+        for key in ordered_data_dict:
+            dateTime = dt.timestamp_to_datetime(key).strftime('%m/%d/%Y')
+            data = data_dict[key].split("|") ### split pipe delimted values
+            dataList = []
+            dataList.append(ticker)
+            dataList.append(str(dateTime))
+            dataList.append(float("{0:.2f}".format(float(data[0]))))
+            dataList.append(float("{0:.2f}".format(float(data[1]))))
+            dataList.append(float("{0:.2f}".format(float(data[2]))))
+            dataList.append(float("{0:.2f}".format(float(data[3]))))
+            dataList.append(float("{0:.2f}".format(float(data[4]))))
+            dataList.append(float("{0:.2f}".format(float(data[5]))))
+            dataList.append(float("{0:.2f}".format(float(data[6]))))
+            dataList.append(float("{0:.2f}".format(float(data[7]))))
+            bd.append(dataList)
 
-    with open(ticker+'_EODRAW.csv', 'w') as fp:
-    	writer = csv.writer(fp, delimiter=',')
-        header = ["Ticker", "Date", "Open", "High", "Low", "Close", "Volume", "AdjClose", "Dividend", "Split"]
-        writer.writerow(header)
-    	writer.writerows(bd)
+        with open(ticker+'_EODRAW.csv', 'w') as fp:
+            writer = csv.writer(fp, delimiter=',')
+            header = ["Ticker", "Date", "Open", "High", "Low", "Close", "Volume", "AdjClose", "Dividend", "Split"]
+            writer.writerow(header)
+            writer.writerows(bd)
+
 
 import dateutil.parser
 #stdate = dateutil.parser.parse('2010-01-01')
@@ -74,10 +77,9 @@ specdate2 = dateutil.parser.parse(' 2014-04-04')
 
 #print calendar.timegm(specdate1.timetuple()), calendar.timegm(specdate2.timetuple()), calendar.timegm(specdate3.timetuple())
 
-
 '''
-#tickerList = util.getTickerList('Abhi-26')
-tickerList = ['KRFT']
+tickerList = util.getTickerList('SP-500')
+#tickerList = ['KRFT']
 for ticker in tickerList:
     redis_build_CSV_EOD(ticker, stdate, enddate)
     print "Successfuly exported EODRAW data: ", ticker
@@ -126,7 +128,7 @@ for ticker in tickerList:
 #print results
 
 
-results = xiQuantStrategyUtil.run_strategy_redis(20, "AAPL", 100000, stdate, enddate)
+#results = xiQuantStrategyUtil.run_strategy_redis(20, "AAPL", 100000, stdate, enddate)
 #print results.getPortfolioResult()
 #print results.getOrdersFilteredByMomentumRank(filterCriteria=3000)
 #print results.getOrders()
@@ -256,12 +258,15 @@ print port_results.getPortfolioResult()
 #print results.getSeries("EMA Signal")
 '''
 
-#port_results = xiQuantStrategyUtil.run_master_strategy(100000, 'MasterOrders_Both_Abhi-26.csv', stdate, enddate, filterAction='both', rank=10000)
+#port_results = xiQuantStrategyUtil.run_master_strategy(100000, 'MasterOrders_Both_Abhi-26.csv', stdate, enddate, filterAction='Buy', rank=10000)
 #port_results = xiQuantStrategyUtil.run_master_strategy(100000, 'MasterOrders_Both_SP-500.csv', stdate, enddate, filterAction='both', rank=250)
 #port_results = xiQuantStrategyUtil.run_master_strategy(100000, 'MasterOrders_Both_CBOE-r1000.csv', stdate, enddate, filterAction='sell', rank=50)
 #port_results = xiQuantStrategyUtil.run_master_strategy(100000, 'MasterOrders_Both_SP500_CBOE1000.csv', stdate, enddate, filterAction='both', rank=10000)
 #port_results = xiQuantStrategyUtil.run_master_strategy(100000, 'orders.csv', stdate, enddate, filterAction='both', rank=10000)
 #print port_results.getPortfolioResult()
+
+upper, middle, lower, adjOHLCSeries = xiQuantStrategyUtil.compute_BBands('AAPL', stdate, enddate)
+print upper
 
 
 

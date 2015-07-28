@@ -719,7 +719,7 @@ def compute_BBands(instrument, startdate, enddate ):
     feedLookbackEndAdj = xiquantPlatform.xiQuantAdjustBars(barsDictForCurrAdj, startdate, enddate)
     feedLookbackEndAdj.adjustBars()
     closeDS = feedLookbackEndAdj.getCloseDataSeries(instrument + "_adjusted")
-    upper, middle, lower = indicator.BBANDS(closeDS, len(closeDS), bBandsPeriod, 2, 2)
+    upper, middle, lower = indicator.BBANDS(closeDS, len(closeDS), bBandsPeriod, 1.5, 1.5)
 
     dateTimes = feedLookbackEndAdj.getDateTimes(instrument + "_adjusted")
     upperDS = numpy_to_highchartds(dateTimes, upper, startdate, enddate)

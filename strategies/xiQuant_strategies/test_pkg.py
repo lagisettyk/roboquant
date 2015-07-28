@@ -128,7 +128,7 @@ for ticker in tickerList:
 #print results
 
 
-#results = xiQuantStrategyUtil.run_strategy_redis(20, "AAPL", 100000, stdate, enddate)
+results = xiQuantStrategyUtil.run_strategy_redis(20, "URI", 100000, stdate, enddate)
 #print results.getPortfolioResult()
 #print results.getOrdersFilteredByMomentumRank(filterCriteria=3000)
 #print results.getOrders()
@@ -262,11 +262,11 @@ print port_results.getPortfolioResult()
 #port_results = xiQuantStrategyUtil.run_master_strategy(100000, 'MasterOrders_Both_SP-500.csv', stdate, enddate, filterAction='both', rank=250)
 #port_results = xiQuantStrategyUtil.run_master_strategy(100000, 'MasterOrders_Both_CBOE-r1000.csv', stdate, enddate, filterAction='sell', rank=50)
 #port_results = xiQuantStrategyUtil.run_master_strategy(100000, 'MasterOrders_Both_SP500_CBOE1000.csv', stdate, enddate, filterAction='both', rank=10000)
-#port_results = xiQuantStrategyUtil.run_master_strategy(100000, 'orders.csv', stdate, enddate, filterAction='both', rank=10000)
+port_results = xiQuantStrategyUtil.run_master_strategy(100000, 'orders.csv', stdate, enddate, filterAction='both', rank=10000)
 #print port_results.getPortfolioResult()
 
-upper, middle, lower, adjOHLCSeries = xiQuantStrategyUtil.compute_BBands('AAPL', stdate, enddate)
-print upper
+#upper, middle, lower, adjOHLCSeries = xiQuantStrategyUtil.compute_BBands('AAPL', stdate, enddate)
+#print upper
 
 
 

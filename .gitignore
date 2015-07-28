@@ -4,3 +4,7 @@ staticfiles
 local_settings.py
 *.log
 *.log.*
+strategies/xiquant_strategies/results
+strategies/xiquant_strategies/bkup
+strategies/xiquant_strategies/EODRAW-Files
+
