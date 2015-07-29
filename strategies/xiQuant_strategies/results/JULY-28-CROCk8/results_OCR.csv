@@ -1,0 +1,2 @@
+Instrument,Trade-Type,Entry-Date,Entry-Price,Quantity,Portfolio-Value-Pre,Portfolio-Cash-Pre,Portfolio-Value-Post,Portfolio-Cash-Post,Intra-Day-Exit-PorL,Intra-Day-Exit-Date,Exit-Date,Exit-Price,Portfolio-Value-Pre,Portfolio-Cash-Pre,Portfolio-Value-Post,Portfolio-Cash-Post,PorL,Current-Pos
+OCR,LONG,2014-10-27,67.05,1416,100000.00,100000.00,98651.92,5062.80,0.0,2014-10-27,2014-10-29,65.82,98694.27,5062.80,98270.79,98270.79,-1729.21,[]

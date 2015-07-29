@@ -307,7 +307,7 @@ def simulatepotfolio(redisURL, amount, strategy, startdate, enddate, filterRank)
 	q = Queue(connection=redisConn, default_timeout=15000)  # no args implies the default queue
 
 	############### Run the master order for computing portfolio#########
-	jobPortfolio = q.enqueue(xiQuantStrategyUtil.run_master_strategy,int(amount), filename, startdate, enddate, filterAction='both', rank=filterRank)
+	jobPortfolio = q.enqueue(xiQuantStrategyUtil.run_master_strategy,int(amount), filename, startdate, enddate, filterAction='sell', rank=filterRank)
 
 	sleep = True
 	while(sleep):

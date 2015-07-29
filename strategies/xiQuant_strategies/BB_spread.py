@@ -28,6 +28,7 @@ import xiquantStrategyParams as consts
 import divergence
 import xiquantPlatform
 
+
 import os
 from utils import util
 module_dir = os.path.dirname(__file__)  # get current
@@ -86,6 +87,8 @@ class BBSpread(strategy.BacktestingStrategy):
 		self.__adjRatio = 0.0
 		self.__adjEntryPrice = 0.0
 		self.__entryDayAdjStopPrice = 0.0
+		self.__bandBreachOrTouch = False
+		self.__noBandBreachOrTouchEntryPrice = 0.0
 
 	def initLogging(self):
 		logger = logging.getLogger("xiQuant")
@@ -355,17 +358,9 @@ class BBSpread(strategy.BacktestingStrategy):
 		self.__openDS = feedLookbackEndAdj.getOpenDataSeries(self.__instrumentAdj)
 		self.__closeDS = feedLookbackEndAdj.getCloseDataSeries(self.__instrumentAdj)
 		self.__volumeDS = feedLookbackEndAdj.getVolumeDataSeries(self.__instrumentAdj)
-		self.__upperBBDataSeries, self.__middleBBDataSeries, self.__lowerBBDataSeries = indicator.BBANDS(self.__closeDS, len(self.__closeDS), self.__bbPeriod, 1.5, 2.5)
-		self.__upperSPYBBDataSeries, self.__middleSPYBBDataSeries, self.__lowerSPYBBDataSeries = indicator.BBANDS(self.__spyDS, len(self.__spyDS), self.__bbPeriod, 2, 2)
+		self.__upperBBDataSeries, self.__middleBBDataSeries, self.__lowerBBDataSeries = indicator.BBANDS(self.__closeDS, len(self.__closeDS), self.__bbPeriod, 2.0, 2.0)
+		self.__upperSPYBBDataSeries, self.__middleSPYBBDataSeries, self.__lowerSPYBBDataSeries = indicator.BBANDS(self.__spyDS, len(self.__spyDS), self.__bbPeriod, 2.0, 2.0)
 		self.__upperQQQBBDataSeries, self.__middleQQQBBDataSeries, self.__lowerQQQBBDataSeries = indicator.BBANDS(self.__qqqDS, len(self.__qqqDS), self.__bbPeriod, 2, 2)
-
-		self.__smaSPYShort1 = indicator.SMA(self.__spyDS, len(self.__spyDS), consts.SMA_SHORT_1)
-		self.__smaLong1 = indicator.SMA(self.__spyDS, len(self.__spyDS), consts.SMA_LONG_1)
-		#print "SMA Long1: ", self.__smaLong1
-		self.__smaLong2 = indicator.SMA(self.__spyDS, len(self.__spyDS), consts.SMA_LONG_2)
-		#print "SMA Long2: ", self.__smaLong2
-
-
 		self.__rsi = indicator.RSI(self.__closeDS, len(self.__closeDS), consts.RSI_SETTING)
 		#print "RSI: ", self.__rsi
 		self.__lowPriceDS = feedLookbackEndAdj.getLowDataSeries(self.__instrumentAdj)
@@ -382,7 +377,7 @@ class BBSpread(strategy.BacktestingStrategy):
 		#print "EMA Short2: ", self.__emaShort2
 		self.__emaShort3 = indicator.EMA(self.__closeDS, len(self.__closeDS), consts.EMA_SHORT_3)
 		#print "EMA Short3: ", self.__emaShort3
-		
+		self.__smaSPYShort1 = indicator.SMA(self.__spyDS, len(self.__spyDS), consts.SMA_SHORT_1)
 		#print "SMA SPY Short1: ", self.__smaSPYShort1
 		self.__smaQQQShort1 = indicator.SMA(self.__qqqDS, len(self.__qqqDS), consts.SMA_SHORT_1)
 		#print "QQQ SPY Short1: ", self.__smaQQQShort1
@@ -390,13 +385,14 @@ class BBSpread(strategy.BacktestingStrategy):
 		#print "SMA Lower Tiny: ", self.__smaLowerTiny
 		self.__smaUpperTiny = indicator.SMA(self.__upperBBDataSeries, len(self.__upperBBDataSeries), consts.SMA_TINY)
 		#print "SMA Upper Tiny: ", self.__smaUpperTiny
-		
+		self.__smaLong1 = indicator.SMA(self.__spyDS, len(self.__spyDS), consts.SMA_LONG_1)
+		#print "SMA Long1: ", self.__smaLong1
+		self.__smaLong2 = indicator.SMA(self.__spyDS, len(self.__spyDS), consts.SMA_LONG_2)
+		#print "SMA Long2: ", self.__smaLong2
 		self.__stdDevLower = indicator.STDDEV(self.__lowerBBDataSeries, len(self.__lowerBBDataSeries), consts.SMA_TINY)
 		#print "Std Dev Lower: ", self.__stdDevLower
 		self.__stdDevUpper = indicator.STDDEV(self.__upperBBDataSeries, len(self.__upperBBDataSeries), consts.SMA_TINY)
 		#print "Std Dev Upper: ", self.__stdDevUpper
-
-
 
 		self.__logger.debug("=====================================================================")
 		# Cancel any existing entry orders from yesterday.
@@ -517,6 +513,8 @@ class BBSpread(strategy.BacktestingStrategy):
 				print "=================================================================:adjRatio:=============================: ", self.__adjRatio, bar.getAdjClose(), self.__priceDS[-1], lookbackEndDate
 				self.__logger.debug("Adj Ratio: %0.2f" % self.__adjRatio)
 				self.__adjEntryPrice = entryPrice * self.__adjRatio
+				if not self.__bandBreachOrTouch:
+					self.__adjEntryPrice = self.__noBandBreachOrTouchEntryPrice * self.__adjRatio
 				self.__logger.debug("%s: Adj Entry Price: %.2f" % (bar.getDateTime(), self.__adjEntryPrice))
 				sharesToBuy = int((self.getBroker().getCash(includeShort=False) * consts.PERCENT_OF_CASH_BALANCE_FOR_ENTRY) / self.__adjEntryPrice)
 				self.__logger.debug("Shares To Buy: %d" % sharesToBuy)
@@ -580,6 +578,8 @@ class BBSpread(strategy.BacktestingStrategy):
 				self.__adjRatio = self.__priceDS[-1] / bar.getAdjClose()
 				self.__logger.debug("Adj Ratio: %0.2f" % self.__adjRatio)
 				self.__adjEntryPrice = entryPrice * self.__adjRatio
+				if not self.__bandBreachOrTouch:
+					self.__adjEntryPrice = self.__noBandBreachOrTouchEntryPrice * self.__adjRatio
 				self.__logger.debug("%s: Adj Entry Price: %.2f" % (bar.getDateTime(), self.__adjEntryPrice))
 				sharesToBuy = int((self.getBroker().getCash(includeShort=False) / 
 								self.__adjEntryPrice) * consts.PERCENT_OF_CASH_BALANCE_FOR_ENTRY)
@@ -700,6 +700,28 @@ class BBSpread(strategy.BacktestingStrategy):
 			if consts.QQQ_CHECK and self.isTechBearish():
 				self.__logger.debug("The tech sector is Bearish so we will not try to go LONG.")
 				return False
+
+		# Check if close breaches or bounces off of the upper band.
+		self.__bandBreachOrTouch = False
+		if self.__inpStrategy["BB_Spread_Call"]["BB_Upper_And_BB_Lower"]["OR"][0] == "BB_Upper_Breach":
+			if bar.getClose() > self.__bb_upper:
+				self.__bandBreachOrTouch = True
+				self.__logger.debug("Upper band breached.")
+				self.__logger.debug("Close Price: %.2f" % bar.getClose())
+				self.__logger.debug("Upper Band: %.2f" % self.__bb_upper)
+			elif self.__inpStrategy["BB_Spread_Call"]["BB_Upper_And_BB_Lower"]["OR"][1] == "BB_Upper_Touch":
+				# The close price may not exactly touch the upper band so we will have to
+				# include some variance parameter
+				if bar.getClose() == self.__bb_upper:
+					self.__bandBreachOrTouch = True
+					self.__logger.debug("Upper band touched.")
+					self.__logger.debug("Close Price: %.2f" % bar.getClose())
+					self.__logger.debug("Upper Band: %.2f" % self.__bb_upper)
+				else:
+					self.__bandBreachOrTouch = False
+					self.__logger.debug("NO upper band breach/touch.")
+					self.__noBandBreachOrTouchEntryPrice = self.__bb_upper + consts.PRICE_DELTA
+					#return False
 
 		### Change to lookback window specific code.
 		# Check if first breach in the lookback.
@@ -1000,6 +1022,28 @@ class BBSpread(strategy.BacktestingStrategy):
 			if consts.QQQ_CHECK and self.isTechBullish():
 				self.__logger.debug("The tech sector is Bullish so we will not try to go short.")
 				return False
+
+		# Check if close breaches or bounces off of the lower band.
+		self.__bandBreachOrTouch = False
+		if self.__inpStrategy["BB_Spread_Put"]["BB_Upper_And_BB_Lower"]["OR"][0] == "BB_Lower_Breach":
+			if bar.getClose() < self.__bb_lower:
+				self.__bandBreachOrTouch = True
+				self.__logger.debug("Lower band breached.")
+				self.__logger.debug("Close Price: %.2f" % bar.getClose())
+				self.__logger.debug("Lower band: %.2f" % self.__bb_lower)
+			elif self.__inpStrategy["BB_Spread_Put"]["BB_Upper_And_BB_Lower"]["OR"][1] == "BB_Lower_Touch":
+				# The close price may not exactly touch the lower band so we will have to
+				# include some variance parameter
+				if bar.getClose() == self.__bb_lower:
+					self.__bandBreachOrTouch = True
+					self.__logger.debug("Lower band touched.")
+					self.__logger.debug("Close Price: %.2f" % bar.getClose())
+					self.__logger.debug("Lower band: %.2f" % self.__bb_lower)
+				else:
+					self.__bandBreachOrTouch = False
+					self.__logger.debug("NO lower band breach/touch.")
+					self.__noBandBreachOrTouchEntryPrice = self.__bb_lower - consts.PRICE_DELTA
+					#return False
 
 		### Change to lookback window specific code.
 		# Check if first breach in the lookback.
@@ -1500,7 +1544,7 @@ def main(plot):
 	startDate = dateutil.parser.parse('2005-06-30T08:00:00.000Z')
 	endDate = dateutil.parser.parse('2014-12-31T08:00:00.000Z')
 
-	instruments = ["AAPL"]
+	instruments = ["FDX"]
 	bBandsPeriod = 20
 	startPortfolio = 1000000
 	for inst in instruments:

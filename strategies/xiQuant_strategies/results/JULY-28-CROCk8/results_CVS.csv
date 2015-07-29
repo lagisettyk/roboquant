@@ -1,0 +1,2 @@
+Instrument,Trade-Type,Entry-Date,Entry-Price,Quantity,Portfolio-Value-Pre,Portfolio-Cash-Pre,Portfolio-Value-Post,Portfolio-Cash-Post,Intra-Day-Exit-PorL,Intra-Day-Exit-Date,Exit-Date,Exit-Price,Portfolio-Value-Pre,Portfolio-Cash-Pre,Portfolio-Value-Post,Portfolio-Cash-Post,PorL,Current-Pos
+CVS,SHORT,2011-08-05,32.20,2950,100000.00,100000.00,99016.30,99016.30,0.0,2011-08-05,2011-08-11,31.31,104890.37,104890.37,102627.87,102627.87,2627.87,[]

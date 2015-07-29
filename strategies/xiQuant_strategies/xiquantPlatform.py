@@ -130,7 +130,7 @@ class xiQuantAdjustBars():
 				LowSeries.appendWithDateTime(bar.getDateTime(), bar.getLow())
 				CloseSeries.appendWithDateTime(bar.getDateTime(), bar.getClose())
 				VolumeSeries.appendWithDateTime(bar.getDateTime(), bar.getVolume())
-				TypicalSeries.appendWithDateTime(bar.getDateTime(), (bar.getOpen()+bar.getHigh()+bar.getLow())/3.0)
+				TypicalSeries.appendWithDateTime(bar.getDateTime(), (bar.getClose()+bar.getHigh()+bar.getLow())/3.0)
 				barSeries.appendWithDateTime(bar.getDateTime(), bar)
 
 

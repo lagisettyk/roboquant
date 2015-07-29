@@ -1,4 +1,0 @@
-Instrument,Trade-Type,Entry-Date,Entry-Price,Quantity,Portfolio-Value-Pre,Portfolio-Cash-Pre,Portfolio-Value-Post,Portfolio-Cash-Post,Intra-Day-Exit-PorL,Intra-Day-Exit-Date,Exit-Date,Exit-Price,Portfolio-Value-Pre,Portfolio-Cash-Pre,Portfolio-Value-Post,Portfolio-Cash-Post,PorL,Current-Pos
-VRX,SHORT,2011-09-22,35.85,2554,100000,100000,98467.6,98467.6,0,2011-09-22,2011-09-23,36.62,98467.6,98467.6,98020.65,98020.65,-1979.35,[]
-VRX,LONG,2013-05-20,78.57,1022,98020.65,98020.65,94760.47,17722.11,0,2013-05-20,2013-05-21,75.08,94760.47,17722.11,94453.87,94453.87,-3566.78,[]
-VRX,LONG,2014-02-19,147.4,522,94453.87,94453.87,93211.51,17511.07,0,2014-02-19,2014-02-21,146.09,94767.07,17511.07,93770.05,93770.05,-683.82,[]

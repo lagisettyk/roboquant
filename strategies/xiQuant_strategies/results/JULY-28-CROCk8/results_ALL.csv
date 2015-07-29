@@ -1,3 +1,2 @@
 Instrument,Trade-Type,Entry-Date,Entry-Price,Quantity,Portfolio-Value-Pre,Portfolio-Cash-Pre,Portfolio-Value-Post,Portfolio-Cash-Post,Intra-Day-Exit-PorL,Intra-Day-Exit-Date,Exit-Date,Exit-Price,Portfolio-Value-Pre,Portfolio-Cash-Pre,Portfolio-Value-Post,Portfolio-Cash-Post,PorL,Current-Pos
-V,LONG,2012-02-03,104.35,910,100000,100000,100213.41,5041.26,0,2012-02-03,2012-02-07,104.01,100506.85,5041.26,99688.78,99688.78,-311.22,[]
-V,LONG,2014-01-21,232.64,410,99688.78,99688.78,98687.69,4305.06,0,2014-01-21,2014-01-23,229.93,99119.05,4305.06,98577.82,98577.82,-1110.96,[]
+ALL,SHORT,2008-11-20,16.36,5807,100000.00,100000.00,106456.95,106456.95,0.0,2008-11-20,2008-11-21,16.75,106456.95,106456.95,97725.39,97725.39,-2274.61,[]

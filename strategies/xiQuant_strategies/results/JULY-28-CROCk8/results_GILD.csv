@@ -1,0 +1,3 @@
+Instrument,Trade-Type,Entry-Date,Entry-Price,Quantity,Portfolio-Value-Pre,Portfolio-Cash-Pre,Portfolio-Value-Post,Portfolio-Cash-Post,Intra-Day-Exit-PorL,Intra-Day-Exit-Date,Exit-Date,Exit-Price,Portfolio-Value-Pre,Portfolio-Cash-Pre,Portfolio-Value-Post,Portfolio-Cash-Post,PorL,Current-Pos
+GILD,SHORT,2008-10-07,40.11,2368,100000.00,100000.00,100070.15,100070.15,0.0,2008-10-07,2008-10-08,41.58,100070.15,100070.15,96527.54,96527.54,-3472.46,[]
+GILD,LONG,2008-12-17,47.62,1677,96527.54,96527.54,95584.41,16675.72,0.0,2008-12-17,2008-12-22,48.73,98896.42,16675.72,98399.62,98399.62,1872.08,[]

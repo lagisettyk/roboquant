@@ -18,7 +18,7 @@ DUMMY_RANK = -1
 # Lookback window for computing the slope of BB bands
 BB_SLOPE_LOOKBACK_WINDOW = 2
 BB_SLOPE_LIMIT_FOR_CURVING = 0
-BB_CROC_SLOPE = 12
+BB_CROC_SLOPE = 8
 # A small wick is defined as not being a long wick
 # A long wick is defined as being more than 40% of the candle.
 BB_LONG_WICK = 40
