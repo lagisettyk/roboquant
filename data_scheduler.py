@@ -8,9 +8,11 @@ from utils import util
 import dateutil.parser
 
 
+### Need to come up with better solutio########
+
 #tickerList = util.getTickerListWithSPY()
-#tickerList = util.getTickerList('CBOE-ALL')
-tickerList = util.getTickerList('Abhi-26')
+tickerList = util.getTickerList('CBOE-ALL')
+#tickerList = util.getTickerList('SP-500')
 #tickerList = ['AGN', 'QQQ']
 
 def get_redis_conn():
