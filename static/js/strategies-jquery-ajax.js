@@ -317,6 +317,9 @@ $(document).ready( function() {
                 bbseries[1] = {name: "upper", data: data.upper};
                 bbseries[2] = {name: "middle", data: data.middle};
                 bbseries[3] = {name: "lower", data: data.lower};
+                bbseries[4] = {name: "upper_1_9", data: data.upper_1_9};
+                bbseries[5] = {name: "middle_1_9", data: data.middle_1_9};
+                bbseries[6] = {name: "lower_1_9", data: data.lower_1_9};
                 displayIndicatorData(bbseries,stkticker)
               },
               // Code to run if the request fails; the raw request and
@@ -465,10 +468,38 @@ function displayIndicatorData (dataList, ticker) {
                 color: '#CC00CC',
                 name : dataList[3].name,
                 data : dataList[3].data,
+                turboThreshold: 0, ///Speed up and make sure it supports more points
                 tooltip: {
                     valueDecimals: 2
                 },
                 id : 'dataseries4'
+               },{
+                color: '#CC00CC',
+                name : dataList[4].name,
+                data : dataList[4].data,
+                turboThreshold: 0, ///Speed up and make sure it supports more points
+                tooltip: {
+                    valueDecimals: 2
+                },
+                id : 'dataseries5'
+               },{
+                color: '#CC0000',
+                name : dataList[5].name,
+                data : dataList[5].data,
+                turboThreshold: 0, ///Speed up and make sure it supports more points
+                tooltip: {
+                    valueDecimals: 2
+                },
+                id : 'dataseries6'
+               },{
+                color: '#CC00CC',
+                name : dataList[6].name,
+                data : dataList[6].data,
+                turboThreshold: 0, ///Speed up and make sure it supports more points
+                tooltip: {
+                    valueDecimals: 2
+                },
+                id : 'dataseries7'
                }]
             });
     }

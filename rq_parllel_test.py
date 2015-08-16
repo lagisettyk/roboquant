@@ -15,11 +15,11 @@ sys.path.append('/home/parallels/Code/heroku-envbased/roboquant/strategies')
 from xiQuant_strategies import xiQuantStrategyUtil, xiquantStrategyParams
 
 
-listStr = 'SP-500'
+listStr = 'Abhi-26'
 
 tickerList = util.getTickerList(listStr)
 
-#tickerList = ['AAPL', 'GOOGL', 'NFLX']
+#tickerList = ['AAPL', 'GOOGL']
 
 
 def run_singlestock_analysis():
@@ -53,14 +53,15 @@ def run_singlestock_analysis():
 				row.append(value[0][0])
 				row.append(value[0][1])
 				row.append(value[0][2])
-				row.append(value[0][3]) #### added for rank
+				row.append(value[0][3]) ##### this is for adj factor....
+				row.append(value[0][4]) #### added for rank
 				dataRows.append(row)
 		fake_csv = util.make_fake_csv(dataRows)
 		print  "Successfully created orders fake_csv file....", ticker
 
-		reader = csv.DictReader(fake_csv, fieldnames=["timeSinceEpoch", "symbol", "action", "stopPrice", "rank"])
+		reader = csv.DictReader(fake_csv, fieldnames=["timeSinceEpoch", "symbol", "action", "stopPrice", "adjRatio", "rank"])
 		with open('Orders_' + xiquantStrategyParams.BB_SPREAD_LONG_OR_SHORT +"_" +ticker+'.csv', 'w') as csvfile:
-			writer = csv.DictWriter(csvfile, fieldnames=["timeSinceEpoch", "symbol", "action", "stopPrice", "rank"])
+			writer = csv.DictWriter(csvfile, fieldnames=["timeSinceEpoch", "symbol", "action", "stopPrice", "adjRatio", "rank"])
 			for row in reader:
 				row["stopPrice"] = round(float(row["stopPrice"]),2)
 				writer.writerow(row)
@@ -115,20 +116,91 @@ def test_parallel_strategy():
 			row.append(value[0][0])
 			row.append(value[0][1])
 			row.append(value[0][2])
-			row.append(value[0][3]) #### added for rank
+			row.append(value[0][3]) ##### this is for adj factor....
+			row.append(value[0][4]) #### added for rank
 			dataRows.append(row)
 
 	######### before passing let's sort orders based on moneyness rank
 	#####################################################################
 	#sorted_datarows = sorted(dataRows, key = lambda x: (int(x[1]), int(x[3])))
-	dataRows.sort(key = operator.itemgetter(0, 4))
+	dataRows.sort(key = operator.itemgetter(0, 5))
+
+
+	fake_csv = util.make_fake_csv(dataRows)
+	print  "Successfully created master_orders fake_csv file...."
+
+	reader = csv.DictReader(fake_csv, fieldnames=["timeSinceEpoch", "symbol", "action", "stopPrice", "adjRatio", "rank"])
+	with open('MasterOrders_' + xiquantStrategyParams.BB_SPREAD_LONG_OR_SHORT +"_" +listStr+'.csv', 'w') as csvfile:
+		writer = csv.DictWriter(csvfile, fieldnames=["timeSinceEpoch", "symbol", "action", "stopPrice", "adjRatio", "rank"])
+		for row in reader:
+			row["stopPrice"] = round(float(row["stopPrice"]),2)
+			writer.writerow(row)
+
+	print  "Successfully created master_orders file for processing..."
+
+
+
+def run_parallel_BBSMAXOverMTM():
+
+	# Tell RQ what Redis connection to use
+	redis_conn = util.get_redis_conn()
+	q = Queue(connection=redis_conn)  # no args implies the default queue
+	import dateutil.parser
+	startdate = dateutil.parser.parse('2005-06-30T08:00:00.000Z')
+	enddate = dateutil.parser.parse('2014-12-31T08:00:00.000Z')
+
+	jobList = []
+
+	for ticker in tickerList:
+		jobList.append(q.enqueue(xiQuantStrategyUtil.run_strategy_BBSMAXOverMTM,20, ticker, 100000, startdate, enddate, indicators=False))
+		
+	#### Wait in loop until all of them are successfull
+	master_orders = [] #### populate master list of  orders dictionary...
+	jobID = 1
+	for job in jobList:
+		try:
+			print "Currently processing job id: ", jobID
+			sleep = True
+			while(sleep):
+				time.sleep(1)
+				if job.get_status() == 'failed' or job.get_status()=='finished':
+					sleep = False
+			if job.get_status() == 'finished' and any(job.result):
+				master_orders.append(job.result)
+				#master_orders.append(job.result.getOrdersFilteredByMomentumRank(filterCriteria=rank))
+				#master_orders.append(job.result.getOrdersFilteredByRules())
+			jobID +=1
+		except Exception,e:
+			print "Entered into exception block while processing:...", str(e)
+			pass ### Make sure you move on with other job...
+
+	print "successfully processed tickers"
+
+
+	########### Iterate master orders file.... #############
+	dataRows = []
+	for k in range(len(master_orders)):
+		for key, value in master_orders[k].iteritems():
+			row = []
+			row.append(key)
+			row.append(value[0][0])
+			row.append(value[0][1])
+			row.append(value[0][2])
+			row.append(value[0][3]) ##### this is for adj factor....
+			row.append(value[0][4]) #### added for rank
+			dataRows.append(row)
+
+	######### before passing let's sort orders based on moneyness rank
+	#####################################################################
+	#sorted_datarows = sorted(dataRows, key = lambda x: (int(x[1]), int(x[3])))
+	dataRows.sort(key = operator.itemgetter(0, 5))
 
 
 	fake_csv = util.make_fake_csv(dataRows)
 	print  "Successfully created master_orders fake_csv file...."
 
 	reader = csv.DictReader(fake_csv, fieldnames=["timeSinceEpoch", "symbol", "action", "stopPrice", "rank"])
-	with open('MasterOrders_' + xiquantStrategyParams.BB_SPREAD_LONG_OR_SHORT +"_" +listStr+'.csv', 'w') as csvfile:
+	with open('MasterOrders_BBSMAxOver'  +"_" +listStr+'.csv', 'w') as csvfile:
 		writer = csv.DictWriter(csvfile, fieldnames=["timeSinceEpoch", "symbol", "action", "stopPrice", "rank"])
 		for row in reader:
 			row["stopPrice"] = round(float(row["stopPrice"]),2)
@@ -137,18 +209,74 @@ def test_parallel_strategy():
 	print  "Successfully created master_orders file for processing..."
 
 
-	'''
-	############### Run the master order for computing portfolio#########
-	jobPortfolio = q.enqueue(xiQuantStrategyUtil.run_master_strategy, 100000, fake_csv, startdate, enddate)
 
-	sleep = True
-	while(sleep):
-		time.sleep(1)
-		if jobPortfolio.get_status() == 'failed' or jobPortfolio.get_status()=='finished':
-			sleep = False
+def run_parallel_EMABreachMTM():
 
-	print  "Successfully simulated portfolio"
-	'''
+	# Tell RQ what Redis connection to use
+	redis_conn = util.get_redis_conn()
+	q = Queue(connection=redis_conn)  # no args implies the default queue
+	import dateutil.parser
+	startdate = dateutil.parser.parse('2005-06-30T08:00:00.000Z')
+	enddate = dateutil.parser.parse('2014-12-31T08:00:00.000Z')
+
+	jobList = []
+
+	for ticker in tickerList:
+		jobList.append(q.enqueue(xiQuantStrategyUtil.run_strategy_EMABreachMTM,20, ticker, 100000, startdate, enddate, indicators=False))
+		
+	#### Wait in loop until all of them are successfull
+	master_orders = [] #### populate master list of  orders dictionary...
+	jobID = 1
+	for job in jobList:
+		try:
+			print "Currently processing job id: ", jobID
+			sleep = True
+			while(sleep):
+				time.sleep(1)
+				if job.get_status() == 'failed' or job.get_status()=='finished':
+					sleep = False
+			if job.get_status() == 'finished' and any(job.result):
+				master_orders.append(job.result)
+				#master_orders.append(job.result.getOrdersFilteredByMomentumRank(filterCriteria=rank))
+				#master_orders.append(job.result.getOrdersFilteredByRules())
+			jobID +=1
+		except Exception,e:
+			print "Entered into exception block while processing:...", str(e)
+			pass ### Make sure you move on with other job...
+
+	print "successfully processed tickers"
+
+
+	########### Iterate master orders file.... #############
+	dataRows = []
+	for k in range(len(master_orders)):
+		for key, value in master_orders[k].iteritems():
+			row = []
+			row.append(key)
+			row.append(value[0][0])
+			row.append(value[0][1])
+			row.append(value[0][2])
+			row.append(value[0][3]) ##### this is for adj factor....
+			row.append(value[0][4]) #### added for rank
+			dataRows.append(row)
+
+	######### before passing let's sort orders based on moneyness rank
+	#####################################################################
+	#sorted_datarows = sorted(dataRows, key = lambda x: (int(x[1]), int(x[3])))
+	dataRows.sort(key = operator.itemgetter(0, 5))
+
+
+	fake_csv = util.make_fake_csv(dataRows)
+	print  "Successfully created master_orders fake_csv file...."
+
+	reader = csv.DictReader(fake_csv, fieldnames=["timeSinceEpoch", "symbol", "action", "stopPrice", "rank"])
+	with open('MasterOrders_EMABreachMTM'  +"_" +listStr+'.csv', 'w') as csvfile:
+		writer = csv.DictWriter(csvfile, fieldnames=["timeSinceEpoch", "symbol", "action", "stopPrice", "rank"])
+		for row in reader:
+			row["stopPrice"] = round(float(row["stopPrice"]),2)
+			writer.writerow(row)
+
+	print  "Successfully created master_orders file for processing..."
 
 
 
@@ -199,6 +327,8 @@ def process_Options_History():
 
 	
 test_parallel_strategy()
+#run_parallel_BBSMAXOverMTM()
+#run_parallel_EMABreachMTM()
 #run_singlestock_analysis()
 #process_Options_History()
 

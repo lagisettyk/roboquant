@@ -1,0 +1,5 @@
+Instrument,Trade-Type,Entry-Date,Entry-Price,Quantity,StopLoss-Exit-Date,StopLoss-Exit-Price,StopLoss-Exit-PorL,Profit-Exit-Date,Profit-Exit-Price,Profit-Exit-PorL,Exit-Date,Exit-Price,PorL,Actual-PorL,Current-Pos
+CF,LONG,2008-12-17,52.39,1813,No-Exit,0.0,0.0,No-Exit,0.0,0.0,2008-12-18,48.01,-7933.12,-7933.12,[]
+CF,LONG,2012-06-20,174.94,499,No-Exit,0.0,0.0,No-Exit,0.0,0.0,2012-06-21,172.86,-1036.30,-1036.30,[]
+CF,LONG,2013-01-10,209.50,414,No-Exit,0.0,0.0,2013-01-10,211.44,802.97,2013-01-18,210.22,299.11,802.97,[]
+CF,LONG,2014-01-09,230.45,376,No-Exit,0.0,0.0,2014-01-09,232.41,737.07,2014-01-22,241.00,3969.25,737.07,[]

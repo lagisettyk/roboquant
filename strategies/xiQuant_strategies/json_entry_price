@@ -19,5 +19,15 @@
 					"OR": {
 							"Breach": "Close_Minus_Price_Delta"
 						}
+				},
+"EMA_Breach_Mtm_Call": {
+					"OR": {
+							"Breach": "Close_Plus_Price_Delta"
+						}
+				},
+"EMA_Breach_Mtm_Put": {
+					"OR": {
+							"Breach": "Close_Minus_Price_Delta"
+						}
 				}
 		}

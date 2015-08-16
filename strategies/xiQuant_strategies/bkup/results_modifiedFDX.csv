@@ -1,0 +1,4 @@
+Instrument,Trade-Type,Entry-Date,Entry-Price,Quantity,StopLoss-Exit-Date,StopLoss-Exit-Price,StopLoss-Exit-PorL,Profit-Exit-Date,Profit-Exit-Price,Profit-Exit-PorL,Exit-Date,Exit-Price,PorL,Actual-PorL,Current-Pos
+FDX,LONG,2008-05-02,95.21,998,2008-05-02,92.76,-2452.96,No-Exit,0.0,0.0,2008-05-05,92.14,-3066.20,-2452.96,[]
+FDX,LONG,2011-02-16,94.35,975,No-Exit,0.0,0.0,2011-02-18,96.31,1906.26,2011-02-22,92.29,-2010.74,1906.26,[]
+FDX,LONG,2013-07-10,104.17,865,No-Exit,0.0,0.0,2013-07-18,106.16,1717.20,2013-07-23,106.46,1974.78,1717.20,[]

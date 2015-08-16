@@ -1,0 +1,2 @@
+Instrument,Trade-Type,Entry-Date,Entry-Price,Quantity,StopLoss-Exit-Date,StopLoss-Exit-Price,StopLoss-Exit-PorL,Profit-Exit-Date,Profit-Exit-Price,Profit-Exit-PorL,Exit-Date,Exit-Price,PorL,Actual-PorL,Current-Pos
+IWM,SHORT,2009-01-15,42.03,2260,No-Exit,0.0,0.0,No-Exit,0.0,0.0,2009-01-16,43.95,-4334.85,-4334.85,[]

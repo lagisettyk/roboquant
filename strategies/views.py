@@ -102,13 +102,16 @@ def computeIndicators(request):
 
 	start_date = dateutil.parser.parse(stdate)
 	end_date = dateutil.parser.parse(enddate)
-	upper, middle, lower, adjOHLCSeries = xiQuantStrategyUtil.compute_BBands(ticker, start_date, end_date)
+	upper, middle, lower, adjOHLCSeries, upper_1_9, middle_1_9, lower_1_9 = xiQuantStrategyUtil.compute_BBands(ticker, start_date, end_date)
 
 	results = {
 		"upper": upper,
 		"middle": middle,
 		"lower": lower,
-		"price": adjOHLCSeries
+		"price": adjOHLCSeries,
+		"upper_1_9": upper_1_9,
+		"middle_1_9": middle_1_9,
+		"lower_1_9": lower_1_9
 		}
 
 	### This is important to note json.dumps() convert python data structure to JSON form

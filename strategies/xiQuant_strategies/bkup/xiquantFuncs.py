@@ -26,7 +26,6 @@ def dsToNumpyArray(ds, count):
 
 def normalize(value, mean, stdDev):
 	return float((value - mean) / stdDev)
-	
 
 def slope(val1, val2):
 	return numpy.arctan(float((val1 - val2) / 2)) * 180 / numpy.pi
@@ -114,7 +113,8 @@ def computeStopPrice(candleLen, bullishOrBearish, openPrice, closePrice, stopPri
 		if candleLen > consts.BB_SPREAD_TRADE_DAY_STOP_LOSS_DELTA_2 and candleLen <= consts.BB_SPREAD_TRADE_DAY_STOP_LOSS_DELTA_3:
 			stopPrice = openPrice + candleLen / 2
 		if candleLen > consts.BB_SPREAD_TRADE_DAY_STOP_LOSS_DELTA_3:
-			stopPrice = openPrice + (candleLen * 2) / 3
+			#stopPrice = openPrice + (candleLen * 2) / 3
+			stopPrice = openPrice + candleLen / 2
 	elif bullishOrBearish.lower() == "bearish":
 		if candleLen <= consts.BB_SPREAD_TRADE_DAY_STOP_LOSS_DELTA_1:
 			stopPrice = openPrice + stopPriceDelta
@@ -123,5 +123,6 @@ def computeStopPrice(candleLen, bullishOrBearish, openPrice, closePrice, stopPri
 		if candleLen > consts.BB_SPREAD_TRADE_DAY_STOP_LOSS_DELTA_2 and candleLen <= consts.BB_SPREAD_TRADE_DAY_STOP_LOSS_DELTA_3:
 			stopPrice = openPrice - candleLen / 2
 		if candleLen > consts.BB_SPREAD_TRADE_DAY_STOP_LOSS_DELTA_3:
-			stopPrice = openPrice - (candleLen * 2) / 3
+			#stopPrice = openPrice - (candleLen * 2) / 3
+			stopPrice = openPrice - candleLen / 2
 	return stopPrice

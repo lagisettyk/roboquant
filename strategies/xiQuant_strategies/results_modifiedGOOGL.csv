@@ -1,0 +1,2 @@
+Instrument,Trade-Type,Entry-Date,Entry-Price,Quantity,StopLoss-Exit-Date,StopLoss-Exit-Price,StopLoss-Exit-PorL,Profit-Exit-Date,Profit-Exit-Price,Profit-Exit-PorL,Exit-Date,Exit-Price,PorL,Actual-PorL,Current-Pos
+GOOGL,LONG,2011-07-06,267.06,355,No-Exit,0.0,0.0,2011-07-06,268.06,355.00,2011-07-08,266.48,-207.68,355.00,[]

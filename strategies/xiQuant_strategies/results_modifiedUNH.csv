@@ -1,0 +1,2 @@
+Instrument,Trade-Type,Entry-Date,Entry-Price,Quantity,StopLoss-Exit-Date,StopLoss-Exit-Price,StopLoss-Exit-PorL,Profit-Exit-Date,Profit-Exit-Price,Profit-Exit-PorL,Exit-Date,Exit-Price,PorL,Actual-PorL,Current-Pos
+UNH,LONG,2012-03-30,56.02,1695,No-Exit,0.0,0.0,No-Exit,0.0,0.0,2012-04-05,56.25,389.41,389.41,[]

@@ -1,0 +1,2 @@
+Instrument,Trade-Type,Entry-Date,Entry-Price,Quantity,StopLoss-Exit-Date,StopLoss-Exit-Price,StopLoss-Exit-PorL,Profit-Exit-Date,Profit-Exit-Price,Profit-Exit-PorL,Exit-Date,Exit-Price,PorL,Actual-PorL,Current-Pos
+ALL,SHORT,2008-11-20,16.36,5807,No-Exit,0.0,0.0,No-Exit,0.0,0.0,2008-11-24,19.41,-17740.31,-17740.31,[]

@@ -111,5 +111,57 @@
 											"DMI_Plus_Less_Than_DMI_Minus"
 										]
 								}
+						},
+"EMA_Breach_Mtm_Call": {"10_EMA": {
+											"AND": [
+													"Breach",
+													"First_Breach"
+												]
+										},
+					"Price_Jump": "Price_Jump_Check",
+					"Resistance_Or_Support": "Resistance_Check",
+					"Volume": "Volume_Check",
+					"Cash_Flow": "Cash_Flow_Check",
+					"RSI": {
+							"AND": [
+									"Greater_Than_Oversold",
+									"Pointing_Up"
+								]
+						},
+					"MACD": "No_Divergence",
+					"ADX_And_DMI": {
+									"AND": [
+											"DMI_Plus_Higher",
+											"DMI_Minus_Lower",
+											"ADX_Greater_Than_DMI_Minus",
+											"DMI_Plus_Greater_Than_DMI_Minus"
+										]
+								}
+						},
+"EMA_Breach_Mtm_Put": {"10_EMA": {
+											"AND": [
+													"Breach",
+													"First_Breach"
+												]
+										},
+					"Price_Jump": "Price_Jump_Check",
+					"Resistance_Or_Support": "Resistance_Check",
+					"Volume": "Volume_Check",
+					"Cash_Flow": "Cash_Flow_Check",
+					"RSI": {
+							"AND": [
+									"Less_Than_Overbought",
+									"Pointing_Down"
+								]
+						},
+					"MACD": "No_Divergence",
+					"ADX_And_DMI": {
+									"AND": [
+											"DMI_Plus_Higher",
+											"DMI_Minus_Lower",
+											"ADX_Less_Than_DMI_Minus",
+											"DMI_Plus_Less_Than_DMI_Minus"
+										]
+								}
 						}
 				}
