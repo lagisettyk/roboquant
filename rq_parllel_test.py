@@ -19,7 +19,7 @@ listStr = 'Abhi-26'
 
 tickerList = util.getTickerList(listStr)
 
-#tickerList = ['AAPL', 'GOOGL']
+#tickerList = ['AAPL', 'IWM', 'WHR', 'NFLX']
 
 
 def run_singlestock_analysis():
@@ -78,6 +78,8 @@ def test_parallel_strategy():
 	import dateutil.parser
 	startdate = dateutil.parser.parse('2005-06-30T08:00:00.000Z')
 	enddate = dateutil.parser.parse('2014-12-31T08:00:00.000Z')
+	#startdate = dateutil.parser.parse('2012-06-30T08:00:00.000Z')
+	#enddate = dateutil.parser.parse('2015-08-31T08:00:00.000Z')
 
 	jobList = []
 
@@ -144,7 +146,7 @@ def run_parallel_BBSMAXOverMTM():
 
 	# Tell RQ what Redis connection to use
 	redis_conn = util.get_redis_conn()
-	q = Queue(connection=redis_conn)  # no args implies the default queue
+	q = Queue(connection=redis_conn, default_timeout=1500)  # no args implies the default queue
 	import dateutil.parser
 	startdate = dateutil.parser.parse('2005-06-30T08:00:00.000Z')
 	enddate = dateutil.parser.parse('2014-12-31T08:00:00.000Z')
@@ -199,9 +201,10 @@ def run_parallel_BBSMAXOverMTM():
 	fake_csv = util.make_fake_csv(dataRows)
 	print  "Successfully created master_orders fake_csv file...."
 
-	reader = csv.DictReader(fake_csv, fieldnames=["timeSinceEpoch", "symbol", "action", "stopPrice", "rank"])
-	with open('MasterOrders_BBSMAxOver'  +"_" +listStr+'.csv', 'w') as csvfile:
-		writer = csv.DictWriter(csvfile, fieldnames=["timeSinceEpoch", "symbol", "action", "stopPrice", "rank"])
+
+	reader = csv.DictReader(fake_csv, fieldnames=["timeSinceEpoch", "symbol", "action", "stopPrice", "adjRatio", "rank"])
+	with open('MasterOrders_BBSMAXOverMTM_' + xiquantStrategyParams.BB_SPREAD_LONG_OR_SHORT +"_" +listStr+'.csv', 'w') as csvfile:
+		writer = csv.DictWriter(csvfile, fieldnames=["timeSinceEpoch", "symbol", "action", "stopPrice", "adjRatio", "rank"])
 		for row in reader:
 			row["stopPrice"] = round(float(row["stopPrice"]),2)
 			writer.writerow(row)
@@ -214,7 +217,7 @@ def run_parallel_EMABreachMTM():
 
 	# Tell RQ what Redis connection to use
 	redis_conn = util.get_redis_conn()
-	q = Queue(connection=redis_conn)  # no args implies the default queue
+	q = Queue(connection=redis_conn, default_timeout=1500)  # no args implies the default queue  # no args implies the default queue
 	import dateutil.parser
 	startdate = dateutil.parser.parse('2005-06-30T08:00:00.000Z')
 	enddate = dateutil.parser.parse('2014-12-31T08:00:00.000Z')
@@ -269,9 +272,9 @@ def run_parallel_EMABreachMTM():
 	fake_csv = util.make_fake_csv(dataRows)
 	print  "Successfully created master_orders fake_csv file...."
 
-	reader = csv.DictReader(fake_csv, fieldnames=["timeSinceEpoch", "symbol", "action", "stopPrice", "rank"])
-	with open('MasterOrders_EMABreachMTM'  +"_" +listStr+'.csv', 'w') as csvfile:
-		writer = csv.DictWriter(csvfile, fieldnames=["timeSinceEpoch", "symbol", "action", "stopPrice", "rank"])
+	reader = csv.DictReader(fake_csv, fieldnames=["timeSinceEpoch", "symbol", "action", "stopPrice", "adjRatio", "rank"])
+	with open('MasterOrders_EMABreachMTM_' + xiquantStrategyParams.BB_SPREAD_LONG_OR_SHORT +"_" +listStr+'.csv', 'w') as csvfile:
+		writer = csv.DictWriter(csvfile, fieldnames=["timeSinceEpoch", "symbol", "action", "stopPrice", "adjRatio", "rank"])
 		for row in reader:
 			row["stopPrice"] = round(float(row["stopPrice"]),2)
 			writer.writerow(row)
@@ -326,8 +329,8 @@ def process_Options_History():
 	print  "Successfully processed...."
 
 	
-test_parallel_strategy()
-#run_parallel_BBSMAXOverMTM()
+#test_parallel_strategy()
+run_parallel_BBSMAXOverMTM()
 #run_parallel_EMABreachMTM()
 #run_singlestock_analysis()
 #process_Options_History()

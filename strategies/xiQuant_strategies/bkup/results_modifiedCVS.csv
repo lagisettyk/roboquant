@@ -1,0 +1,2 @@
+Instrument,Trade-Type,Entry-Date,Entry-Price,Quantity,StopLoss-Exit-Date,StopLoss-Exit-Price,StopLoss-Exit-PorL,Profit-Exit-Date,Profit-Exit-Price,Profit-Exit-PorL,Exit-Date,Exit-Price,PorL,Actual-PorL,Current-Pos
+CVS,LONG,2013-12-19,68.87,1379,No-Exit,0.0,0.0,2013-12-27,70.84,2717.87,2014-01-02,70.12,1725.85,2717.87,[]

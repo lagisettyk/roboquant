@@ -11,9 +11,9 @@ import dateutil.parser
 ### Need to come up with better solutio########
 
 #tickerList = util.getTickerListWithSPY()
-tickerList = util.getTickerList('CBOE-ALL')
-#tickerList = util.getTickerList('SP-500')
-#tickerList = ['AGN', 'QQQ']
+#tickerList = util.getTickerList('CBOE-ALL')
+tickerList = util.getTickerList('SP-500')
+#tickerList = ['AAPL', 'QQQ', 'SPY']
 
 def get_redis_conn():
 	return util.get_redis_conn_nopool()

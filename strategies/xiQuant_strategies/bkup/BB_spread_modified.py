@@ -29,6 +29,7 @@ import divergence
 import xiquantPlatform
 
 import os
+
 #import dateutil.parser
 
 class BBSpread(strategy.BacktestingStrategy):
@@ -84,7 +85,9 @@ class BBSpread(strategy.BacktestingStrategy):
 		self.__adjEntryPrice = 0.0
 		self.__entryDayAdjStopPrice = 0.0
 		self.__bandBreachOrTouch = False
+		self.__bandBreachByWick = False
 		self.__noBandBreachOrTouchEntryPrice = 0.0
+		self.__progressStopLosses = False
 
 	def initLogging(self):
 		logger = logging.getLogger("xiQuant")
@@ -107,7 +110,7 @@ class BBSpread(strategy.BacktestingStrategy):
 		self.__logger.debug("QQQ Close: $%.2f" % self.__qqqDS[-1])
 		self.__logger.debug("QQQ 20 SMA: $%.2f" % self.__smaQQQShort1[-1])
 		self.__logger.debug("QQQ Upper BBand: $%.2f" % self.__upperQQQBBDataSeries[-1])
-		if self.__qqqDS[-1] > self.__smaQQQShort1[-1] and self.__qqqDS[-1] < self.__upperQQQBBDataSeries[-1]:
+		if self.__qqqDS[-1] > self.__smaQQQShort1[-1]: 
 			self.__logger.debug("The tech sector is Bullish today.")
 			return True
 		else:
@@ -118,7 +121,7 @@ class BBSpread(strategy.BacktestingStrategy):
 		self.__logger.debug("QQQ Close: $%.2f" % self.__qqqDS[-1])
 		self.__logger.debug("QQQ 20 SMA: $%.2f" % self.__smaQQQShort1[-1])
 		self.__logger.debug("QQQ Lower BBand: $%.2f" % self.__lowerQQQBBDataSeries[-1])
-		if self.__qqqDS[-1] < self.__smaQQQShort1[-1] and self.__qqqDS[-1] > self.__lowerQQQBBDataSeries[-1]:
+		if self.__qqqDS[-1] <= self.__smaQQQShort1[-1]:
 			self.__logger.debug("The tech sector is Bearish today.")
 			return True
 		else:
@@ -129,7 +132,8 @@ class BBSpread(strategy.BacktestingStrategy):
 		self.__logger.debug("SPY Close: $%.2f" % self.__spyDS[-1])
 		self.__logger.debug("SPY 20 SMA: $%.2f" % self.__smaSPYShort1[-1])
 		self.__logger.debug("SPY Upper BBand: $%.2f" % self.__upperSPYBBDataSeries[-1])
-		if self.__spyDS[-1] > self.__smaSPYShort1[-1] and self.__spyDS[-1] < self.__upperSPYBBDataSeries[-1]:
+		#if self.__spyDS[-1] > self.__smaSPYShort1[-1] and (self.__spyDS[-1] < self.__upperSPYBBDataSeries[-1] or self.__spyDS[-1] >= self.__upperSPYBBDataSeries[-1]):
+		if self.__spyDS[-1] > self.__smaSPYShort1[-1]:
 			self.__logger.debug("The market is Bullish today.")
 			return True
 		else:
@@ -140,7 +144,8 @@ class BBSpread(strategy.BacktestingStrategy):
 		self.__logger.debug("SPY Close: $%.2f" % self.__spyDS[-1])
 		self.__logger.debug("SPY 20 SMA: $%.2f" % self.__smaSPYShort1[-1])
 		self.__logger.debug("SPY Lower BBand: $%.2f" % self.__lowerSPYBBDataSeries[-1])
-		if self.__spyDS[-1] < self.__smaSPYShort1[-1] and self.__spyDS[-1] > self.__lowerSPYBBDataSeries[-1]:
+		#if self.__spyDS[-1] < self.__smaSPYShort1[-1] and (self.__spyDS[-1] > self.__lowerSPYBBDataSeries[-1] or self.__spyDS[-1] <= self.__lowerSPYBBDataSeries[-1]):
+		if self.__spyDS[-1] <= self.__smaSPYShort1[-1]:
 			self.__logger.debug("The market is Bearish today.")
 			return True
 		else:
@@ -171,7 +176,6 @@ class BBSpread(strategy.BacktestingStrategy):
 		jsonStrategies.close()
 		jsonEntryPrice.close()
 		jsonExitPrice.close()
-
 
 
 	def onFinish(self, bars):
@@ -258,6 +262,8 @@ class BBSpread(strategy.BacktestingStrategy):
 		execInfo = position.getExitOrder().getExecutionInfo()
 		t = self.__priceDS.getDateTimes()[-1]
 		tInSecs = xiquantFuncs.secondsSinceEpoch(t)
+		self.__progressStopLosses = False
+		self.__bandBreachByWick = False
 		if self.__longPos == position: 
 			self.__logger.info("%s: SOLD CLOSE %d at $%.2f" % (execInfo.getDateTime(), execInfo.getQuantity(), execInfo.getPrice()))
 			self.__logger.info("Portfolio after SELL CLOSE: $%.2f" % self.getBroker().getCash(includeShort=False))
@@ -384,9 +390,9 @@ class BBSpread(strategy.BacktestingStrategy):
 		#print "SMA Lower Tiny: ", self.__smaLowerTiny
 		self.__smaUpperTiny = indicator.SMA(self.__upperBBDataSeries, len(self.__upperBBDataSeries), consts.SMA_TINY)
 		#print "SMA Upper Tiny: ", self.__smaUpperTiny
-		self.__smaLong1 = indicator.SMA(self.__spyDS, len(self.__spyDS), consts.SMA_LONG_1)
+		self.__smaLong1 = indicator.SMA(self.__closeDS, len(self.__closeDS), consts.SMA_LONG_1)
 		#print "SMA Long1: ", self.__smaLong1
-		self.__smaLong2 = indicator.SMA(self.__spyDS, len(self.__spyDS), consts.SMA_LONG_2)
+		self.__smaLong2 = indicator.SMA(self.__closeDS, len(self.__closeDS), consts.SMA_LONG_2)
 		#print "SMA Long2: ", self.__smaLong2
 		self.__stdDevLower = indicator.STDDEV(self.__lowerBBDataSeries, len(self.__lowerBBDataSeries), consts.SMA_TINY)
 		#print "Std Dev Lower: ", self.__stdDevLower
@@ -424,30 +430,14 @@ class BBSpread(strategy.BacktestingStrategy):
 			return
 		#self.__macd = xiquantFuncs.dsToNumpyArray(self.__emaFast, consts.MACD_PRICE_DVX_LOOKBACK) - xiquantFuncs.dsToNumpyArray(self.__emaSlow, consts.MACD_PRICE_DVX_LOOKBACK)
 		self.__macd = indicator.MACD(self.__closeDS, consts.MACD_PRICE_DVX_LOOKBACK, consts.MACD_FAST_FASTPERIOD, consts.MACD_FAST_SLOWPERIOD, consts.MACD_FAST_SIGNALPERIOD)
-		
 
 		if len(self.__priceDS) <= consts.DMI_PERIOD:
 			self.__logger.debug("Not enough bar entries for DMI computations.")
 			self.__logger.debug("DMI Period: %d" % consts.DMI_PERIOD)
 			return
-		#self.__adx = indicator.ADX(feedLookbackEndAdj.getBarSeries(self.__instrumentAdj), consts.ADX_COUNT, consts.ADX_PERIOD)
-		#self.__dmiPlus = indicator.PLUS_DI(feedLookbackEndAdj.getBarSeries(self.__instrumentAdj), consts.DMI_COUNT, consts.DMI_PERIOD)
-		#self.__dmiMinus = indicator.MINUS_DI(feedLookbackEndAdj.getBarSeries(self.__instrumentAdj), consts.DMI_COUNT, consts.DMI_PERIOD)
-
-		self.__adx = indicator.ADX(feedLookbackEndAdj.getBarSeries(self.__instrumentAdj), len(feedLookbackEndAdj.getBarSeries(self.__instrumentAdj)), consts.ADX_PERIOD)
-		self.__dmiPlus = indicator.PLUS_DI(feedLookbackEndAdj.getBarSeries(self.__instrumentAdj), len(feedLookbackEndAdj.getBarSeries(self.__instrumentAdj)), consts.DMI_PERIOD)
-		self.__dmiMinus = indicator.MINUS_DI(feedLookbackEndAdj.getBarSeries(self.__instrumentAdj), len(feedLookbackEndAdj.getBarSeries(self.__instrumentAdj)), consts.DMI_PERIOD)
-
-
-
-		############Compute Money Flow Index which is more appropriate check then cash flow Index.....
-
-		self.__mfi = indicator.MFI(feedLookbackEndAdj.getBarSeries(self.__instrumentAdj), len(feedLookbackEndAdj.getBarSeries(self.__instrumentAdj)), 14)
-
-		self.__mfi_tiny = indicator.MFI(feedLookbackEndAdj.getBarSeries(self.__instrumentAdj), len(feedLookbackEndAdj.getBarSeries(self.__instrumentAdj)), 3)
-		#self.__adx = indicator.ADX(feedLookbackEndAdj.getBarSeries(self.__instrumentAdj), len(feedLookbackEndAdj.getBarSeries(self.__instrumentAdj)), consts.ADX_PERIOD)
-		#self.__dmiPlus = indicator.PLUS_DI(feedLookbackEndAdj.getBarSeries(self.__instrumentAdj), len(feedLookbackEndAdj.getBarSeries(self.__instrumentAdj)), consts.DMI_PERIOD)
-		#self.__dmiMinus = indicator.MINUS_DI(feedLookbackEndAdj.getBarSeries(self.__instrumentAdj), len(feedLookbackEndAdj.getBarSeries(self.__instrumentAdj)), consts.DMI_PERIOD)
+		self.__adx = indicator.ADX(feedLookbackEndAdj.getBarSeries(self.__instrumentAdj), consts.ADX_COUNT, consts.ADX_PERIOD)
+		self.__dmiPlus = indicator.PLUS_DI(feedLookbackEndAdj.getBarSeries(self.__instrumentAdj), consts.DMI_COUNT, consts.DMI_PERIOD)
+		self.__dmiMinus = indicator.MINUS_DI(feedLookbackEndAdj.getBarSeries(self.__instrumentAdj), consts.DMI_COUNT, consts.DMI_PERIOD)
 
 		self.__ema1 = self.getEMASHORT1()[-1]
 		self.__ema2 = self.getEMASHORT2()[-1]
@@ -511,6 +501,8 @@ class BBSpread(strategy.BacktestingStrategy):
 				wickLen = bar.getHigh() - bar.getClose()
 				candleLen = bar.getClose() - bar.getOpen()
 				# Relative wick length as a percentage of the candle length
+				if candleLen == 0:
+					candleLen = consts.DUMMY_CANDLE_LEN
 				relWickLen = (wickLen / candleLen) * 100
 				# Set the entry price based on the relative wick length
 				entryPrice = 0
@@ -528,8 +520,8 @@ class BBSpread(strategy.BacktestingStrategy):
 				print "=================================================================:adjRatio:=============================: ", self.__adjRatio, bar.getAdjClose(), self.__priceDS[-1], lookbackEndDate
 				self.__logger.debug("Adj Ratio: %0.2f" % self.__adjRatio)
 				self.__adjEntryPrice = entryPrice * self.__adjRatio
-				if not self.__bandBreachOrTouch:
-					self.__adjEntryPrice = self.__noBandBreachOrTouchEntryPrice * self.__adjRatio
+				#if not self.__bandBreachOrTouch:
+				#	self.__adjEntryPrice = self.__noBandBreachOrTouchEntryPrice * self.__adjRatio
 				self.__logger.debug("%s: Adj Entry Price: %.2f" % (bar.getDateTime(), self.__adjEntryPrice))
 				sharesToBuy = int((self.getBroker().getCash(includeShort=False) * consts.PERCENT_OF_CASH_BALANCE_FOR_ENTRY) / self.__adjEntryPrice)
 				self.__logger.debug("Shares To Buy: %d" % sharesToBuy)
@@ -577,6 +569,8 @@ class BBSpread(strategy.BacktestingStrategy):
 				wickLen = bar.getClose() - bar.getLow()
 				candleLen = bar.getOpen() - bar.getClose()
 				# Relative wick length as a percentage of the candle length
+				if candleLen == 0:
+					candleLen = consts.DUMMY_CANDLE_LEN
 				relWickLen = (wickLen / candleLen) * 100
 				# Set the entry price based on the relative wick length
 				entryPrice = 0
@@ -593,8 +587,8 @@ class BBSpread(strategy.BacktestingStrategy):
 				self.__adjRatio = self.__priceDS[-1] / bar.getAdjClose()
 				self.__logger.debug("Adj Ratio: %0.2f" % self.__adjRatio)
 				self.__adjEntryPrice = entryPrice * self.__adjRatio
-				if not self.__bandBreachOrTouch:
-					self.__adjEntryPrice = self.__noBandBreachOrTouchEntryPrice * self.__adjRatio
+				#if not self.__bandBreachOrTouch:
+				#	self.__adjEntryPrice = self.__noBandBreachOrTouchEntryPrice * self.__adjRatio
 				self.__logger.debug("%s: Adj Entry Price: %.2f" % (bar.getDateTime(), self.__adjEntryPrice))
 				sharesToBuy = int((self.getBroker().getCash(includeShort=False) / 
 								self.__adjEntryPrice) * consts.PERCENT_OF_CASH_BALANCE_FOR_ENTRY)
@@ -618,7 +612,8 @@ class BBSpread(strategy.BacktestingStrategy):
 						self.__logger.debug("SHORT on %d shares" % abs(self.__shortPos.getShares()))
 					self.__entryDay = xiquantFuncs.timestamp_from_datetime(self.__priceDS.getDateTimes()[-1])
 					self.__logger.debug("Analysis Day is : %s" % self.__entryDay)
-					# Enter a stop loss order to exit here
+					# Compute the stop loss price -- we use the stop loss
+					# price on a successful entry.
 					stopPriceDelta = 0.0
 					closePrice = bar.getClose()
 					openPrice = bar.getOpen()
@@ -696,11 +691,12 @@ class BBSpread(strategy.BacktestingStrategy):
 			self.__logger.debug("We are not playing long.")
 			return False
 
+
 		# Check if tomorrow is the earnings announcement, as we don't trade on the day after the earnings
 		# announcement. If the earnings are announced before the market open or during, we don't trade on
 		# that day. If the earnings are announced after the close of market, we don't trade the next day.
-		if xiquantFuncs.isEarnings(self.__earningsCal, bar.getDateTime().date()):
-			self.__logger.debug("%s: Earnings day today, so don't enter." % bar.getDateTime())
+		if xiquantFuncs.isEarnings(self.__earningsCal, bar.getDateTime().date()) or xiquantFuncs.isEarnings(self.__earningsCal, bar.getDateTime().date() + datetime.timedelta(days=1)) or xiquantFuncs.isEarnings(self.__earningsCal, bar.getDateTime().date() + datetime.timedelta(days=2)):
+			self.__logger.debug("%s: Earnings day today/tomorrow/day-after, so don't enter." % bar.getDateTime())
 			return False
 
 		# Check if we already hold a position in this instrument
@@ -708,6 +704,7 @@ class BBSpread(strategy.BacktestingStrategy):
 			self.__logger.debug("We already hold a position in %s" % self.__instrument)
 			return False
 
+		'''
 		# For any instrument, we trade on the same side of the market, so check the market sentiment first
 		if not self.__instrument.upper() in self.__SPYExceptions:
 			if consts.SPY_CHECK and self.isBearish():
@@ -719,8 +716,43 @@ class BBSpread(strategy.BacktestingStrategy):
 				self.__logger.debug("The tech sector is Bearish so we will not try to go LONG.")
 				return False
 
+		# Check if price is above the cutoff
+		if bar.getClose() <= consts.PRICE_CUTOFF_FOR_TRADING:
+			self.__logger.debug("Price below cutoff of %.2f." % consts.PRICE_CUTOFF_FOR_TRADING)
+			self.__logger.debug("Price: %.2f" % bar.getClose())
+			return
+
+		# Check if the avg daily price range is above the cutoff.
+		if len(self.__priceDS) < consts.DAILY_PRICE_RANGE_LOOKBACK_WINDOW:
+			self.__logger.debug("Not enough bar entries for daily price range check.")
+			self.__logger.debug("No of bars: %d"% len(self.__priceDS))
+			self.__logger.debug("Price range lookback: %d" % consts.DAILY_PRICE_RANGE_LOOKBACK_WINDOW)
+			return
+		#openPriceArrayInLookback = xiquantFuncs.dsToNumpyArray(self.__openDS, consts.DAILY_PRICE_RANGE_LOOKBACK_WINDOW)
+		lowPriceArrayInLookback = xiquantFuncs.dsToNumpyArray(self.__lowPriceDS, consts.DAILY_PRICE_RANGE_LOOKBACK_WINDOW)
+		#closePriceArrayInLookback = xiquantFuncs.dsToNumpyArray(self.__closeDS, consts.DAILY_PRICE_RANGE_LOOKBACK_WINDOW)
+		highPriceArrayInLookback = xiquantFuncs.dsToNumpyArray(self.__highPriceDS, consts.DAILY_PRICE_RANGE_LOOKBACK_WINDOW)
+		#dailyPriceRangeArrayInLookback = closePriceArrayInLookback - openPriceArrayInLookback
+		dailyPriceRangeArrayInLookback = highPriceArrayInLookback - lowPriceArrayInLookback
+		if dailyPriceRangeArrayInLookback.mean() < consts.DAILY_PRICE_RANGE_FOR_TRADING:
+			self.__logger.debug("Price range average in lookback not greater than cutoff.")
+			self.__logger.debug("Price range in lookback: %.2f" % dailyPriceRangeArrayInLookback.mean())
+			self.__logger.debug("Price range cutoff: %.2f" % consts.DAILY_PRICE_RANGE_FOR_TRADING)
+			return
+
+		wickLen = bar.getHigh() - bar.getClose()
+		candleLen = bar.getClose() - bar.getOpen()
+		# Relative wick length as a percentage of the candle length
+		if candleLen == 0:
+			candleLen = consts.DUMMY_CANDLE_LEN
+		relWickLen = float((wickLen / candleLen) * 100)
+		if abs(relWickLen) > consts.WICK_REL_LEN_CUTOFF_FOR_TRADING:
+			self.__logger.debug("Wick length relative to candle greater than cutoff.")
+			self.__logger.debug("Wick Length: %.2f" % wickLen)
+			self.__logger.debug("Candle Length: %.2f" % candleLen)
+			return False
+
 		# Check if close breaches or bounces off of the upper band.
-		#self.__bandBreachOrTouch = True
 		self.__bandBreachOrTouch = False
 		if self.__inpStrategy["BB_Spread_Call"]["BB_Upper_And_BB_Lower"]["OR"][0] == "BB_Upper_Breach":
 			if bar.getClose() > self.__bb_upper:
@@ -739,8 +771,11 @@ class BBSpread(strategy.BacktestingStrategy):
 				else:
 					self.__bandBreachOrTouch = False
 					self.__logger.debug("NO upper band breach/touch.")
-					self.__noBandBreachOrTouchEntryPrice = self.__bb_upper + consts.PRICE_DELTA
-					#return False
+					if bar.getHigh() >= self.__bb_upper:
+						self.__bandBreachByWick = True
+						self.__logger.debug("Wick breaches/touches the upper band.")
+					else:
+						return False
 
 		### Change to lookback window specific code.
 		# Check if first breach in the lookback.
@@ -779,41 +814,57 @@ class BBSpread(strategy.BacktestingStrategy):
 			self.__logger.debug("Bullish candle jump: %.2f" % bullishCandleJumpArray[-1])
 			prevClosePrice = self.__closeDS[-2]
 			self.__logger.debug("Prev Close Price: %.2f" % prevClosePrice)
+			priceJumpPercent = float(bullishCandleJumpArray[-1] / prevClosePrice) * 100
 			if prevClosePrice < consts.BB_PRICE_RANGE_HIGH_1:
-				if float(bullishCandleJumpArray[-1] / prevClosePrice) * 100 >= consts.BB_SPREAD_PERCENT_INCREASE_RANGE_1:
+				if priceJumpPercent >= consts.BB_SPREAD_PERCENT_INCREASE_RANGE_1:
 					self.__logger.debug("Bullish candle jump greater than jump range")
 					self.__logger.debug("First price: %.2f" % consts.BB_PRICE_RANGE_HIGH_1)
 					self.__logger.debug("First price increase: %.2f" % consts.BB_SPREAD_PERCENT_INCREASE_RANGE_1)
 					self.__logger.debug("Bullish candle jump: %.2f" % bullishCandleJumpArray[-1])
-					return False
+					if priceJumpPercent <= consts.BB_SPREAD_PERCENT_INCREASE_RANGE_2:
+						self.__progressStopLosses = True
+					else:
+						return False
 			if prevClosePrice >= consts.BB_PRICE_RANGE_HIGH_1 and prevClosePrice < consts.BB_PRICE_RANGE_HIGH_2:
-				if float(bullishCandleJumpArray[-1] / prevClosePrice) * 100 >= consts.BB_SPREAD_PERCENT_INCREASE_RANGE_2:
+				if priceJumpPercent >= consts.BB_SPREAD_PERCENT_INCREASE_RANGE_2:
 					self.__logger.debug("Bullish candle jump greater than jump range")
 					self.__logger.debug("Second price: %.2f" % consts.BB_PRICE_RANGE_HIGH_2)
 					self.__logger.debug("Second price increase: %.2f" % consts.BB_SPREAD_PERCENT_INCREASE_RANGE_2)
 					self.__logger.debug("Bullish candle jump: %.2f" % bullishCandleJumpArray[-1])
-					return False
+					if priceJumpPercent <= consts.BB_SPREAD_PERCENT_INCREASE_RANGE_3:
+						self.__progressStopLosses = True
+					else:
+						return False
 			if prevClosePrice >= consts.BB_PRICE_RANGE_HIGH_2 and prevClosePrice < consts.BB_PRICE_RANGE_HIGH_3:
-				if float(bullishCandleJumpArray[-1] / prevClosePrice) * 100 >= consts.BB_SPREAD_PERCENT_INCREASE_RANGE_3:
+				if priceJumpPercent >= consts.BB_SPREAD_PERCENT_INCREASE_RANGE_3:
 					self.__logger.debug("Bullish candle jump greater than jump range")
 					self.__logger.debug("Third price: %.2f" % consts.BB_PRICE_RANGE_HIGH_3)
 					self.__logger.debug("Third price increase: %.2f" % consts.BB_SPREAD_PERCENT_INCREASE_RANGE_3)
 					self.__logger.debug("Bullish candle jump: %.2f" % bullishCandleJumpArray[-1])
-					return False
+					if priceJumpPercent <= consts.BB_SPREAD_PERCENT_INCREASE_RANGE_4:
+						self.__progressStopLosses = True
+					else:
+						return False
 			if prevClosePrice >= consts.BB_PRICE_RANGE_HIGH_3 and prevClosePrice < consts.BB_PRICE_RANGE_HIGH_4:
-				if float(bullishCandleJumpArray[-1] / prevClosePrice) * 100 >= consts.BB_SPREAD_PERCENT_INCREASE_RANGE_4:
+				if priceJumpPercent >= consts.BB_SPREAD_PERCENT_INCREASE_RANGE_4:
 					self.__logger.debug("Bullish candle jump greater than jump range")
 					self.__logger.debug("Fourth price: %.2f" % consts.BB_PRICE_RANGE_HIGH_4)
 					self.__logger.debug("Fourth price increase: %.2f" % consts.BB_SPREAD_PERCENT_INCREASE_RANGE_4)
 					self.__logger.debug("Bullish candle jump: %.2f" % bullishCandleJumpArray[-1])
-					return False
+					if priceJumpPercent <= consts.BB_SPREAD_PERCENT_INCREASE_RANGE_5:
+						self.__progressStopLosses = True
+					else:
+						return False
 			if prevClosePrice >= consts.BB_PRICE_RANGE_HIGH_4:
-				if float(bullishCandleJumpArray[-1] / prevClosePrice) * 100 >= consts.BB_SPREAD_PERCENT_INCREASE_RANGE_5:
+				if priceJumpPercent >= consts.BB_SPREAD_PERCENT_INCREASE_RANGE_5:
 					self.__logger.debug("Bullish candle jump greater than jump range")
 					self.__logger.debug("Fifth price, greater than: %.2f" % consts.BB_PRICE_RANGE_HIGH_4)
 					self.__logger.debug("Fifth price increase: %.2f" % consts.BB_SPREAD_PERCENT_INCREASE_RANGE_5)
 					self.__logger.debug("Bullish candle jump: %.2f" % bullishCandleJumpArray[-1])
-					return False
+					if priceJumpPercent <= consts.BB_SPREAD_PERCENT_INCREASE_RANGE_6:
+						self.__progressStopLosses = True
+					else:
+						return False
 
 		self.__logger.debug("Price Jump check passed.")
 
@@ -830,7 +881,7 @@ class BBSpread(strategy.BacktestingStrategy):
 			self.__logger.debug("Volume: %.2f" % volumeArrayInLookback[-1])
 			self.__logger.debug("Max volume in lookback: %.2f" % volumeArrayInLookback.max())
 			self.__logger.debug("Volume NOT greater in lookback.")
-			if volumeArrayInLookback[-2] >= 0 or volumeArrayInLookback[-1] <= 0:
+			if volumeArrayInLookback[-2] - volumeArrayInLookback[-3] >= 0 or volumeArrayInLookback[-1]  - volumeArrayInLookback[-2] <= 0:
 				avgVolume = volumeArrayInAvgLookback.sum() / consts.VOLUME_AVG_WINDOW
 				if volumeArrayInLookback[-1] < avgVolume and float((avgVolume - volumeArrayInLookback[-1]) / avgVolume * 100) > consts.VOLUME_DELTA:
 					return False 
@@ -843,36 +894,19 @@ class BBSpread(strategy.BacktestingStrategy):
 			self.__logger.debug("Number of entries: %d" % len(self.__priceDS))
 			return False
 		priceArrayInLookback = xiquantFuncs.dsToNumpyArray(self.__closeDS, consts.CASH_FLOW_LOOKBACK_WINDOW)
-		volumeArrayInLookback = xiquantFuncs.dsToNumpyArray(self.__volumeDS, consts.CASH_FLOW_LOOKBACK_WINDOW)
-		cashFlowArrayInLookback = priceArrayInLookback * volumeArrayInLookback
-
-		print "@@@@@@@@@@@@@@@@++++++++++++++++++++++================= Money Flow Index value...: ", self.__mfi
-		#if cashFlowArrayInLookback[-1] <= float(cashFlowArrayInLookback[:-1].sum() / (consts.CASH_FLOW_LOOKBACK_WINDOW -1)):
-		#if float(cashFlowArrayInLookback[1:].sum() / (consts.CASH_FLOW_LOOKBACK_WINDOW -1)) <= float(cashFlowArrayInLookback[:-1].sum() / (consts.CASH_FLOW_LOOKBACK_WINDOW -1)):
-		#if self.__mfi[-1] <= self.__mfi[-2]:
-		#if (self.__mfi[-1] >= 65.0) or (self.__mfi[-1] <= self.__mfi[-2]):
-		if self.__mfi[-1] >= 70.0:
-			self.__logger.debug("Cashflow: %.2f" % cashFlowArrayInLookback[-1]) 
-			self.__logger.debug("Cashflow in lookback: %.2f" % float(cashFlowArrayInLookback[:-1].sum() / (consts.CASH_FLOW_LOOKBACK_WINDOW -1))) 
-			self.__logger.debug("Volume: %.2f" % volumeArrayInLookback[-1])
+		analysisPriceArray = priceArrayInLookback[(consts.CASH_FLOW_LOOKBACK_WINDOW - 1) * -1:]
+		prevPriceArray = priceArrayInLookback[consts.CASH_FLOW_LOOKBACK_WINDOW * -1:-1]
+		priceDiffArrayInLookback = analysisPriceArray - prevPriceArray
+		volumeArrayInLookback = xiquantFuncs.dsToNumpyArray(self.__volumeDS, consts.CASH_FLOW_LOOKBACK_WINDOW - 1)
+		cashFlowArrayInLookback = priceDiffArrayInLookback * volumeArrayInLookback
+		if float(cashFlowArrayInLookback[(consts.CASH_FLOW_LOOKBACK_WINDOW - 1) * -1:].sum() / (consts.CASH_FLOW_LOOKBACK_WINDOW -1)) <= float(cashFlowArrayInLookback[consts.CASH_FLOW_LOOKBACK_WINDOW * -1:-1].sum() / (consts.CASH_FLOW_LOOKBACK_WINDOW -1)):
+			self.__logger.debug("Avg Cashflow: %.2f" % float(cashFlowArrayInLookback[(consts.CASH_FLOW_LOOKBACK_WINDOW - 1) * -1:].sum() / (consts.CASH_FLOW_LOOKBACK_WINDOW -1))) 
+			self.__logger.debug("Avg Cashflow in lookback: %.2f" % float(cashFlowArrayInLookback[consts.CASH_FLOW_LOOKBACK_WINDOW * -1:-1].sum() / (consts.CASH_FLOW_LOOKBACK_WINDOW -1))) 
 			self.__logger.debug("Cashflow check failed.")
 			return False
 
-		if self.__mfi_tiny[-1] < self.__mfi_tiny[-2]:
-			return False
-
-
-		'''
-		##### Check ADX for trend .........
-		if self.__adx[-1] >= 25:
-			self.__logger.debug("ADX trend check failed.")
-			return False
-		'''
-
-
-		self.__logger.debug("Cashflow: %.2f" % cashFlowArrayInLookback[-1]) 
-		self.__logger.debug("Cashflow in lookback: %.2f" % float(cashFlowArrayInLookback[:-1].sum() / (consts.CASH_FLOW_LOOKBACK_WINDOW -1))) 
-		self.__logger.debug("Volume: %.2f" % volumeArrayInLookback[-1])
+		self.__logger.debug("Avg Cashflow: %.2f" % cashFlowArrayInLookback[-1]) 
+		self.__logger.debug("Avg Cashflow in lookback: %.2f" % float(cashFlowArrayInLookback[:-1].sum() / (consts.CASH_FLOW_LOOKBACK_WINDOW -1))) 
 		self.__logger.debug("Cashflow check passed.")
 
 		# Check resistance
@@ -916,16 +950,60 @@ class BBSpread(strategy.BacktestingStrategy):
 
 		# Check price against the averages
 		if abs(closePrice - self.__ema1) < consts.PRICE_AVG_CHECK_DELTA:
+			self.__logger.debug("Price comparison against EMA 10 failed.")
+			self.__logger.debug("Price: %.2f" % closePrice)
+			self.__logger.debug("EMA 10: %.2f" % self.__ema1)
 			return False
 		if abs(closePrice - self.__ema2) < consts.PRICE_AVG_CHECK_DELTA:
+			self.__logger.debug("Price comparison against EMA 20 failed.")
+			self.__logger.debug("Price: %.2f" % closePrice)
+			self.__logger.debug("EMA 20: %.2f" % self.__ema2)
 			return False
 		if abs(closePrice - self.__ema3) < consts.PRICE_AVG_CHECK_DELTA:
+			self.__logger.debug("Price comparison against EMA 50 failed.")
+			self.__logger.debug("Price: %.2f" % closePrice)
+			self.__logger.debug("EMA 50: %.2f" % self.__ema3)
 			return False
 		if abs(closePrice - self.__sma1) < consts.PRICE_AVG_CHECK_DELTA:
+			self.__logger.debug("Price comparison against SMA 100 failed.")
+			self.__logger.debug("Price: %.2f" % closePrice)
+			self.__logger.debug("SMA 100: %.2f" % self.__sma1)
 			return False
 		if abs(closePrice - self.__sma2) < consts.PRICE_AVG_CHECK_DELTA:
+			self.__logger.debug("Price comparison against SMA 200 failed.")
+			self.__logger.debug("Price: %.2f" % closePrice)
+			self.__logger.debug("SMA 200: %.2f" % self.__sma2)
 			return False
-		self.__logger.debug("Price against averages check passed.")
+		self.__logger.debug("Price check against EMA and SMA averages passed.")
+
+		# Check the top of the wick against the averages
+		wick = bar.getHigh()
+		if abs(wick - self.__ema1) < consts.WICK_PRICE_AVG_CHECK_DELTA:
+			self.__logger.debug("Price comparison against EMA 10 failed.")
+			self.__logger.debug("Price: %.2f" % closePrice)
+			self.__logger.debug("EMA 10: %.2f" % self.__ema1)
+			return False
+		if abs(wick - self.__ema2) < consts.WICK_PRICE_AVG_CHECK_DELTA:
+			self.__logger.debug("Price comparison against EMA 20 failed.")
+			self.__logger.debug("Price: %.2f" % closePrice)
+			self.__logger.debug("EMA 20: %.2f" % self.__ema2)
+			return False
+		if abs(wick - self.__ema3) < consts.WICK_PRICE_AVG_CHECK_DELTA:
+			self.__logger.debug("Price comparison against EMA 50 failed.")
+			self.__logger.debug("Price: %.2f" % closePrice)
+			self.__logger.debug("EMA 50: %.2f" % self.__ema3)
+			return False
+		if abs(wick - self.__sma1) < consts.WICK_PRICE_AVG_CHECK_DELTA:
+			self.__logger.debug("Price comparison against SMA 100 failed.")
+			self.__logger.debug("Price: %.2f" % closePrice)
+			self.__logger.debug("SMA 100: %.2f" % self.__sma1)
+			return False
+		if abs(wick - self.__sma2) < consts.WICK_PRICE_AVG_CHECK_DELTA:
+			self.__logger.debug("Price comparison against SMA 200 failed.")
+			self.__logger.debug("Price: %.2f" % closePrice)
+			self.__logger.debug("SMA 200: %.2f" % self.__sma2)
+			return False
+		self.__logger.debug("Wick check against EMA and SMA averages passed.")
 
 		# Check RSI, should be moving through the lower limit and pointing up.
 		if len(self.__rsi) < consts.RSI_SETTING:
@@ -939,13 +1017,9 @@ class BBSpread(strategy.BacktestingStrategy):
 		if rsiArrayInLookback[-1] != rsiArrayInLookback.max():
 			self.__logger.debug("RSI lookback check failed.")
 			return False
-
-		'''
-		if (self.__rsi[-1] >= consts.RSI_UPPER_LIMIT):
-			self.__logger.debug("RSI still not less/equal to Oversold.")
-			return False
-		'''
-
+		#if (self.__rsi[-1] >= consts.RSI_LOWER_LIMIT):
+		#	self.__logger.debug("RSI still not less/equal to Oversold.")
+		#	return False
 		self.__logger.debug("RSI check passed.")
 
 		# Check MACD, should show no divergence with the price chart in the lookback window
@@ -978,6 +1052,7 @@ class BBSpread(strategy.BacktestingStrategy):
 			return False
 		self.__logger.debug("DMI check passed.")
 
+		'''
 		# Add checks for other indicators here
 		############
 		return True
@@ -1047,7 +1122,7 @@ class BBSpread(strategy.BacktestingStrategy):
 		# Check if tomorrow is the earnings announcement, as we don't trade on the day after the earnings
 		# announcement. If the earnings are announced before the market open or during, we don't trade on
 		# that day. If the earnings are announced after the close of market, we don't trade the next day.
-		if xiquantFuncs.isEarnings(self.__earningsCal, bar.getDateTime().date()):
+		if xiquantFuncs.isEarnings(self.__earningsCal, bar.getDateTime().date()) or xiquantFuncs.isEarnings(self.__earningsCal, bar.getDateTime().date() + datetime.timedelta(days=1)) or xiquantFuncs.isEarnings(self.__earningsCal, bar.getDateTime().date() + datetime.timedelta(days=2)):
 			self.__logger.debug("%s: Earnings day today, so don't enter." % bar.getDateTime())
 			return False
 
@@ -1056,6 +1131,7 @@ class BBSpread(strategy.BacktestingStrategy):
 			self.__logger.debug("We already hold a position in %s" % self.__instrument)
 			return False
 
+		'''
 		# For any instrument, we trade on the same side of the market, so check the market sentiment first
 		if not self.__instrument.upper() in self.__SPYExceptions:
 			if consts.SPY_CHECK and self.isBullish():
@@ -1066,6 +1142,43 @@ class BBSpread(strategy.BacktestingStrategy):
 			if consts.QQQ_CHECK and self.isTechBullish():
 				self.__logger.debug("The tech sector is Bullish so we will not try to go short.")
 				return False
+
+
+		# Check if price is above the cutoff
+		if bar.getClose() <= consts.PRICE_CUTOFF_FOR_TRADING:
+			self.__logger.debug("Price below cutoff of %.2f." % consts.PRICE_CUTOFF_FOR_TRADING)
+			self.__logger.debug("Price: %.2f" % bar.getClose())
+			return
+
+		# Check if the avg daily price range is above the cutoff.
+		if len(self.__priceDS) < consts.DAILY_PRICE_RANGE_LOOKBACK_WINDOW:
+			self.__logger.debug("Not enough bar entries for daily price range check.")
+			self.__logger.debug("No of bars: %d"% len(self.__priceDS))
+			self.__logger.debug("Price range lookback: %d" % consts.DAILY_PRICE_RANGE_LOOKBACK_WINDOW)
+			return
+		#openPriceArrayInLookback = xiquantFuncs.dsToNumpyArray(self.__openDS, consts.DAILY_PRICE_RANGE_LOOKBACK_WINDOW)
+		lowPriceArrayInLookback = xiquantFuncs.dsToNumpyArray(self.__lowPriceDS, consts.DAILY_PRICE_RANGE_LOOKBACK_WINDOW)
+		#closePriceArrayInLookback = xiquantFuncs.dsToNumpyArray(self.__closeDS, consts.DAILY_PRICE_RANGE_LOOKBACK_WINDOW)
+		highPriceArrayInLookback = xiquantFuncs.dsToNumpyArray(self.__highPriceDS, consts.DAILY_PRICE_RANGE_LOOKBACK_WINDOW)
+		#dailyPriceRangeArrayInLookback = openPriceArrayInLookback - closePriceArrayInLookback
+		dailyPriceRangeArrayInLookback = highPriceArrayInLookback - lowPriceArrayInLookback
+		if dailyPriceRangeArrayInLookback.mean() < consts.DAILY_PRICE_RANGE_FOR_TRADING:
+			self.__logger.debug("Price range average in lookback not greater than cutoff.")
+			self.__logger.debug("Price range in lookback: %.2f" % dailyPriceRangeArrayInLookback.mean())
+			self.__logger.debug("Price range cutoff: %.2f" % consts.DAILY_PRICE_RANGE_FOR_TRADING)
+			return
+
+		wickLen = bar.getClose() - bar.getLow()
+		candleLen = bar.getOpen() - bar.getClose()
+		# Relative wick length as a percentage of the candle length
+		if candleLen == 0:
+			candleLen = consts.DUMMY_CANDLE_LEN
+		relWickLen = float((wickLen / candleLen) * 100)
+		if abs(relWickLen) > consts.WICK_REL_LEN_CUTOFF_FOR_TRADING:
+			self.__logger.debug("Wick length relative to candle greater than cutoff.")
+			self.__logger.debug("Wick Length: %.2f" % wickLen)
+			self.__logger.debug("Candle Length: %.2f" % candleLen)
+			return False
 
 		# Check if close breaches or bounces off of the lower band.
 		self.__bandBreachOrTouch = False
@@ -1086,8 +1199,11 @@ class BBSpread(strategy.BacktestingStrategy):
 				else:
 					self.__bandBreachOrTouch = False
 					self.__logger.debug("NO lower band breach/touch.")
-					self.__noBandBreachOrTouchEntryPrice = self.__bb_lower - consts.PRICE_DELTA
-					#return False #######$$$$$$$$$$$$$$$$$$Kiran Blocked the Code################
+					if bar.getLow() <= self.__bb_lower:
+						self.__bandBreachByWick = True
+						self.__logger.debug("Wick breaches/touches the lower band.")
+					else:
+						return False
 
 		### Change to lookback window specific code.
 		# Check if first breach in the lookback.
@@ -1126,41 +1242,57 @@ class BBSpread(strategy.BacktestingStrategy):
 			self.__logger.debug("Bearish candle jump: %.2f" % bearishCandleJumpArray[-1])
 			prevClosePrice = self.__closeDS[-2]
 			self.__logger.debug("Prev Close Price: %.2f" % prevClosePrice)
+			priceJumpPercent = float(bearishCandleJumpArray[-1] / prevClosePrice) * 100
 			if prevClosePrice < consts.BB_PRICE_RANGE_HIGH_1:
-				if float(bearishCandleJumpArray[-1] / prevClosePrice) * 100 >= consts.BB_SPREAD_PERCENT_INCREASE_RANGE_1:
+				if priceJumpPercent >= consts.BB_SPREAD_PERCENT_INCREASE_RANGE_1:
 					self.__logger.debug("Bearish candle jump greater than jump range")
 					self.__logger.debug("First price: %.2f" % consts.BB_PRICE_RANGE_HIGH_1)
 					self.__logger.debug("First price increase: %.2f" % consts.BB_SPREAD_PERCENT_INCREASE_RANGE_1)
 					self.__logger.debug("Bearish candle jump: %.2f" % bearishCandleJumpArray[-1])
-					return False
+					if priceJumpPercent <= consts.BB_SPREAD_PERCENT_INCREASE_RANGE_2:
+						self.__progressStopLosses = True
+					else:
+						return False
 			if prevClosePrice >= consts.BB_PRICE_RANGE_HIGH_1 and prevClosePrice < consts.BB_PRICE_RANGE_HIGH_2:
-				if float(bearishCandleJumpArray[-1] / prevClosePrice) * 100 >= consts.BB_SPREAD_PERCENT_INCREASE_RANGE_2:
+				if priceJumpPercent >= consts.BB_SPREAD_PERCENT_INCREASE_RANGE_2:
 					self.__logger.debug("Bearish candle jump greater than jump range")
 					self.__logger.debug("Second price: %.2f" % consts.BB_PRICE_RANGE_HIGH_2)
 					self.__logger.debug("Second price increase: %.2f" % consts.BB_SPREAD_PERCENT_INCREASE_RANGE_2)
 					self.__logger.debug("Bearish candle jump: %.2f" % bearishCandleJumpArray[-1])
-					return False
+					if priceJumpPercent <= consts.BB_SPREAD_PERCENT_INCREASE_RANGE_3:
+						self.__progressStopLosses = True
+					else:
+						return False
 			if prevClosePrice >= consts.BB_PRICE_RANGE_HIGH_2 and prevClosePrice < consts.BB_PRICE_RANGE_HIGH_3:
-				if float(bearishCandleJumpArray[-1] / prevClosePrice) * 100 >= consts.BB_SPREAD_PERCENT_INCREASE_RANGE_3:
+				if priceJumpPercent >= consts.BB_SPREAD_PERCENT_INCREASE_RANGE_3:
 					self.__logger.debug("Bearish candle jump greater than jump range")
 					self.__logger.debug("Third price: %.2f" % consts.BB_PRICE_RANGE_HIGH_3)
 					self.__logger.debug("Third price increase: %.2f" % consts.BB_SPREAD_PERCENT_INCREASE_RANGE_3)
 					self.__logger.debug("Bearish candle jump: %.2f" % bearishCandleJumpArray[-1])
-					return False
+					if priceJumpPercent <= consts.BB_SPREAD_PERCENT_INCREASE_RANGE_4:
+						self.__progressStopLosses = True
+					else:
+						return False
 			if prevClosePrice >= consts.BB_PRICE_RANGE_HIGH_3 and prevClosePrice < consts.BB_PRICE_RANGE_HIGH_4:
-				if float(bearishCandleJumpArray[-1] / prevClosePrice) * 100 >= consts.BB_SPREAD_PERCENT_INCREASE_RANGE_4:
+				if priceJumpPercent >= consts.BB_SPREAD_PERCENT_INCREASE_RANGE_4:
 					self.__logger.debug("Bearish candle jump greater than jump range")
 					self.__logger.debug("Fourth price: %.2f" % consts.BB_PRICE_RANGE_HIGH_4)
 					self.__logger.debug("Fourth price increase: %.2f" % consts.BB_SPREAD_PERCENT_INCREASE_RANGE_4)
 					self.__logger.debug("Bearish candle jump: %.2f" % bearishCandleJumpArray[-1])
-					return False
+					if priceJumpPercent <= consts.BB_SPREAD_PERCENT_INCREASE_RANGE_5:
+						self.__progressStopLosses = True
+					else:
+						return False
 			if prevClosePrice >= consts.BB_PRICE_RANGE_HIGH_4:
-				if float(bearishCandleJumpArray[-1] / prevClosePrice) * 100 >= consts.BB_SPREAD_PERCENT_INCREASE_RANGE_5:
+				if priceJumpPercent >= consts.BB_SPREAD_PERCENT_INCREASE_RANGE_5:
 					self.__logger.debug("Bearish candle jump greater than jump range")
 					self.__logger.debug("Fifth price, greater than: %.2f" % consts.BB_PRICE_RANGE_HIGH_4)
 					self.__logger.debug("Fifth price increase: %.2f" % consts.BB_SPREAD_PERCENT_INCREASE_RANGE_5)
 					self.__logger.debug("Bearish candle jump: %.2f" % bearishCandleJumpArray[-1])
-					return False
+					if priceJumpPercent <= consts.BB_SPREAD_PERCENT_INCREASE_RANGE_6:
+						self.__progressStopLosses = True
+					else:
+						return False
 
 		self.__logger.debug("Price Jump check passed.")
 
@@ -1177,13 +1309,12 @@ class BBSpread(strategy.BacktestingStrategy):
 			self.__logger.debug("Volume: %.2f" % volumeArrayInLookback[-1])
 			self.__logger.debug("Max volume in lookback: %.2f" % volumeArrayInLookback.max())
 			self.__logger.debug("Volume NOT greater in lookback.")
-			if volumeArrayInLookback[-2] <= 0 or volumeArrayInLookback[-1] >= 0:
+			if volumeArrayInLookback[-2] - volumeArrayInLookback[-3] <= 0 or volumeArrayInLookback[-1]  - volumeArrayInLookback[-2] >= 0:
 				avgVolume = volumeArrayInAvgLookback.sum() / consts.VOLUME_AVG_WINDOW
 				if volumeArrayInLookback[-1] < avgVolume and float((avgVolume - volumeArrayInLookback[-1]) / avgVolume * 100) > consts.VOLUME_DELTA:
 					return False 
 
 		self.__logger.debug("Volume check passed.")
-
 		# Check cash flow 
 		if len(self.__priceDS) < consts.CASH_FLOW_LOOKBACK_WINDOW: 
 			self.__logger.debug("Not enough entries for cashflow lookback")
@@ -1191,36 +1322,19 @@ class BBSpread(strategy.BacktestingStrategy):
 			self.__logger.debug("Number of entries: %d" % len(self.__priceDS))
 			return False
 		priceArrayInLookback = xiquantFuncs.dsToNumpyArray(self.__closeDS, consts.CASH_FLOW_LOOKBACK_WINDOW)
-		volumeArrayInLookback = xiquantFuncs.dsToNumpyArray(self.__volumeDS, consts.CASH_FLOW_LOOKBACK_WINDOW)
-		cashFlowArrayInLookback = priceArrayInLookback * volumeArrayInLookback
-
-		print "@@@@@@@@@@@@@@@@++++++++++++++++++++++================= Money Flow Index value...: ", self.__mfi
-		#if cashFlowArrayInLookback[-1] >= float(cashFlowArrayInLookback[:-1].sum() / (consts.CASH_FLOW_LOOKBACK_WINDOW -1)):
-		#if float(cashFlowArrayInLookback[1:].sum() / (consts.CASH_FLOW_LOOKBACK_WINDOW -1)) >= float(cashFlowArrayInLookback[:-1].sum() / (consts.CASH_FLOW_LOOKBACK_WINDOW -1)):
-		#if self.__mfi[-1] >= self.__mfi[-2]:
-		#if (self.__mfi[-1] <= 35.0) or (self.__mfi[-1] >= self.__mfi[-2]):
-		#if self.__mfi[-1] <= 80.0:
-		if self.__mfi[-1] >= 30.0:
-			self.__logger.debug("Cashflow: %.2f" % cashFlowArrayInLookback[-1]) 
-			self.__logger.debug("Cashflow in lookback: %.2f" % float(cashFlowArrayInLookback[:-1].sum() / (consts.CASH_FLOW_LOOKBACK_WINDOW -1))) 
-			self.__logger.debug("Volume: %.2f" % volumeArrayInLookback[-1])
+		analysisPriceArray = priceArrayInLookback[(consts.CASH_FLOW_LOOKBACK_WINDOW - 1) * -1:]
+		prevPriceArray = priceArrayInLookback[consts.CASH_FLOW_LOOKBACK_WINDOW * -1:-1]
+		priceDiffArrayInLookback = analysisPriceArray - prevPriceArray
+		volumeArrayInLookback = xiquantFuncs.dsToNumpyArray(self.__volumeDS, consts.CASH_FLOW_LOOKBACK_WINDOW - 1)
+		cashFlowArrayInLookback = priceDiffArrayInLookback * volumeArrayInLookback
+		if float(cashFlowArrayInLookback[(consts.CASH_FLOW_LOOKBACK_WINDOW - 1) * -1:].sum() / (consts.CASH_FLOW_LOOKBACK_WINDOW -1)) >= float(cashFlowArrayInLookback[consts.CASH_FLOW_LOOKBACK_WINDOW * -1:-1].sum() / (consts.CASH_FLOW_LOOKBACK_WINDOW -1)):
+			self.__logger.debug("Avg Cashflow: %.2f" % float(cashFlowArrayInLookback[(consts.CASH_FLOW_LOOKBACK_WINDOW - 1) * -1:].sum() / (consts.CASH_FLOW_LOOKBACK_WINDOW -1))) 
+			self.__logger.debug("Avg Cashflow in lookback: %.2f" % float(cashFlowArrayInLookback[consts.CASH_FLOW_LOOKBACK_WINDOW * -1:-1].sum() / (consts.CASH_FLOW_LOOKBACK_WINDOW -1))) 
 			self.__logger.debug("Cashflow check failed.")
 			return False
 
-		if self.__mfi_tiny[-1] > self.__mfi_tiny[-2]:
-			return False
-
-
-		'''
-		##### Check ADX for trend .........
-		if self.__adx[-1] >= 20:
-			self.__logger.debug("ADX trend check failed.")
-			return False
-		'''
-
-		self.__logger.debug("Cashflow: %.2f" % cashFlowArrayInLookback[-1]) 
-		self.__logger.debug("Cashflow in lookback: %.2f" % float(cashFlowArrayInLookback[:-1].sum() / (consts.CASH_FLOW_LOOKBACK_WINDOW -1))) 
-		self.__logger.debug("Volume: %.2f" % volumeArrayInLookback[-1])
+		self.__logger.debug("Avg Cashflow: %.2f" % cashFlowArrayInLookback[-1]) 
+		self.__logger.debug("Avg Cashflow in lookback: %.2f" % float(cashFlowArrayInLookback[:-1].sum() / (consts.CASH_FLOW_LOOKBACK_WINDOW -1))) 
 		self.__logger.debug("Cashflow check passed.")
 
 		# Check support
@@ -1264,16 +1378,60 @@ class BBSpread(strategy.BacktestingStrategy):
 
 		# Check price against the averages
 		if abs(closePrice - self.__ema1) < consts.PRICE_AVG_CHECK_DELTA:
+			self.__logger.debug("Price comparison against EMA 10 failed.")
+			self.__logger.debug("Price: %.2f" % closePrice)
+			self.__logger.debug("EMA 10: %.2f" % self.__ema1)
 			return False
 		if abs(closePrice - self.__ema2) < consts.PRICE_AVG_CHECK_DELTA:
+			self.__logger.debug("Price comparison against EMA 20 failed.")
+			self.__logger.debug("Price: %.2f" % closePrice)
+			self.__logger.debug("EMA 20: %.2f" % self.__ema2)
 			return False
 		if abs(closePrice - self.__ema3) < consts.PRICE_AVG_CHECK_DELTA:
+			self.__logger.debug("Price comparison against EMA 50 failed.")
+			self.__logger.debug("Price: %.2f" % closePrice)
+			self.__logger.debug("EMA 50: %.2f" % self.__ema3)
 			return False
 		if abs(closePrice - self.__sma1) < consts.PRICE_AVG_CHECK_DELTA:
+			self.__logger.debug("Price comparison against SMA 100 failed.")
+			self.__logger.debug("Price: %.2f" % closePrice)
+			self.__logger.debug("SMA 100: %.2f" % self.__sma1)
 			return False
 		if abs(closePrice - self.__sma2) < consts.PRICE_AVG_CHECK_DELTA:
+			self.__logger.debug("Price comparison against SMA 200 failed.")
+			self.__logger.debug("Price: %.2f" % closePrice)
+			self.__logger.debug("SMA 200: %.2f" % self.__sma2)
 			return False
-		self.__logger.debug("Price against averages check passed.")
+		self.__logger.debug("Price check against EMA and SMA averages passed.")
+
+		# Check the top of the wick against the averages
+		wick = bar.getLow()
+		if abs(wick - self.__ema1) < consts.WICK_PRICE_AVG_CHECK_DELTA:
+			self.__logger.debug("Price comparison against EMA 10 failed.")
+			self.__logger.debug("Price: %.2f" % closePrice)
+			self.__logger.debug("EMA 10: %.2f" % self.__ema1)
+			return False
+		if abs(wick - self.__ema2) < consts.WICK_PRICE_AVG_CHECK_DELTA:
+			self.__logger.debug("Price comparison against EMA 20 failed.")
+			self.__logger.debug("Price: %.2f" % closePrice)
+			self.__logger.debug("EMA 20: %.2f" % self.__ema2)
+			return False
+		if abs(wick - self.__ema3) < consts.WICK_PRICE_AVG_CHECK_DELTA:
+			self.__logger.debug("Price comparison against EMA 50 failed.")
+			self.__logger.debug("Price: %.2f" % closePrice)
+			self.__logger.debug("EMA 50: %.2f" % self.__ema3)
+			return False
+		if abs(wick - self.__sma1) < consts.WICK_PRICE_AVG_CHECK_DELTA:
+			self.__logger.debug("Price comparison against SMA 100 failed.")
+			self.__logger.debug("Price: %.2f" % closePrice)
+			self.__logger.debug("SMA 100: %.2f" % self.__sma1)
+			return False
+		if abs(wick - self.__sma2) < consts.WICK_PRICE_AVG_CHECK_DELTA:
+			self.__logger.debug("Price comparison against SMA 200 failed.")
+			self.__logger.debug("Price: %.2f" % closePrice)
+			self.__logger.debug("SMA 200: %.2f" % self.__sma2)
+			return False
+		self.__logger.debug("Wick check against EMA and SMA averages passed.")
 
 		# Check RSI, should be moving through the upper limit and pointing down.
 		if len(self.__rsi) < consts.RSI_SETTING:
@@ -1287,13 +1445,9 @@ class BBSpread(strategy.BacktestingStrategy):
 		if rsiArrayInLookback[-1] != rsiArrayInLookback.min():
 			self.__logger.debug("RSI lookback check failed.")
 			return False
-
-		'''
-		if (self.__rsi[-1] <= consts.RSI_LOWER_LIMIT):
-			self.__logger.debug("RSI still not greater/equal to Overbought.")
-			return False
-		'''
-
+		#if (self.__rsi[-1] <= consts.RSI_UPPER_LIMIT):
+		#	self.__logger.debug("RSI still not greater/equal to Overbought.")
+		#	return False
 		self.__logger.debug("RSI check passed.")
 
 		# Check MACD, should show no divergence with the price chart in the lookback window
@@ -1325,7 +1479,7 @@ class BBSpread(strategy.BacktestingStrategy):
 			self.__logger.debug("DMI Minus not pointing up.")
 			return False
 		self.__logger.debug("DMI check passed.")
-
+		'''
 		# Add checks for other indicators here
 		############
 
@@ -1573,7 +1727,7 @@ def main(plot):
 	startDate = dateutil.parser.parse('2005-06-30T08:00:00.000Z')
 	endDate = dateutil.parser.parse('2014-12-31T08:00:00.000Z')
 
-	instruments = ["NFLX"]
+	instruments = ["AAPL"]
 	bBandsPeriod = 20
 	startPortfolio = 1000000
 	for inst in instruments:

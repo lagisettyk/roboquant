@@ -15,7 +15,7 @@ from xiQuant_strategies import xiQuantStrategyUtil
 
 ### Initialize global...
 histStartDate = '2005-01-01'
-endDate = '2014-12-30'
+endDate = '2015-09-01'
 #logger = util.getLogger('Quandl.log')
 logger = util.Log
 
@@ -43,8 +43,8 @@ WIKI_DICT = {
 def populate_redis_moneyflow(redisConn, tickerList, startdate, enddate):
 
 	for ticker in range(len(tickerList)):
-		#moneyflowList = xiQuantStrategyUtil.cashflow_timeseries_TN(tickerList[ticker], startdate, enddate)
-		moneyflowList = xiQuantStrategyUtil.cashflow_timeseries_percentChange(tickerList[ticker], startdate, enddate)
+		moneyflowList = xiQuantStrategyUtil.cashflow_timeseries_TN(tickerList[ticker], startdate, enddate)
+		#moneyflowList = xiQuantStrategyUtil.cashflow_timeseries_percentChange(tickerList[ticker], startdate, enddate)
 		print "Currently processing ticker: ", ticker
 		for k in range(len(moneyflowList)):
 			if moneyflowList[k][1] is not None:
@@ -58,10 +58,10 @@ def populate_redis_moneyflow(redisConn, tickerList, startdate, enddate):
 
 def populate_redis_moneyflow_history(tickerList):
 	redisConn = util.get_redis_conn()
-	return populate_redis_moneyflow(redisConn, tickerList, startdate=dateutil.parser.parse(histStartDate), 
-		                                                  enddate=(datetime.date.today() - datetime.timedelta(days=1)))
 	#return populate_redis_moneyflow(redisConn, tickerList, startdate=dateutil.parser.parse(histStartDate), 
-	#	                                                  enddate=dateutil.parser.parse(endDate))
+	#	                                                  enddate=(datetime.date.today() - datetime.timedelta(days=1)))
+	return populate_redis_moneyflow(redisConn, tickerList, startdate=dateutil.parser.parse(histStartDate), 
+		                                                  enddate=dateutil.parser.parse(endDate))
 
 def populate_redis_eod_today_raw(datasource, tickerList):
 

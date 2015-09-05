@@ -1,0 +1,2 @@
+Instrument,Trade-Type,Entry-Date,Entry-Price,Quantity,StopLoss-Exit-Date,StopLoss-Exit-Price,StopLoss-Exit-PorL,Profit-Exit-Date,Profit-Exit-Price,Profit-Exit-PorL,Exit-Date,Exit-Price,PorL,Actual-PorL,Current-Pos
+GILD,SHORT,2013-10-08,61.30,619,No-Exit,0.0,0.0,2013-10-08,59.30,1238.00,2013-10-10,62.75,-896.95,1238.00,[]

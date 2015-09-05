@@ -6,6 +6,7 @@ import csv
 
 from pyalgotrade import dataseries
 from pyalgotrade.talibext import indicator
+from pyalgotrade.technical import cross
 import xiquantStrategyParams as consts
 import datetime
 
@@ -105,24 +106,45 @@ def computeStopPriceDelta(closePrice):
 
 def computeStopPrice(candleLen, bullishOrBearish, openPrice, closePrice, stopPriceDelta):
 	stopPrice = 0.0
+	compareLen = 0.0
+	candleLenAsPricePercent = float(candleLen / closePrice * 100)
+	if consts.BB_SPREAD_TRADE_DAY_STOP_LOSS_PERCENTAGE:
+		compareLen = candleLenAsPricePercent
+	else:
+		compareLen = candleLen
 	if bullishOrBearish.lower() == "bullish":
-		if candleLen <= consts.BB_SPREAD_TRADE_DAY_STOP_LOSS_DELTA_1:
+		if compareLen <= consts.BB_SPREAD_TRADE_DAY_STOP_LOSS_DELTA_1:
 			stopPrice = openPrice - stopPriceDelta
-		if candleLen > consts.BB_SPREAD_TRADE_DAY_STOP_LOSS_DELTA_1 and candleLen <= consts.BB_SPREAD_TRADE_DAY_STOP_LOSS_DELTA_2:
+		if compareLen > consts.BB_SPREAD_TRADE_DAY_STOP_LOSS_DELTA_1 and candleLen <= consts.BB_SPREAD_TRADE_DAY_STOP_LOSS_DELTA_2:
 			stopPrice = openPrice + candleLen / 3
-		if candleLen > consts.BB_SPREAD_TRADE_DAY_STOP_LOSS_DELTA_2 and candleLen <= consts.BB_SPREAD_TRADE_DAY_STOP_LOSS_DELTA_3:
+			if not consts.BB_SPREAD_TRADE_DAY_STOP_LOSS_PERCENTAGE and stopPrice < consts.BB_SPREAD_TRADE_DAY_STOP_LOSS_DELTA_1:
+				stopPrice = consts.BB_SPREAD_TRADE_DAY_STOP_LOSS_DELTA_1
+		if compareLen > consts.BB_SPREAD_TRADE_DAY_STOP_LOSS_DELTA_2:
 			stopPrice = openPrice + candleLen / 2
-		if candleLen > consts.BB_SPREAD_TRADE_DAY_STOP_LOSS_DELTA_3:
-			#stopPrice = openPrice + (candleLen * 2) / 3
-			stopPrice = openPrice + candleLen / 2
+			if not consts.BB_SPREAD_TRADE_DAY_STOP_LOSS_PERCENTAGE and stopPrice < consts.BB_SPREAD_TRADE_DAY_STOP_LOSS_DELTA_1:
+				stopPrice = consts.BB_SPREAD_TRADE_DAY_STOP_LOSS_DELTA_1
 	elif bullishOrBearish.lower() == "bearish":
-		if candleLen <= consts.BB_SPREAD_TRADE_DAY_STOP_LOSS_DELTA_1:
+		if compareLen <= consts.BB_SPREAD_TRADE_DAY_STOP_LOSS_DELTA_1:
 			stopPrice = openPrice + stopPriceDelta
-		if candleLen > consts.BB_SPREAD_TRADE_DAY_STOP_LOSS_DELTA_1 and candleLen <= consts.BB_SPREAD_TRADE_DAY_STOP_LOSS_DELTA_2:
+		if compareLen > consts.BB_SPREAD_TRADE_DAY_STOP_LOSS_DELTA_1 and candleLen <= consts.BB_SPREAD_TRADE_DAY_STOP_LOSS_DELTA_2:
 			stopPrice = openPrice - candleLen / 3
-		if candleLen > consts.BB_SPREAD_TRADE_DAY_STOP_LOSS_DELTA_2 and candleLen <= consts.BB_SPREAD_TRADE_DAY_STOP_LOSS_DELTA_3:
+			if not consts.BB_SPREAD_TRADE_DAY_STOP_LOSS_PERCENTAGE and stopPrice < consts.BB_SPREAD_TRADE_DAY_STOP_LOSS_DELTA_1:
+				stopPrice = consts.BB_SPREAD_TRADE_DAY_STOP_LOSS_DELTA_1
+		if compareLen > consts.BB_SPREAD_TRADE_DAY_STOP_LOSS_DELTA_2:
 			stopPrice = openPrice - candleLen / 2
-		if candleLen > consts.BB_SPREAD_TRADE_DAY_STOP_LOSS_DELTA_3:
-			#stopPrice = openPrice - (candleLen * 2) / 3
-			stopPrice = openPrice - candleLen / 2
+			if not consts.BB_SPREAD_TRADE_DAY_STOP_LOSS_PERCENTAGE and stopPrice < consts.BB_SPREAD_TRADE_DAY_STOP_LOSS_DELTA_1:
+				stopPrice = consts.BB_SPREAD_TRADE_DAY_STOP_LOSS_DELTA_1
 	return stopPrice
+
+def totalCrossovers(thatCrossesDS, beingCrossedDS, startRange=-2, endRange=None):
+	noOfCrossAbove = cross.cross_above(thatCrossesDS, beingCrossedDS, startRange, endRange)
+	noOfCrossBelow = cross.cross_below(thatCrossesDS, beingCrossedDS, startRange, endRange)
+	return noOfCrossAbove + noOfCrossBelow
+
+def totalCrossAbove(thatCrossesDS, beingCrossedDS, startRange=-2, endRange=None):
+	noOfCrossAbove = cross.cross_above(thatCrossesDS, beingCrossedDS, startRange, endRange)
+	return noOfCrossAbove 
+
+def totalCrossBelow(thatCrossesDS, beingCrossedDS, startRange=-2, endRange=None):
+	noOfCrossBelow = cross.cross_below(thatCrossesDS, beingCrossedDS, startRange, endRange)
+	return noOfCrossBelow

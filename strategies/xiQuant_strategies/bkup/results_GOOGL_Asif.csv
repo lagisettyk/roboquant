@@ -1,5 +1,0 @@
-Instrument,Trade-Type,Entry-Date,Entry-Price,Quantity,StopLoss-Exit-Date,StopLoss-Exit-Price,StopLoss-Exit-PorL,Profit-Exit-Date,Profit-Exit-Price,Profit-Exit-PorL,Exit-Date,Exit-Price,PorL,Actual-PorL,Current-Pos
-GOOGL,LONG,2010-04-14,295.03,322,No-Exit,0,0,2010-04-14,296.03,322,2010-04-16,281.5,-4356.66,322,[]
-GOOGL,LONG,2011-07-06,267.06,329,No-Exit,0,0,2011-07-06,268.06,329,2011-07-08,264.44,-863.63,329,[]
-GOOGL,SHORT,2011-05-17,257.71,352,2011-05-17,261.18,-1220.56,No-Exit,0,0,2011-05-19,266.37,-3044.8,-1220.56,[]
-GOOGL,SHORT,2014-10-08,573.9,151,2014-10-08,579.5,-845.6,2014-10-08,571.9,-302,2014-10-16,527,7081.9,-845.6,[]

@@ -99,20 +99,31 @@ def computeIndicators(request):
 		ticker = request.GET['Ticker']
 		stdate = request.GET['stdate']
 		enddate = request.GET['enddate']
+		indicator = request.GET['indicator']
 
 	start_date = dateutil.parser.parse(stdate)
 	end_date = dateutil.parser.parse(enddate)
-	upper, middle, lower, adjOHLCSeries, upper_1_9, middle_1_9, lower_1_9 = xiQuantStrategyUtil.compute_BBands(ticker, start_date, end_date)
+	if indicator == 'BBands':
+		upper, middle, lower, adjOHLCSeries = xiQuantStrategyUtil.compute_BBands(ticker, start_date, end_date)
+		results = {
+			"upper": upper,
+			"middle": middle,
+			"lower": lower,
+			"price": adjOHLCSeries
+			}
+	elif indicator == 'SMA-20':
+		sma_20, adjOHLCSeries = xiQuantStrategyUtil.compute_SMA(ticker, start_date, end_date)
+		results = {
+			"sma_20": sma_20,
+			"price": adjOHLCSeries
+			}
+	elif indicator == 'EMA-10':
+		ema_10, adjOHLCSeries = xiQuantStrategyUtil.compute_EMA(ticker, start_date, end_date)
+		results = {
+			"ema_10": ema_10,
+			"price": adjOHLCSeries
+			}
 
-	results = {
-		"upper": upper,
-		"middle": middle,
-		"lower": lower,
-		"price": adjOHLCSeries,
-		"upper_1_9": upper_1_9,
-		"middle_1_9": middle_1_9,
-		"lower_1_9": lower_1_9
-		}
 
 	### This is important to note json.dumps() convert python data structure to JSON form
 	return HttpResponse(json.dumps(results), content_type='application/json')
@@ -159,6 +170,7 @@ def backtest(request):
 		if job.get_status() == 'failed' or job.get_status()=='finished':
 			sleep = False
 
+	'''
 	results = {
 		"seriesData":job.result.getPortfolioResult(),
 		"flagData": job.result.getTradeDetails(),
@@ -167,7 +179,6 @@ def backtest(request):
 		"lower": job.result.getSeries("lower"),
 		"price": job.result.getAdjCloseSeries(ticker+"_adjusted")
 		}
-
 	'''
 	results = {
 		"seriesData":job.result.getPortfolioResult(),
@@ -175,20 +186,19 @@ def backtest(request):
 		"upper": job.result.getSeries("upper"), 
 		"middle": job.result.getSeries("middle"),
 		"lower": job.result.getSeries("lower"),
-		"price": job.result.getAdjCloseSeries(ticker),
-		"volume": job.result.getAdjVolSeries(ticker),
-		"macd": job.result.getMACD(),
-		"adx": job.result.getADX(),
-		"dmiplus": job.result.getDMIPlus(),
-		"dmiminus": job.result.getDMIMinus(),
-		"rsi": job.result.getSeries("RSI"),
-		"emafast": job.result.getSeries("EMA Fast"),
-		"emaslow": job.result.getSeries("EMA Slow"),
-		"emasignal": job.result.getSeries("EMA Signal"),
-		"cashflow_3days": xiQuantStrategyUtil.redis_build_moneyflow(ticker, start_date, end_date),
+		"price": job.result.getAdjCloseSeries(ticker+"_adjusted"),
+		"volume": job.result.getAdjVolSeries(ticker+"_adjusted"),
+		#"macd": job.result.getMACD(),
+		#"adx": job.result.getADX(),
+		#"dmiplus": job.result.getDMIPlus(),
+		#"dmiminus": job.result.getDMIMinus(),
+		#"rsi": job.result.getSeries("RSI"),
+		#"emafast": job.result.getSeries("EMA Fast"),
+		#"emaslow": job.result.getSeries("EMA Slow"),
+		#"emasignal": job.result.getSeries("EMA Signal"),
+		"cashflow_3days": xiQuantStrategyUtil.cashflow_timeseries_TN(ticker, start_date, end_date),
 		"volsma5days": xiQuantStrategyUtil.redis_build_volume_sma_ndays(ticker, 5, start_date, end_date) ### 5days...
 		}
-	'''
 	
     ### This is important to note json.dumps() convert python data structure to JSON form
 	return HttpResponse(json.dumps(results), content_type='application/json')

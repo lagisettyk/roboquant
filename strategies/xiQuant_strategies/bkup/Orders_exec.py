@@ -7,6 +7,7 @@ from pyalgotrade.tools import yahoofinance
 from pyalgotrade.barfeed import yahoofeed
 from pyalgotrade.barfeed import csvfeed
 from pyalgotrade import strategy
+from pyalgotrade.technical import ma
 from pyalgotrade.utils import stats
 from pyalgotrade.stratanalyzer import returns
 from pyalgotrade.stratanalyzer import sharpe
@@ -79,11 +80,16 @@ class MyStrategy(strategy.BacktestingStrategy):
 	def __init__(self, feed, cash, ordersFile, useAdjustedClose):
 		strategy.BacktestingStrategy.__init__(self, feed, cash)
 		self.__feed = feed
+		self.__SPYFeed = feed["SPY"]
+		self.__spyDS = self.__SPYFeed.getCloseDataSeries()
+		self.__spyOpenDS = self.__SPYFeed.getOpenDataSeries()
+		self.__smaSPYShort1 = ma.SMA(self.__spyDS, consts.SMA_SHORT_1)
 		self.__ordersFile = ordersFile
 		self.__longPos = {}
 		self.__shortPos = {}
 		self.__results = {}
 		self.__intraDayExits = {}
+		self.__spyNullified = {}
 		self.__stopLossExitPOrL = {}
 		self.__stopLossExitDate = {}
 		self.__stopLossExitPrice = {}
@@ -96,6 +102,7 @@ class MyStrategy(strategy.BacktestingStrategy):
 		self.__cashKeptAsideForShortLoss = 0.0
 		self.__adjRatio = {}
 		self.getBroker().setCommission(backtesting.NoCommission())
+		self.__SPYExceptions = consts.SPY_EXCEPTIONS
 
 	def onStart(self):
 		self.__resultsFile = open(consts.RESULTS_FILE, 'w')
@@ -135,6 +142,21 @@ class MyStrategy(strategy.BacktestingStrategy):
 			self.info("Total cash for short adjustments: %.2f" % self.__cashKeptAsideForShortLoss)
 		else:
 			action = "ERROR"
+
+		# Check if SPY opened higher/lower on T than T-1's 20 SMA value for
+		# bullinsh/bearish trades, otherwise nullify the trade.
+		if consts.SIMULATE_SPY_TRADE_NULLIFICATION:
+			self.__spyNullified[instrument] = False
+			if not instrument in self.__SPYExceptions:
+				if action.lower() == "long":
+					if self.__spyOpenDS[-1] < self.__smaSPYShort1[-2]:
+						action = consts.SPY_BASED_LONG_TRADE_NULLIFICATION
+						self.__spyNullified[instrument] = True
+				elif action.lower() == "short":
+					if self.__spyOpenDS[-1] > self.__smaSPYShort1[-2]:
+						action = consts.SPY_BASED_SHORT_TRADE_NULLIFICATION
+						self.__spyNullified[instrument] = True
+
 		self.__results[instrument] = instrument + ',' + action + ',' + str(execTime.date()) + ',' + buyPrice + ',' + quantity + ','
 		self.info("Entered %s for %s, %s shares at %s" % (action, instrument, quantity, buyPrice))
 		self.__intraDayExits[instrument] = False
@@ -202,6 +224,11 @@ class MyStrategy(strategy.BacktestingStrategy):
 		if float(stopLossPOrL) != 0:
 			realPorL = stopLossPOrL
 
+		# Check if the trade was nullifed due to SPY value check.
+		if consts.SIMULATE_SPY_TRADE_NULLIFICATION:
+			if self.__spyNullified[instrument]:
+				realPorL = "0.0"
+
 		exitStr = stopLossExitDate + ',' + stopLossExitPrice + ',' + stopLossPOrL + ',' + profitExitDate + ',' + profitExitPrice + ',' + profitPOrL + ',' + exitDate + ',' + sellPrice + ',' + profitOrLoss + ',' + realPorL + ',' + str(listOfCurrInstrs) + '\n'
 		self.info("Exited %s for %s, %s shares at %s" % (action, instrument, quantity, sellPrice))
 		if self.__results[instrument] is not None:
@@ -221,6 +248,7 @@ class MyStrategy(strategy.BacktestingStrategy):
 			self.info("Total cash for short adjustments: %.2f" % self.__cashKeptAsideForShortLoss)
 
 		self.__intraDayExits[instrument] = False
+		self.__spyNullified[instrument] = False
 		self.__profitExitPOrL[instrument] = 0.0
 		self.__profitExitDate[instrument] = None
 		self.__profitExitPrice[instrument] = 0.0
@@ -372,7 +400,21 @@ class MyStrategy(strategy.BacktestingStrategy):
 				# or loss accordingly.
 				actualPorL =  0.0
 				exitPrice = 0.0
-				if not self.__longPos[instrument].entryActive() and not self.__intraDayExits[instrument]:
+				# The check for __intraDayExits being none is important due to
+				# the following reason:
+				# Since we added the intraday profit exit, we are now 
+				# processing the stop-loss orders as well -- which we were 
+				# not processing earlier. So, if a Buy/Sell order is filtered 
+				# out but the corresponding stop-loss orders aren't, while 
+				# trying to process the stop-loss order looking back from a 
+				# Buy/Sell order the __longPos[instrument]/
+				# __shortPos[instrument] will not be none (as it was 
+				# initialized by the next Buy/Sell order that didn't get 
+				# filtered out) but the __intraDayExits[instrument] will be 
+				# none as it was never instantiated in onEnterOk (since the 
+				# next unfiltered Buy/Sell is not yet executed). 
+				# A very unique case :^)
+				if not self.__longPos[instrument].entryActive() and self.__intraDayExits.get(instrument, None) != None and not self.__intraDayExits[instrument]:
 					self.__lowDS = self.__feed[instrument].getLowDataSeries()
 					self.__highDS = self.__feed[instrument].getHighDataSeries()
 					self.__openDS = self.__feed[instrument].getOpenDataSeries()
@@ -417,7 +459,21 @@ class MyStrategy(strategy.BacktestingStrategy):
 				# or loss accordingly.
 				actualPorL =  0.0
 				exitPrice = 0.0
-				if not self.__shortPos[instrument].entryActive() and not self.__intraDayExits[instrument]:
+				# The check for __intraDayExits being none is important due to
+				# the following reason:
+				# Since we added the intraday profit exit, we are now 
+				# processing the stop-loss orders as well -- which we were 
+				# not processing earlier. So, if a Buy/Sell order is filtered 
+				# out but the corresponding stop-loss orders aren't, while 
+				# trying to process the stop-loss order looking back from a 
+				# Buy/Sell order the __longPos[instrument]/
+				# __shortPos[instrument] will not be none (as it was 
+				# initialized by the next Buy/Sell order that didn't get 
+				# filtered out) but the __intraDayExits[instrument] will be 
+				# none as it was never instantiated in onEnterOk (since the 
+				# next unfiltered Buy/Sell is not yet executed). 
+				# A very unique case :^)
+				if not self.__shortPos[instrument].entryActive() and self.__intraDayExits.get(instrument, None) != None and not self.__intraDayExits[instrument]:
 					self.__lowDS = self.__feed[instrument].getLowDataSeries()
 					self.__highDS = self.__feed[instrument].getHighDataSeries()
 					self.__openDS = self.__feed[instrument].getOpenDataSeries()
@@ -448,7 +504,7 @@ class MyStrategy(strategy.BacktestingStrategy):
 						self.info("exitPrice is lockProfitPrice")
 					if exitPrice != 0:
 						self.info("exitPrice: %0.2f" % exitPrice)
-						actualPorL =  (execInfo.getPrice() - exitPrice) * -1 * execInfo.getQuantity()
+						actualPorL =  (exitPrice - execInfo.getPrice()) * -1 * execInfo.getQuantity()
 						self.info("Actual P or L for short %s %d shares is %0.2f" % (instrument, execInfo.getQuantity(), actualPorL))
 						self.__intraDayExits[instrument] = True
 						self.__profitExitPOrL[instrument] = actualPorL
@@ -475,7 +531,7 @@ class MyStrategy(strategy.BacktestingStrategy):
 			if self.__longPos.get(instrument, None) and self.__longPos[instrument]:
 				actualPorL =  0.0
 				exitPrice = 0.0
-				if not self.__longPos[instrument].entryActive() and not self.__intraDayExits[instrument]:
+				if not self.__longPos[instrument].entryActive() and self.__intraDayExits.get(instrument, None) != None and not self.__intraDayExits[instrument]:
 					self.__lowDS = self.__feed[instrument].getLowDataSeries()
 					self.__highDS = self.__feed[instrument].getHighDataSeries()
 					self.__openDS = self.__feed[instrument].getOpenDataSeries()
@@ -516,7 +572,7 @@ class MyStrategy(strategy.BacktestingStrategy):
 			if self.__shortPos.get(instrument, None) and self.__shortPos[instrument]:
 				actualPorL =  0.0
 				exitPrice = 0.0
-				if not self.__shortPos[instrument].entryActive() and not self.__intraDayExits[instrument]:
+				if not self.__shortPos[instrument].entryActive() and self.__intraDayExits.get(instrument, None) != None and not self.__intraDayExits[instrument]:
 					self.__lowDS = self.__feed[instrument].getLowDataSeries()
 					self.__highDS = self.__feed[instrument].getHighDataSeries()
 					self.__openDS = self.__feed[instrument].getOpenDataSeries()
@@ -547,7 +603,7 @@ class MyStrategy(strategy.BacktestingStrategy):
 						self.info("exitPrice is lockProfitPrice")
 					if exitPrice != 0:
 						self.info("exitPrice: %0.2f" % exitPrice)
-						actualPorL =  (execInfo.getPrice() - exitPrice) * -1 * execInfo.getQuantity()
+						actualPorL =  (exitPrice - execInfo.getPrice()) * -1 * execInfo.getQuantity()
 						self.info("Actual P or L for short %s %d shares is %0.2f" % (instrument, execInfo.getQuantity(), actualPorL))
 						self.__intraDayExits[instrument] = True
 						self.__profitExitPOrL[instrument] = actualPorL
@@ -583,9 +639,15 @@ def main():
 			feed = xiquantPlatform.add_feeds_EODRAW_CSV(feed, instrument, startPeriod, endPeriod)
 		k += 1
 
+	# Add the SPY bars to support the simulation of whether we should have
+	# entered certain trades or not -- based on the SPY opening higher/lower
+	# than 20 SMA value for bullish/bearish trades.
+	feed = xiquantPlatform.add_feeds_EODRAW_CSV(feed, 'SPY', startPeriod, endPeriod)
+
 	barsDictForCurrAdj = {}
 	for instrument in ordersFile.getInstruments():
 		barsDictForCurrAdj[instrument] = feed.getBarSeries(instrument)
+	barsDictForCurrAdj['SPY'] = feed.getBarSeries('SPY')
 	feedAdjustedToEndDate = xiquantPlatform.adjustBars(barsDictForCurrAdj, startPeriod, endPeriod, keyFlag=False)
 
 	cash = 100000

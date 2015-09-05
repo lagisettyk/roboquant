@@ -19,6 +19,7 @@ import calendar
 from pyalgotrade import bar
 import collections
 from pyalgotrade.bar import BasicBar, Frequency
+import xiquantStrategyParams as consts
 import math
 
 
@@ -638,66 +639,60 @@ def getEarningsCal(instrument):
 ####################### Populate momentum rank field ########################################################################
 
 ##### topNMomentum stocks ..............
-def topNMomentumTickerList(startDate, endDate, rankCutOff):
+def updateOrdersRankbyMoneyFlowPercentChange(orders, instrument):
+    from pyalgotrade.talibext import indicator
 
-    import operator
+    updatedOrders = {}
+    for key, value in orders.iteritems():
 
-    redisConn = util.get_redis_conn()
-    momentumDict = {}
-    cashFlowCountDict = {}
-    tickerList = util.getMasterTickerList()
-    dt = startDate
-    while(dt < endDate):
-        '''
-        #timestamp = xiquantFuncs.secondsSinceEpoch(dt)
-        convertedDt = datetime.datetime.fromtimestamp(timestamp)
-        #seconds = calendar.timegm(convertedDt.timetuple())
-        dtMod = convertedDt.replace(microsecond=dt.microsecond)
-        '''
-        seconds = calendar.timegm(dt.timetuple())
-        keyString = int(seconds)*1000
-        print "KeyString.............: ", keyString
-        rediskey = "cashflow:"+str(keyString)
-        for instrument in tickerList:
-            rankByTopCashFlow = redisConn.zrevrank(rediskey, instrument)
-            rankByBottomCashFlow  = redisConn.zrank(rediskey, instrument) 
-            #print "$$$$$$$$--------: ", rankByTopCashFlow, rankByBottomCashFlow
-            #### if rank <= rankCutOff add it to momentum list###########
-            if (rankByTopCashFlow is not None) and (rankByBottomCashFlow is not None):
-                if rankByTopCashFlow <= rankCutOff or rankByBottomCashFlow <= rankCutOff:
-                    if instrument not in momentumDict:
-                        rankList = {}
-                        if rankByTopCashFlow <= rankCutOff:
-                            rankList[dt] = rankByTopCashFlow
-                            momentumDict[instrument] = rankList
-                            cashFlowCountDict[instrument] = len(rankList.keys())
-                        else:
-                            rankList[dt] = rankByBottomCashFlow
-                            momentumDict[instrument] = rankList
-                            cashFlowCountDict[instrument] = len(rankList.keys())
-                    else:
-                        rankList = momentumDict[instrument]
-                        if rankByTopCashFlow <= rankCutOff:
-                            rankList[dt] = rankByTopCashFlow
-                            momentumDict[instrument] = rankList
-                            cashFlowCountDict[instrument] = len(rankList.keys())
-                        else:
-                            rankList[dt] = rankByBottomCashFlow
-                            momentumDict[instrument] = rankList
-                            cashFlowCountDict[instrument] = len(rankList.keys())
-        #### Increment date....
-        dt = dt + datetime.timedelta(days=1) #### end of while loop
+        if value[0][1] == 'Buy' or value[0][1] == 'Sell':
+           
+            dt = datetime.datetime.fromtimestamp(key) + datetime.timedelta(days=1)
+            dt0 = dt - datetime.timedelta(days=30)
 
-    cashFlowCountDict = sorted(cashFlowCountDict.items(), key=operator.itemgetter(1), reverse=True)
+            '''
+            cfData = cashflow_timeseries_TN(instrument, dt0, dt)
+            cfPercentChange = float((cfData[-1][1] - cfData[-2][1])/(cfData[-2][1])) 
+            rank = cfPercentChange * 100.0
+            '''
 
-    return momentumDict, cashFlowCountDict
+            feed = redis_build_feed_EOD_RAW(instrument, dt0, dt)
+            barsDictForCurrAdj = {}
+            barsDictForCurrAdj[instrument] = feed.getBarSeries(instrument)
+            feedLookbackEndAdj = xiquantPlatform.xiQuantAdjustBars(barsDictForCurrAdj, dt0, dt)
+            feedLookbackEndAdj.adjustBars()
+            barDS = feedLookbackEndAdj.getBarSeries(instrument + "_adjusted")
+            #mfi = indicator.MFI(barDS, len(barDS), 3)
+            print "*******************++++++++++++++++++++================:", barDS[-1].getDateTime(), barDS[-1].getClose(), barDS[-1].getVolume()
+            #mfiDSPercentChange = float((mfi[-1] - mfi[-2]) / (mfi[-2]))
+            analysisDayMoneyFlow = barDS[-1].getClose() *  barDS[-1].getVolume()
+            previousDayMoneyFlow = barDS[-2].getClose() *  barDS[-2].getVolume()
+            cfPercentChange =  ((analysisDayMoneyFlow - previousDayMoneyFlow)/(previousDayMoneyFlow)) * 100.0
 
-
+            if value[0][1] == 'Buy':
+                if cfPercentChange >= 20.0:
+                    rank = 10
+                else:
+                    rank = 10000
+            else:
+                if cfPercentChange <= -20.0:
+                    rank = 10
+                else:
+                    rank = 10000
     
+            ### update rank based on cashflow for BUY and SELL orders...
+            newval = []
+            #newval.append((value[0][0], value[0][1], value[0][2], rank))
+            newval.append((value[0][0], value[0][1], value[0][2], value[0][3], rank))
+            ########## Please note we are just appending relevant cashflow ranks and relevant filter rules will be applied 
+            ########## during portfolio simulation rules...
+            updatedOrders[key] = newval
+        else:
+            updatedOrders[key] = value
 
+    return updatedOrders
 
 def updateOrdersRank(orders, instrument):
-
     updatedOrders = {}
     for key, value in orders.iteritems():
 
@@ -837,11 +832,78 @@ def compute_BBands(instrument, startdate, enddate ):
 
 
     return upperDS, middleDS, lowerDS, adj_Close_Series
+
+def compute_SMA(instrument, startdate, enddate ):
+    from pyalgotrade.talibext import indicator
+
+    noOfPeriods = 20 #### No of periods.....
+    feed = redis_build_feed_EOD_RAW(instrument, startdate, enddate)
+    barsDictForCurrAdj = {}
+    barsDictForCurrAdj[instrument] = feed.getBarSeries(instrument)
+    feedLookbackEndAdj = xiquantPlatform.xiQuantAdjustBars(barsDictForCurrAdj, startdate, enddate)
+    feedLookbackEndAdj.adjustBars()
+    closeDS = feedLookbackEndAdj.getCloseDataSeries(instrument + "_adjusted")
+    sma_20 = indicator.SMA(closeDS, len(closeDS), noOfPeriods)
+
+    dateTimes = feedLookbackEndAdj.getDateTimes(instrument + "_adjusted")
+    smaDS = numpy_to_highchartds(dateTimes, sma_20, startdate, enddate)
+    
+    ##########Display price seriesin the center of Bolinger bands......##################
+    barDS = feedLookbackEndAdj.getBarSeries(instrument + "_adjusted")
+    adj_Close_Series = []
+    for bar in barDS:
+        dt = bar.getDateTime()
+        sec = calendar.timegm(dt.timetuple())
+        dtInMilliSeconds = int(sec * 1000)
+        adjPrice_val = [dtInMilliSeconds, bar.getOpen(), bar.getHigh(), \
+                        bar.getLow(), bar.getClose()]
+        adj_Close_Series.append(adjPrice_val)
+
+
+    return smaDS, adj_Close_Series
+
+def compute_EMA(instrument, startdate, enddate ):
+    from pyalgotrade.talibext import indicator
+
+    noOfPeriods = 10 #### No of periods.....
+    feed = redis_build_feed_EOD_RAW(instrument, startdate, enddate)
+    barsDictForCurrAdj = {}
+    barsDictForCurrAdj[instrument] = feed.getBarSeries(instrument)
+    feedLookbackEndAdj = xiquantPlatform.xiQuantAdjustBars(barsDictForCurrAdj, startdate, enddate)
+    feedLookbackEndAdj.adjustBars()
+    closeDS = feedLookbackEndAdj.getCloseDataSeries(instrument + "_adjusted")
+    ema_10 = indicator.SMA(closeDS, len(closeDS), noOfPeriods)
+
+    dateTimes = feedLookbackEndAdj.getDateTimes(instrument + "_adjusted")
+    emaDS = numpy_to_highchartds(dateTimes, ema_10, startdate, enddate)
+    
+    ##########Display price seriesin the center of Bolinger bands......##################
+    barDS = feedLookbackEndAdj.getBarSeries(instrument + "_adjusted")
+    adj_Close_Series = []
+    for bar in barDS:
+        dt = bar.getDateTime()
+        sec = calendar.timegm(dt.timetuple())
+        dtInMilliSeconds = int(sec * 1000)
+        adjPrice_val = [dtInMilliSeconds, bar.getOpen(), bar.getHigh(), \
+                        bar.getLow(), bar.getClose()]
+        adj_Close_Series.append(adjPrice_val)
+
+    return emaDS, adj_Close_Series
+
+
+def computeIndicators(instrument, indicator, startdate, enddate ):
+    if indicator == 'BBands':
+        return compute_BBands(instrument, startdate, enddate)
+    if indicator == 'SMA-20':
+        return compute_SMA(instrument,  startdate, enddate)
+    if indicator == 'EMA-10':
+        return compute_EMA(instrument,  startdate, enddate)
+    
+
     
 
 def run_strategy_redis(bBandsPeriod, instrument, startPortfolio, startdate, enddate, filterCriteria=20, indicators=True):
-
-    
+ 
     feed = redis_build_feed_EOD_RAW(instrument, startdate, enddate)
     # Add the SPY bars, which are used to determine if the market is Bullish or Bearish
     # on a particular day.
@@ -881,39 +943,23 @@ def run_strategy_redis(bBandsPeriod, instrument, startPortfolio, startdate, endd
 
         ####Populate orders from the backtest run...
         results.addOrders(strat.getOrders())
-
-        #print "Upper: ...........", strat.getUpperBollingerBands()
-       
-       
         results.addSeries("upper", strat.getUpperBollingerBands())
         results.addSeries("middle", strat.getMiddleBollingerBands())
         results.addSeries("lower", strat.getLowerBollingerBands())
-
-        #results.addSeries("middle", strat.getBollingerBands().getMiddleBand())
-        #results.addSeries("lower", strat.getBollingerBands().getLowerBand())
-        #results.addSeries("RSI", strat.getRSI())
-        #results.addSeries("EMA Fast", strat.getEMAFast())
-        #results.addSeries("EMA Slow", strat.getEMASlow())
-        #results.addSeries("EMA Signal", strat.getEMASignal())
+        results.addSeries("RSI", strat.getRSI())
+        results.addSeries("EMA Fast", strat.getEMAFast())
+        results.addSeries("EMA Slow", strat.getEMASlow())
+        results.addSeries("EMA Signal", strat.getEMASignal())
         return results
     else:
         # This is to ensue we consume less memory on the portfolio simulation case ... main thread.......
         returnsAnalyzer = Returns()
         results = StrategyResults(strat, instList, returnsAnalyzer, plotSignals=False)
         strat.run()
-
         updatedOrders = updateOrdersRank(strat.getOrders(), instrument)
 
         return updatedOrders
 
-        '''
-        if filterCriteria == 10000:
-            orders = strat.getOrders()
-        else:
-            orders = getOrdersFiltered(strat.getOrders(), instrument, filterCriteria)
- 
-        return orders
-        '''
 
 
 def run_master_strategy(initialcash, masterFile, startdate, enddate, filterAction='Both', rank=10000):
@@ -938,9 +984,15 @@ def run_master_strategy(initialcash, masterFile, startdate, enddate, filterActio
         else:
             feed = add_feeds_EOD_redis_RAW(feed, instrument, startdate, enddate)
 
+    # Add the SPY bars to support the simulation of whether we should have
+    # entered certain trades or not -- based on the SPY opening higher/lower
+    # than 20 SMA value for bullish/bearish trades.
+    feed = add_feeds_EOD_redis_RAW(feed, 'SPY', startdate, enddate)
+
     barsDictForCurrAdj = {}
     for instrument in ordersFile.getInstruments():
         barsDictForCurrAdj[instrument] = feed.getBarSeries(instrument)
+    barsDictForCurrAdj['SPY'] = feed.getBarSeries('SPY')
     feedAdjustedToEndDate = xiquantPlatform.adjustBars(barsDictForCurrAdj, startdate, enddate, keyFlag=False)
 
     cash = 100000
@@ -967,7 +1019,7 @@ def run_strategy_BBSMAXOverMTM(bBandsPeriod, instrument, startPortfolio, startda
     
 
     ###Get earnings calendar
-    calList = getEarningsCal(instrument)
+    earningsCalList = getEarningsCal(instrument)
 
     barsDictForCurrAdj = {}
     barsDictForCurrAdj[instrument] = feed.getBarSeries(instrument)
@@ -975,30 +1027,37 @@ def run_strategy_BBSMAXOverMTM(bBandsPeriod, instrument, startPortfolio, startda
     barsDictForCurrAdj['QQQ'] = feed.getBarSeries('QQQ')
     feedAdjustedToEndDate = xiquantPlatform.adjustBars(barsDictForCurrAdj, startdate, enddate)
 
-    strat = BB_SMA_xover_mtm.BBSMAXOverMTM(feedAdjustedToEndDate, feed, instrument, bBandsPeriod, calList, startPortfolio)
-
+    #strat = BB_SMA_xover_mtm.BBSMAXOverMTM(feedAdjustedToEndDate, feed, instrument, bBandsPeriod, calList, startPortfolio)
     instList = [instrument+"_adjusted", 'SPY'+"_adjusted", 'QQQ'+"_adjusted"]
 
-    if indicators:
-        # Attach a returns analyzers to the strategy.
-        returnsAnalyzer = Returns()
-        results = StrategyResults(strat, instList, returnsAnalyzer, plotSignals=True)
-        strat.run()
-
-        ####Populate orders from the backtest run...
-        results.addOrders(strat.getOrders())
-        results.addSeries("upper", strat.getUpperBollingerBands())
-        results.addSeries("middle", strat.getMiddleBollingerBands())
-        results.addSeries("lower", strat.getLowerBollingerBands())
-        return results
-    else:
-        # This is to ensue we consume less memory on the portfolio simulation case ... main thread.......
+    strat = BB_SMA_xover_mtm.BBSMACrossover(feedAdjustedToEndDate, feed, instrument, bBandsPeriod, earningsCalList, startPortfolio, consts.SMA_CROSSOVERS_LIMIT_1_LOW_RANGE, consts.SMA_CROSSOVERS_LIMIT_1_HIGH_RANGE)
+    returnsAnalyzer = Returns()
+    results = StrategyResults(strat, instList, returnsAnalyzer, plotSignals=False)
+    strat.run()
+    '''
+    if not strat.getOrders():
+        print "+++++++++++++++++++=========########################### Inside #2nd run..."
+        feedAdjustedToEndDate.reset() #### Reset back to initial state
+        strat = BB_SMA_xover_mtm.BBSMACrossover(feedAdjustedToEndDate, feed, instrument, bBandsPeriod, earningsCalList, startPortfolio, consts.SMA_CROSSOVERS_LIMIT_2_LOW_RANGE, consts.SMA_CROSSOVERS_LIMIT_2_HIGH_RANGE)
         returnsAnalyzer = Returns()
         results = StrategyResults(strat, instList, returnsAnalyzer, plotSignals=False)
         strat.run()
+        if not strat.getOrders():
+            print "+++++++++++++++++++=========########################### Inside #3rd run..."
+            feedAdjustedToEndDate.reset() #### Reset back to initial state
+            strat = BB_SMA_xover_mtm.BBSMACrossover(feedAdjustedToEndDate, feed, instrument, bBandsPeriod, earningsCalList, startPortfolio, consts.SMA_CROSSOVERS_LIMIT_3_LOW_RANGE, consts.SMA_CROSSOVERS_LIMIT_3_HIGH_RANGE)
+            returnsAnalyzer = Returns()
+            results = StrategyResults(strat, instList, returnsAnalyzer, plotSignals=False)
+            strat.run()
+    '''
 
+    if indicators:
+        ####Populate orders from the backtest run...
+        results.addOrders(strat.getOrders())
+        return results
+    else:
+        # This is to ensue we consume less memory on the portfolio simulation case ... main thread.......
         updatedOrders = updateOrdersRank(strat.getOrders(), instrument)
-
         return updatedOrders
 
 def run_strategy_EMABreachMTM(bBandsPeriod, instrument, startPortfolio, startdate, enddate, filterCriteria=20, indicators=True):
@@ -1012,7 +1071,7 @@ def run_strategy_EMABreachMTM(bBandsPeriod, instrument, startPortfolio, startdat
     
 
     ###Get earnings calendar
-    calList = getEarningsCal(instrument)
+    earningsCalList = getEarningsCal(instrument)
 
     barsDictForCurrAdj = {}
     barsDictForCurrAdj[instrument] = feed.getBarSeries(instrument)
@@ -1020,30 +1079,34 @@ def run_strategy_EMABreachMTM(bBandsPeriod, instrument, startPortfolio, startdat
     barsDictForCurrAdj['QQQ'] = feed.getBarSeries('QQQ')
     feedAdjustedToEndDate = xiquantPlatform.adjustBars(barsDictForCurrAdj, startdate, enddate)
 
-    strat = EMA_breach_mtm.EMABreachMTM(feedAdjustedToEndDate, feed, instrument, bBandsPeriod, calList, startPortfolio)
-
     instList = [instrument+"_adjusted", 'SPY'+"_adjusted", 'QQQ'+"_adjusted"]
 
-    if indicators:
-        # Attach a returns analyzers to the strategy.
-        returnsAnalyzer = Returns()
-        results = StrategyResults(strat, instList, returnsAnalyzer, plotSignals=True)
-        strat.run()
-
-        ####Populate orders from the backtest run...
-        results.addOrders(strat.getOrders())
-        results.addSeries("upper", strat.getUpperBollingerBands())
-        results.addSeries("middle", strat.getMiddleBollingerBands())
-        results.addSeries("lower", strat.getLowerBollingerBands())
-        return results
-    else:
-        # This is to ensue we consume less memory on the portfolio simulation case ... main thread.......
+    strat = EMA_breach_mtm.EMA10Crossover(feedAdjustedToEndDate, feed, instrument, bBandsPeriod, earningsCalList, startPortfolio, consts.EMA_10_CROSSOVERS_LIMIT_1_LOW_RANGE, consts.EMA_10_CROSSOVERS_LIMIT_1_LOW_RANGE)
+    returnsAnalyzer = Returns()
+    results = StrategyResults(strat, instList, returnsAnalyzer, plotSignals=False)
+    strat.run()
+    if not strat.getOrders():
+        print "+++++++++++++++++++=========########################### Inside #2nd run..."
+        feedAdjustedToEndDate.reset() #### Reset back to initial state
+        strat = EMA_breach_mtm.EMA10Crossover(feedAdjustedToEndDate, feed, instrument, bBandsPeriod, earningsCalList, startPortfolio, consts.EMA_10_CROSSOVERS_LIMIT_2_LOW_RANGE, consts.EMA_10_CROSSOVERS_LIMIT_2_LOW_RANGE)
         returnsAnalyzer = Returns()
         results = StrategyResults(strat, instList, returnsAnalyzer, plotSignals=False)
         strat.run()
+        if not strat.getOrders():
+            print "+++++++++++++++++++=========########################### Inside #3rd run..."
+            feedAdjustedToEndDate.reset() #### Reset back to initial state
+            strat = EMA_breach_mtm.EMA10Crossover(feedAdjustedToEndDate, feed, instrument, bBandsPeriod, earningsCalList, startPortfolio, consts.EMA_10_CROSSOVERS_LIMIT_3_LOW_RANGE, consts.EMA_10_CROSSOVERS_LIMIT_3_LOW_RANGE)
+            returnsAnalyzer = Returns()
+            results = StrategyResults(strat, instList, returnsAnalyzer, plotSignals=False)
+            strat.run()
 
+    if indicators:
+        ####Populate orders from the backtest run...
+        results.addOrders(strat.getOrders())
+        return results
+    else:
+        # This is to ensue we consume less memory on the portfolio simulation case ... main thread.......
         updatedOrders = updateOrdersRank(strat.getOrders(), instrument)
-
         return updatedOrders
 
 ####=========================================================================================================################

@@ -292,7 +292,8 @@ $(document).ready( function() {
     console.log("inside dLabel")
     $('#showList').empty()
     $('#showList').html('<li><a href="#" id="indicator-1">BBands</a>'
-                         +'</li><li><a href="#" id="indicator-1">RSI</a></li>'
+                         +'</li><li><a href="#" id="indicator-1">SMA-20</a></li>'
+                         +'</li><li><a href="#" id="indicator-1">EMA-10</a></li>'
                         );
   });
 
@@ -312,15 +313,33 @@ $(document).ready( function() {
               }, 
               success: function (data) {
                 console.log("Inside Success")
-                bbseries = []
-                bbseries[0] = {name: "price", data: data.price};
-                bbseries[1] = {name: "upper", data: data.upper};
-                bbseries[2] = {name: "middle", data: data.middle};
-                bbseries[3] = {name: "lower", data: data.lower};
-                bbseries[4] = {name: "upper_1_9", data: data.upper_1_9};
-                bbseries[5] = {name: "middle_1_9", data: data.middle_1_9};
-                bbseries[6] = {name: "lower_1_9", data: data.lower_1_9};
-                displayIndicatorData(bbseries,stkticker)
+                if (indicator == "BBands")
+                {
+                  bbseries = []
+                  bbseries[0] = {name: "price", data: data.price};
+                  bbseries[1] = {name: "upper", data: data.upper};
+                  bbseries[2] = {name: "middle", data: data.middle};
+                  bbseries[3] = {name: "lower", data: data.lower};
+                  bbseries[4] = {name: "upper_1_9", data: data.upper_1_9};
+                  bbseries[5] = {name: "middle_1_9", data: data.middle_1_9};
+                  bbseries[6] = {name: "lower_1_9", data: data.lower_1_9};
+                  displayIndicatorData(bbseries,stkticker);
+                }
+                if (indicator == "SMA-20")
+                {
+                  smaseries = []
+                  smaseries[0] = {name: "price", data: data.price};
+                  smaseries[1] = {name: "sma-20", data: data.sma_20};
+                  displaySMAData(smaseries,stkticker);
+                }
+                if (indicator == "EMA-10")
+                {
+                  emaseries = []
+                  emaseries[0] = {name: "price", data: data.price};
+                  emaseries[1] = {name: "ema-10", data: data.ema_10};
+                  displayEMA10Data(emaseries,stkticker);
+                }
+
               },
               // Code to run if the request fails; the raw request and
       // status codes are passed to the function
@@ -339,6 +358,109 @@ $(document).ready( function() {
         });
   });
 
+
+function displaySMAData (dataList, ticker) {
+      var chartIndicator = new Highcharts.StockChart({
+             chart: {
+                        renderTo: $('#container')[0]
+              },
+             legend: {
+                    enabled: true,
+                    align: 'right',
+                    backgroundColor: '#FCFFC5',
+                    borderColor: 'black',
+                    borderWidth: 2,
+                    layout: 'vertical',
+                    verticalAlign: 'top',
+                    y: 100,
+                    shadow: true
+              },
+              rangeSelector : {
+                  selected : 0
+              },
+
+              title : {
+                  text : ticker + ": SMA-20",
+                  floating: true,
+                  align: 'left',
+                  x: 75,
+                  y: 70
+              },
+              //series: data,
+              series : [{
+                type: 'candlestick',
+                color: '#000000',
+                name : dataList[0].name,
+                data : dataList[0].data,
+                turboThreshold: 0, ///Speed up and make sure it supports more points
+                tooltip: {
+                    valueDecimals: 2
+                },
+                id : 'dataseries1'
+               },{
+                color: '#CC00CC',
+                name : dataList[1].name,
+                data : dataList[1].data,
+                turboThreshold: 0, ///Speed up and make sure it supports more points
+                tooltip: {
+                    valueDecimals: 2
+                },
+                id : 'dataseries2'
+               }]
+            });
+    }
+
+
+function displayEMA10Data (dataList, ticker) {
+      var chartIndicator = new Highcharts.StockChart({
+             chart: {
+                        renderTo: $('#container')[0]
+              },
+             legend: {
+                    enabled: true,
+                    align: 'right',
+                    backgroundColor: '#FCFFC5',
+                    borderColor: 'black',
+                    borderWidth: 2,
+                    layout: 'vertical',
+                    verticalAlign: 'top',
+                    y: 100,
+                    shadow: true
+              },
+              rangeSelector : {
+                  selected : 0
+              },
+
+              title : {
+                  text : ticker + ": EMA-10",
+                  floating: true,
+                  align: 'left',
+                  x: 75,
+                  y: 70
+              },
+              //series: data,
+              series : [{
+                type: 'candlestick',
+                color: '#000000',
+                name : dataList[0].name,
+                data : dataList[0].data,
+                turboThreshold: 0, ///Speed up and make sure it supports more points
+                tooltip: {
+                    valueDecimals: 2
+                },
+                id : 'dataseries1'
+               },{
+                color: '#CC00CC',
+                name : dataList[1].name,
+                data : dataList[1].data,
+                turboThreshold: 0, ///Speed up and make sure it supports more points
+                tooltip: {
+                    valueDecimals: 2
+                },
+                id : 'dataseries2'
+               }]
+            });
+    }
 
 function displayIndicatorData (dataList, ticker) {
       var chartIndicator = new Highcharts.StockChart({
