@@ -1,0 +1,2 @@
+Instrument,Trade-Type,Entry-Date,Entry-Price,Quantity,StopLoss-Exit-Date,StopLoss-Exit-Price,StopLoss-Exit-PorL,Profit-Exit-Date,Profit-Exit-Price,Profit-Exit-PorL,Exit-Date,Exit-Price,PorL,Actual-PorL,Current-Pos
+NFLX,SHORT,2014-07-09,444.80,85,No-Exit,0.0,0.0,2014-07-09,442.80,170.00,2014-07-14,453.16,-710.22,170.00,[]

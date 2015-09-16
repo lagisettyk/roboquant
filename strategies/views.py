@@ -20,8 +20,8 @@ def display_hichart(request):
 
 def display_matplotlib(request):
 	print ">>>>> entered display_matplotlib"
-	context_dict = {'matplotlibmessage': "Simple-Matplotlib"}
-	return render(request, 'strategies/Simple-Matplotlib.html', context_dict)
+	context_dict = {'demo-handsontable': "handsontable-example"}
+	return render(request, 'strategies/demo-spreadsheet.html', context_dict)
 
 def display_backtest(request):
 	print ">>>>> entered display_backtest"
@@ -189,13 +189,13 @@ def backtest(request):
 		"price": job.result.getAdjCloseSeries(ticker+"_adjusted"),
 		"volume": job.result.getAdjVolSeries(ticker+"_adjusted"),
 		#"macd": job.result.getMACD(),
-		#"adx": job.result.getADX(),
-		#"dmiplus": job.result.getDMIPlus(),
-		#"dmiminus": job.result.getDMIMinus(),
-		#"rsi": job.result.getSeries("RSI"),
-		#"emafast": job.result.getSeries("EMA Fast"),
-		#"emaslow": job.result.getSeries("EMA Slow"),
-		#"emasignal": job.result.getSeries("EMA Signal"),
+		"adx": job.result.getADX(),
+		"dmiplus": job.result.getDMIPlus(),
+		"dmiminus": job.result.getDMIMinus(),
+		"rsi": job.result.getSeries("RSI"),
+		"emafast": job.result.getSeries("EMA Fast"),
+		"emaslow": job.result.getSeries("EMA Slow"),
+		"emasignal": job.result.getSeries("EMA Signal"),
 		"cashflow_3days": xiQuantStrategyUtil.cashflow_timeseries_TN(ticker, start_date, end_date),
 		"volsma5days": xiQuantStrategyUtil.redis_build_volume_sma_ndays(ticker, 5, start_date, end_date) ### 5days...
 		}

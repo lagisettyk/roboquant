@@ -215,5 +215,71 @@
 											"DMI_Plus_Less_Than_DMI_Minus"
 										]
 								}
+						},
+"EMA_Trend_Call": {"EMA": {
+											"AND": [
+													"Bounce"
+												]
+										},
+					"xWick_Rel_To_Candle": "Cutoff_Check",
+					"xCandle_Len_Check": "Against_Average_Length",
+					"xPrice_Jump": "Price_Jump_Check",
+					"xVolume": "Volume_Check",
+					"xCash_Flow": "Cash_Flow_Check",
+					"xResistance_Or_Support": "Resistance_Check",
+					"xAverages": {
+								"AND": [
+										"Price_Check",
+										"Wick_Top_Check"
+								]
+						},
+					"xRSI": {
+							"AND": [
+									"Greater_Than_Oversold",
+									"Pointing_Up"
+								]
+						},
+					"xMACD": "No_Divergence",
+					"xADX_And_DMI": {
+									"AND": [
+											"DMI_Plus_Higher",
+											"DMI_Minus_Lower",
+											"ADX_Greater_Than_DMI_Minus",
+											"DMI_Plus_Greater_Than_DMI_Minus"
+										]
+								}
+						},
+"EMA_Trend_Put": {"EMA": {
+											"AND": [
+													"Bounce"
+												]
+										},
+					"xWick_Rel_To_Candle": "Cutoff_Check",
+					"xCandle_Len_Check": "Against_Average_Length",
+					"xPrice_Jump": "Price_Jump_Check",
+					"xVolume": "Volume_Check",
+					"xCash_Flow": "Cash_Flow_Check",
+					"xResistance_Or_Support": "Resistance_Check",
+					"xAverages": {
+								"AND": [
+										"Price_Check",
+										"Wick_Top_Check"
+								]
+						},
+					"xRSI": {
+							"AND": [
+									"Greater_Than_Oversold",
+									"Pointing_Up"
+								]
+						},
+					"xMACD": "No_Divergence",
+					"xADX_And_DMI": {
+									"AND": [
+											"DMI_Plus_Higher",
+											"DMI_Minus_Lower",
+											"ADX_Less_Than_DMI_Minus",
+											"DMI_Plus_Less_Than_DMI_Minus"
+										]
+								}
 						}
 				}

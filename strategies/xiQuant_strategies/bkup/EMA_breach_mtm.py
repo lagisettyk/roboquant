@@ -31,8 +31,8 @@ import os
 
 #import dateutil.parser
 
-class EMABreachMTM(strategy.BacktestingStrategy):
-	def __init__(self, feedAnalysis, feedRaw, instrument, bBandsPeriod, earningsCal, startPortfolio):
+class EMACrossover(strategy.BacktestingStrategy):
+	def __init__(self, feedAnalysis, feedRaw, instrument, bBandsPeriod, earningsCal, startPortfolio, crossoverRangeLow, crossoverRangeHigh):
 		self.__feed = feedAnalysis
 		strategy.BacktestingStrategy.__init__(self, self.__feed, startPortfolio)
 
@@ -43,6 +43,8 @@ class EMABreachMTM(strategy.BacktestingStrategy):
 		self.__barsDict = barsDict
 
 		self.__feedLookbackAdjusted = feedRaw
+		self.__crossoverLowRange = crossoverRangeLow
+		self.__crossoverHighRange = crossoverRangeHigh
 		self.__bullishOrBearish = 0
 		self.__longPos = None
 		self.__shortPos = None
@@ -84,6 +86,9 @@ class EMABreachMTM(strategy.BacktestingStrategy):
 		self.__adjEntryPrice = 0.0
 		self.__entryDayAdjStopPrice = 0.0
 		self.__progressStopLosses = False
+		self.__emaDS = None
+		self.__strategyID = None
+		self.__orderID = None
 
 	def initLogging(self):
 		logger = logging.getLogger("xiQuant")
@@ -185,6 +190,7 @@ class EMABreachMTM(strategy.BacktestingStrategy):
 			row.append(value[0][2])
 			row.append(value[0][3])
 			row.append(value[0][4])
+			row.append(value[0][5])
 			dataRows.append(row)
 
 		# This is for ordering orders by timestamp and rank....
@@ -202,16 +208,23 @@ class EMABreachMTM(strategy.BacktestingStrategy):
 		execInfo = position.getEntryOrder().getExecutionInfo()
 		t = self.__priceDS.getDateTimes()[-1]
 		tInSecs = xiquantFuncs.secondsSinceEpoch(t)
+		 # Set the orderID. The order ID is added to support overlapping orders, from
+		# the same or different strategies, for the same instrument.
+		self.__orderID = str(self.__strategyID) + '_' + str(tInSecs)
 		if self.__longPos == position:
 			self.__logger.info("%s: BOUGHT %d at $%.2f" % (execInfo.getDateTime(), execInfo.getQuantity(), execInfo.getPrice()))
 			existingOrdersForTime = self.__orders.setdefault(self.__entryOrderTime, [])
-			existingOrdersForTime.append(self.__entryOrderTuple)
+			# The orderID in the entryOrderTuple is None and hence should be set.
+			entryOrderTupleWithOrderID = (self.__entryOrderTuple[0], self.__entryOrderTuple[1], self.__entryOrderTuple[2], self.__orderID, self.__entryOrderTuple[4], self.__entryOrderTuple[5])
+			existingOrdersForTime.append(entryOrderTupleWithOrderID)
 			self.__orders[self.__entryOrderTime] = existingOrdersForTime
 			self.__logger.info("Portfolio cash after BUY: $%.2f" % self.getBroker().getCash(includeShort=False))
 		elif self.__shortPos == position:
 			self.__logger.info("%s: SOLD %d at $%.2f" % (execInfo.getDateTime(), execInfo.getQuantity(), execInfo.getPrice()))
 			existingOrdersForTime = self.__orders.setdefault(self.__entryOrderTime, [])
-			existingOrdersForTime.append(self.__entryOrderTuple)
+			# The orderID in the entryOrderTuple is None and hence should be set.
+			entryOrderTupleWithOrderID = (self.__entryOrderTuple[0], self.__entryOrderTuple[1], self.__entryOrderTuple[2], self.__orderID, self.__entryOrderTuple[4], self.__entryOrderTuple[5])
+			existingOrdersForTime.append(entryOrderTupleWithOrderID)
 			self.__orders[self.__entryOrderTime] = existingOrdersForTime
 			self.__logger.info("Portfolio cash after SELL: $%.2f" % self.getBroker().getCash(includeShort=False))
 
@@ -223,7 +236,7 @@ class EMABreachMTM(strategy.BacktestingStrategy):
 			# processing phase.
 			tInSecs = xiquantFuncs.secondsSinceEpoch(t + datetime.timedelta(seconds=1))
 			existingOrdersForTime = self.__orders.setdefault(tInSecs, [])
-			existingOrdersForTime.append((self.__instrument, 'Stop-Sell', self.__entryDayAdjStopPrice, consts.DUMMY_ADJ_RATIO, consts.DUMMY_RANK))
+			existingOrdersForTime.append((self.__instrument, 'Stop-Sell', self.__entryDayAdjStopPrice, self.__orderID, consts.DUMMY_ADJ_RATIO, consts.DUMMY_RANK))
 			self.__orders[tInSecs] = existingOrdersForTime
 			self.__logger.info("%s: Stop Loss SELL order of %d %s shares set at %.2f" % (self.getCurrentDateTime(), self.__longPos.getShares(), self.__instrument, self.__entryDayStopPrice))
 		elif self.__shortPos == position: 
@@ -233,7 +246,7 @@ class EMABreachMTM(strategy.BacktestingStrategy):
 			# processing phase.
 			tInSecs = xiquantFuncs.secondsSinceEpoch(t + datetime.timedelta(seconds=1))
 			existingOrdersForTime = self.__orders.setdefault(tInSecs, [])
-			existingOrdersForTime.append((self.__instrument, 'Stop-Buy', self.__entryDayAdjStopPrice, consts.DUMMY_ADJ_RATIO, consts.DUMMY_RANK))
+			existingOrdersForTime.append((self.__instrument, 'Stop-Buy', self.__entryDayAdjStopPrice, self.__orderID, consts.DUMMY_ADJ_RATIO, consts.DUMMY_RANK))
 			self.__orders[tInSecs] = existingOrdersForTime
 			self.__logger.info("%s: Stop Loss BUY order of %d %s shares set at %.2f" % (self.getCurrentDateTime(), self.__shortPos.getShares(), self.__instrument, self.__entryDayStopPrice))
 
@@ -256,6 +269,9 @@ class EMABreachMTM(strategy.BacktestingStrategy):
 		execInfo = position.getExitOrder().getExecutionInfo()
 		t = self.__priceDS.getDateTimes()[-1]
 		tInSecs = xiquantFuncs.secondsSinceEpoch(t)
+
+		# Reset the orderID in preparation of the next order.
+		self.__orderID = None
 		self.__progressStopLosses = False
 		if self.__longPos == position: 
 			self.__logger.info("%s: SOLD CLOSE %d at $%.2f" % (execInfo.getDateTime(), execInfo.getQuantity(), execInfo.getPrice()))
@@ -277,15 +293,6 @@ class EMABreachMTM(strategy.BacktestingStrategy):
 
 	def getBollingerBands(self):
 		return self.__bbands
-
-	def getUpperBollingerBands(self):
-		return self.__upperBBDataSeries 
-
-	def getMiddleBollingerBands(self):
-		return self.__middleBBDataSeries
-
-	def getLowerBollingerBands(self):
-		return self.__lowerBBDataSeries
 
 	def getSPYBollingerBands(self):
 		return self.__spyBBands
@@ -391,6 +398,17 @@ class EMABreachMTM(strategy.BacktestingStrategy):
 		self.__stdDevUpper = indicator.STDDEV(self.__upperBBDataSeries, len(self.__upperBBDataSeries), consts.SMA_TINY)
 		#print "Std Dev Upper: ", self.__stdDevUpper
 
+		# Set the EMA dataseries based on the type specified.
+		if consts.EMA_TYPE == consts.EMA_SHORT_1:
+			self.__emaDS = self.__emaShort1
+			self.__strategyID = consts.EMA_10_CROSSOVER_MTM_ID
+		elif consts.EMA_TYPE == consts.EMA_SHORT_2:
+			self.__emaDS = self.__emaShort2
+			self.__strategyID = consts.EMA_20_CROSSOVER_MTM_ID
+		elif consts.EMA_TYPE == consts.EMA_SHORT_3:
+			self.__emaDS = self.__emaShort3
+			self.__strategyID = consts.EMA_50_CROSSOVER_MTM_ID
+
 		self.__logger.debug("=====================================================================")
 		# Cancel any existing entry orders from yesterday.
 		# We do this because the broker gets the daily bar first so the broker can execute
@@ -464,7 +482,7 @@ class EMABreachMTM(strategy.BacktestingStrategy):
 			t = bar.getDateTime()
 			tInSecs = xiquantFuncs.secondsSinceEpoch(t)
 			existingOrdersForTime = self.__orders.setdefault(tInSecs, [])
-			existingOrdersForTime.append((self.__instrument, 'Sell-Market', consts.DUMMY_MARKET_PRICE, consts.DUMMY_ADJ_RATIO, consts.DUMMY_RANK))
+			existingOrdersForTime.append((self.__instrument, 'Sell-Market', consts.DUMMY_MARKET_PRICE, self.__orderID, consts.DUMMY_ADJ_RATIO, consts.DUMMY_RANK))
 			self.__orders[tInSecs] = existingOrdersForTime
 			self.__logger.info("Exiting a LONG position")
 			self.__logger.info("Portfolio Cash: $%.2f" % self.getBroker().getCash(includeShort=False))
@@ -475,7 +493,7 @@ class EMABreachMTM(strategy.BacktestingStrategy):
 			t = bar.getDateTime()
 			tInSecs = xiquantFuncs.secondsSinceEpoch(t)
 			existingOrdersForTime = self.__orders.setdefault(tInSecs, [])
-			existingOrdersForTime.append((self.__instrument, 'Buy-Market' , consts.DUMMY_MARKET_PRICE, consts.DUMMY_ADJ_RATIO, consts.DUMMY_RANK))
+			existingOrdersForTime.append((self.__instrument, 'Buy-Market' , consts.DUMMY_MARKET_PRICE, self.__orderID, consts.DUMMY_ADJ_RATIO, consts.DUMMY_RANK))
 			self.__orders[tInSecs] = existingOrdersForTime
 			self.__logger.debug("Exiting a SHORT position")
 			self.__logger.debug("Portfolio Cash: $%.2f" % self.getBroker().getCash(includeShort=False))
@@ -504,7 +522,8 @@ class EMABreachMTM(strategy.BacktestingStrategy):
 				# Set the entry price based on the relative wick length
 				entryPrice = 0
 				if "OR" in self.__inpEntry["EMA_Breach_Mtm_Call"] and "Breach" in self.__inpEntry["EMA_Breach_Mtm_Call"]["OR"]:
-					entryPrice = bar.getClose() + consts.EMA_ENTRY_PRICE_DELTA
+					#entryPrice = bar.getClose() + consts.EMA_ENTRY_PRICE_DELTA
+					entryPrice = bar.getClose() + bar.getClose() * consts.EMA_ENTRY_DAY_STOP_PRICE_PERCENT
 				self.__logger.debug("%s: Entry Price: %.4f" % (bar.getDateTime(), entryPrice))
 				self.__adjRatio = self.__priceDS[-1] / bar.getAdjClose()
 				print "=================================================================:adjRatio:=============================: ", self.__adjRatio, bar.getAdjClose(), self.__priceDS[-1], lookbackEndDate
@@ -518,11 +537,8 @@ class EMABreachMTM(strategy.BacktestingStrategy):
 				t = bar.getDateTime()
 				tInSecs = xiquantFuncs.secondsSinceEpoch(t)
 				self.__entryOrderForFile = "%s,%s,Buy,%.2f\n" % (str(tInSecs), self.__instrument, self.__adjEntryPrice)
-				#existingOrdersForTime = self.__orders.setdefault(tInSecs, [])
-				#existingOrdersForTime.append((self.__instrument, 'Buy', entryPrice, consts.DUMMY_RANK))
-				#self.__orders[tInSecs] = existingOrdersForTime
 				self.__entryOrderTime = tInSecs
-				self.__entryOrderTuple = (self.__instrument, 'Buy', self.__adjEntryPrice, self.__adjRatio, consts.DUMMY_RANK)
+				self.__entryOrderTuple = (self.__instrument, 'Buy', self.__adjEntryPrice, self.__orderID, self.__adjRatio, consts.DUMMY_RANK)
 				if self.__longPos == None:
 					self.__logger.debug("For whatever reason, couldn't go LONG %d shares" % sharesToBuy)
 				else:
@@ -541,7 +557,11 @@ class EMABreachMTM(strategy.BacktestingStrategy):
 					self.__logger.debug("%s: Stop Loss Price Delta: %.2f" % (bar.getDateTime(), stopPriceDelta))
 					stopPrice = xiquantFuncs.computeStopPrice(bullishCandle, "bullish", openPrice, closePrice, stopPriceDelta)
 					# Adjust the stop price based on the last day of the backtesting period
-					stopPrice = self.__emaShort1[-1] - consts.EMA_ENTRY_PRICE_DELTA
+					if consts.EMA_STOP_PRICE_PERCENT_OR_ABS.lower() == 'percent':
+						stopPriceDelta = bar.getClose() * consts.EMA_ENTRY_DAY_STOP_PRICE_PERCENT 
+					else:
+						stopPriceDelta = consts.EMA_ENTRY_DAY_STOP_PRICE_ABS
+					stopPrice = self.__emaDS[-1] - stopPriceDelta
 					self.__entryDayStopPrice = stopPrice * self.__adjRatio
 					self.__entryDayAdjStopPrice = stopPrice * self.__adjRatio
 					self.__logger.debug("%s: Entry Day Stop Price: %.2f" % (bar.getDateTime(), self.__entryDayStopPrice))
@@ -569,7 +589,9 @@ class EMABreachMTM(strategy.BacktestingStrategy):
 				# Set the entry price based on the relative wick length
 				entryPrice = 0
 				if "OR" in self.__inpEntry["EMA_Breach_Mtm_Put"] and "Breach" in self.__inpEntry["EMA_Breach_Mtm_Put"]["OR"]:
-					entryPrice = bar.getClose() - consts.EMA_ENTRY_PRICE_DELTA
+					#entryPrice = bar.getClose() - consts.EMA_ENTRY_PRICE_DELTA
+					entryPrice = bar.getClose() - bar.getClose() * consts.EMA_ENTRY_DAY_STOP_PRICE_PERCENT 
+
 				self.__logger.debug( "%s: Entry Price: %.2f" % (bar.getDateTime(), entryPrice))
 				self.__adjRatio = self.__priceDS[-1] / bar.getAdjClose()
 				self.__logger.debug("Adj Ratio: %0.4f" % self.__adjRatio)
@@ -583,11 +605,8 @@ class EMABreachMTM(strategy.BacktestingStrategy):
 				t = bar.getDateTime()
 				tInSecs = xiquantFuncs.secondsSinceEpoch(t)
 				self.__entryOrderForFile = "%s,%s,Sell,%.2f\n" % (str(tInSecs), self.__instrument, self.__adjEntryPrice)
-				#existingOrdersForTime = self.__orders.setdefault(tInSecs, [])
-				#existingOrdersForTime.append((self.__instrument, 'Sell', entryPrice, consts.DUMMY_RANK))
-				#self.__orders[tInSecs] = existingOrdersForTime
 				self.__entryOrderTime = tInSecs
-				self.__entryOrderTuple = (self.__instrument, 'Sell', self.__adjEntryPrice, self.__adjRatio, consts.DUMMY_RANK)
+				self.__entryOrderTuple = (self.__instrument, 'Sell', self.__adjEntryPrice, self.__orderID, self.__adjRatio, consts.DUMMY_RANK)
 				if self.__shortPos == None:
 					self.__logger.debug("For whatever reason, couldn't SHORT %d shares" % sharesToBuy)
 				else:
@@ -607,7 +626,11 @@ class EMABreachMTM(strategy.BacktestingStrategy):
 					self.__logger.debug("%s: Stop Loss Price Delta: %.2f" % (bar.getDateTime(), stopPriceDelta))
 					stopPrice = xiquantFuncs.computeStopPrice(bearishCandle, "bearish", openPrice, closePrice, stopPriceDelta)
 					# Adjust the stop price based on the last day of the backtesting period
-					stopPrice = self.__emaShort1[-1] + consts.EMA_10_ENTRY_DAY_STOP_PRICE_DELTA
+					if consts.EMA_STOP_PRICE_PERCENT_OR_ABS.lower() == 'percent':
+						stopPriceDelta = bar.getClose() * consts.EMA_ENTRY_DAY_STOP_PRICE_PERCENT 
+					else:
+						stopPriceDelta = consts.EMA_ENTRY_DAY_STOP_PRICE_ABS
+					stopPrice = self.__emaDS[-1] + stopPriceDelta
 					self.__entryDayStopPrice = stopPrice * self.__adjRatio
 					self.__entryDayAdjStopPrice = stopPrice * self.__adjRatio
 					self.__logger.debug("%s: Entry Day Stop Price: %.2f" % (bar.getDateTime(), self.__entryDayStopPrice))
@@ -693,7 +716,7 @@ class EMABreachMTM(strategy.BacktestingStrategy):
 		# Check if two consecutive days of close prices are on the opposite 
 		# sides of the EMA 10 and moving up.
 		if self.__inpStrategy["EMA_Breach_Mtm_Call"]["10_EMA"]["AND"][0] == "Crossover":
-			if self.__closeDS[-1] > self.__ema1 and self.__closeDS[-2] < self.getEMASHORT1()[-2]:
+			if self.__closeDS[-1] > self.__emaDS[-1] and self.__closeDS[-2] < self.__emaDS[-2]:
 				self.__logger.debug("EMA 10 breached moving up.")
 				self.__logger.debug("Close Price: %.2f" % self.__closeDS[-1])
 				self.__logger.debug("Previous Close Price: %.2f" % self.__closeDS[-2])
@@ -705,17 +728,31 @@ class EMABreachMTM(strategy.BacktestingStrategy):
 		##### Change this code to lookback generic code
 		# Check if the crossover is the first one in the lookback
 		if self.__inpStrategy["EMA_Breach_Mtm_Call"]["10_EMA"]["AND"][1] == "First_Breach":
-			if len(self.__closeDS) < consts.EMA_10_BREACH_LOOKBACK + 1:
+			if len(self.__closeDS) < consts.EMA_BREACH_LOOKBACK + 1:
 				self.__logger.debug("Not enough entires for SMA breach lookback check.")
-				self.__logger.debug("Lookback: %d" % consts.EMA_10_BREACH_LOOKBACK)
+				self.__logger.debug("Lookback: %d" % consts.EMA_BREACH_LOOKBACK)
 				self.__logger.debug("Entries: %d" % len(self.__closeDS))
 				return False
-			if self.__closeDS[-2] < self.getEMASHORT1()[-2] and self.__closeDS[-3] > self.getEMASHORT1()[-3]:
+			if self.__closeDS[-2] < self.__emaDS[-2] and self.__closeDS[-3] > self.__emaDS[-3]:
 				self.__logger.debug("EMA 10 breached in lookback.")
 				self.__logger.debug("Previous Close Price: %.2f" % self.__closeDS[-2])
 				self.__logger.debug("Previous to previous Close Price: %.2f" % self.__closeDS[-3])
-				self.__logger.debug("EMA 10 previous: %.2f" % self.getEMASHORT1()[-2])
+				self.__logger.debug("EMA 10 previous: %.2f" % self.__emaDS[-2])
 				return False
+
+		# Check the no. of crossovers in the lookback window
+		if "Crossover_Check" in self.__inpStrategy["EMA_Breach_Mtm_Call"] and "Total" in self.__inpStrategy["EMA_Breach_Mtm_Call"]["Crossover_Check"]:
+			totalEMACrossovers = xiquantFuncs.totalCrossovers(self.__closeDS, self.__emaDS, (-1 * consts.EMA_CROSSOVERS_LOOKBACK), -2)
+			if totalEMACrossovers > self.__crossoverHighRange:
+				self.__logger.debug("Total no. of EMA 10 crossovers crossed the limit.")
+				self.__logger.debug("Total no. of EMA 10 crossovers: %d" % totalEMACrossovers)
+				self.__logger.debug("Crossover Range Low: %d" % self.__crossoverLowRange)
+				self.__logger.debug("Crossover Range High: %d" % self.__crossoverHighRange)
+				return False
+			self.__logger.debug("Total no. of EMA 10 crossovers within the limit in %d days lookback." % consts.EMA_CROSSOVERS_LOOKBACK)
+			self.__logger.debug("Total no. of EMA 10 crossovers: %d" % totalEMACrossovers)
+			self.__logger.debug("Crossover Range Low: %d" % self.__crossoverLowRange)
+			self.__logger.debug("Crossover Range High: %d" % self.__crossoverHighRange)
 
 		# Check the price jump
 		if "Price_Jump" in self.__inpStrategy["EMA_Breach_Mtm_Call"] and "Price_Jump_Check" in self.__inpStrategy["EMA_Breach_Mtm_Call"]["Price_Jump"]:
@@ -879,53 +916,6 @@ class EMABreachMTM(strategy.BacktestingStrategy):
 			self.__logger.debug("Resistance check passed.")
 
 		# Check price against the averages
-		if "Averages" in self.__inpStrategy["EMA_Breach_Mtm_Call"] and "AND" in self.__inpStrategy["EMA_Breach_Mtm_Call"]["Averages"]:
-			if "AND" in self.__inpStrategy["EMA_Breach_Mtm_Call"]["Averages"] and "Price_Check" in self.__inpStrategy["EMA_Breach_Mtm_Call"]["Averages"]["AND"]:
-				closePrice = bar.getClose()
-				if closePrice * consts.AVG_PRICECHECK_LONG < self.__ema1:
-					self.__logger.debug("Price comparison against EMA 10 failed.")
-					self.__logger.debug("Price: %.2f" % closePrice)
-					self.__logger.debug("EMA 10: %.2f" % self.__ema1)
-					return False
-				'''
-				if closePrice * consts.AVG_PRICECHECK_LONG < self.__ema2:
-					self.__logger.debug("Price comparison against EMA 20 failed.")
-					self.__logger.debug("Price: %.2f" % closePrice)
-					self.__logger.debug("EMA 20: %.2f" % self.__ema2)
-					return False
-				if closePrice * consts.AVG_PRICECHECK_LONG < self.__ema3:
-					self.__logger.debug("Price comparison against EMA 20 failed.")
-					self.__logger.debug("Price: %.2f" % closePrice)
-					self.__logger.debug("EMA 20: %.2f" % self.__ema2)
-					return False
-				'''
-				self.__logger.debug("Price check against EMA and SMA averages passed.")
-
-		# Check the top of the wick against the averages
-		if "Averages" in self.__inpStrategy["EMA_Breach_Mtm_Call"] and "AND" in self.__inpStrategy["EMA_Breach_Mtm_Call"]["Averages"]:
-			if "AND" in self.__inpStrategy["EMA_Breach_Mtm_Put"]["Averages"] and "Wick_Top_Check" in self.__inpStrategy["EMA_Breach_Mtm_Put"]["Averages"]["AND"]:
-				wick = bar.getHigh()
-				if wick * consts.AVG_WICKCHECK_LONG < self.__ema1:
-					self.__logger.debug("Price comparison against EMA 10 failed.")
-					self.__logger.debug("Price: %.2f" % closePrice)
-					self.__logger.debug("EMA 10: %.2f" % self.__ema1)
-					return False
-				'''
-				if wick * consts.AVG_WICKCHECK_LONG < self.__ema2:
-					self.__logger.debug("Price comparison against EMA 20 failed.")
-					self.__logger.debug("Price: %.2f" % closePrice)
-					self.__logger.debug("EMA 20: %.2f" % self.__ema2)
-					return False
-				if wick * consts.AVG_WICKCHECK_LONG < self.__ema3:
-					self.__logger.debug("Price comparison against EMA 20 failed.")
-					self.__logger.debug("Price: %.2f" % closePrice)
-					self.__logger.debug("EMA 20: %.2f" % self.__ema2)
-					return False
-				'''
-				self.__logger.debug("Wick check against EMA and SMA averages passed.")
-
-		'''
-		# Check price against the averages
 		closePrice = bar.getClose()
 		if "Averages" in self.__inpStrategy["EMA_Breach_Mtm_Call"] and "AND" in self.__inpStrategy["EMA_Breach_Mtm_Call"]["Averages"]:
 			if "AND" in self.__inpStrategy["EMA_Breach_Mtm_Call"]["Averages"] and "Price_Check" in self.__inpStrategy["EMA_Breach_Mtm_Call"]["Averages"]["AND"]:
@@ -986,7 +976,6 @@ class EMABreachMTM(strategy.BacktestingStrategy):
 					self.__logger.debug("SMA 200: %.2f" % self.__sma2)
 					return False
 				self.__logger.debug("Wick check against EMA and SMA averages passed.")
-		'''
 
 		# Check RSI, should be moving through the lower limit and pointing up.
 		if "RSI" in self.__inpStrategy["EMA_Breach_Mtm_Call"] and "AND" in self.__inpStrategy["EMA_Breach_Mtm_Call"]["RSI"]:
@@ -1126,7 +1115,7 @@ class EMABreachMTM(strategy.BacktestingStrategy):
 		# Check if two consecutive days of close prices are on the opposite 
 		# sides of the EMA 10 and moving down.
 		if self.__inpStrategy["EMA_Breach_Mtm_Put"]["10_EMA"]["AND"][0] == "Crossover":
-			if self.__closeDS[-1] < self.__ema1 and self.__closeDS[-2] > self.getEMASHORT1()[-2]:
+			if self.__closeDS[-1] < self.__emaDS[-1] and self.__closeDS[-2] > self.__emaDS[-2]:
 				self.__logger.debug("EMA 10 breached moving down.")
 				self.__logger.debug("Close Price: %.2f" % self.__closeDS[-1])
 				self.__logger.debug("Previous Close Price: %.2f" % self.__closeDS[-2])
@@ -1138,17 +1127,32 @@ class EMABreachMTM(strategy.BacktestingStrategy):
 		##### Change this code to lookback generic code
 		# Check if the crossover is the first one in the lookback
 		if self.__inpStrategy["EMA_Breach_Mtm_Put"]["10_EMA"]["AND"][1] == "First_Breach":
-			if len(self.__closeDS) < consts.EMA_10_BREACH_LOOKBACK + 1:
+			if len(self.__closeDS) < consts.EMA_BREACH_LOOKBACK + 1:
 				self.__logger.debug("Not enough entires for SMA breach lookback check.")
-				self.__logger.debug("Lookback: %d" % consts.EMA_10_BREACH_LOOKBACK)
+				self.__logger.debug("Lookback: %d" % consts.EMA_BREACH_LOOKBACK)
 				self.__logger.debug("Entries: %d" % len(self.__closeDS))
 				return False
-			if self.__closeDS[-2] > self.getEMASHORT1()[-2] and self.__closeDS[-3] < self.getEMASHORT1()[-3]:
+			if self.__closeDS[-2] > self.__emaDS[-2] and self.__closeDS[-3] < self.__emaDS[-3]:
 				self.__logger.debug("EMA 10 breached in lookback.")
 				self.__logger.debug("Previous Close Price: %.2f" % self.__closeDS[-2])
 				self.__logger.debug("Previous to previous Close Price: %.2f" % self.__closeDS[-3])
-				self.__logger.debug("EMA 10 previous: %.2f" % self.getEMASHORT1()[-2])
+				self.__logger.debug("EMA 10 previous: %.2f" % self.__emaDS[-2])
 				return False
+
+		# Check the no. of crossovers in the lookback window
+		if "Crossover_Check" in self.__inpStrategy["EMA_Breach_Mtm_Put"] and "Total" in self.__inpStrategy["EMA_Breach_Mtm_Put"]["Crossover_Check"]:
+			totalEMACrossovers = xiquantFuncs.totalCrossovers(self.__closeDS, self.__emaDS, (-1 * consts.EMA_CROSSOVERS_LOOKBACK), -2)
+			if totalEMACrossovers > self.__crossoverHighRange:
+				self.__logger.debug("Total no. of EMA 10 crossovers crossed the limit.")
+				self.__logger.debug("Total no. of EMA 10 crossovers: %d" % totalEMACrossovers)
+				self.__logger.debug("Crossover Range Low: %d" % self.__crossoverLowRange)
+				self.__logger.debug("Crossover Range High: %d" % self.__crossoverHighRange)
+				return False
+			self.__logger.debug("Total no. of EMA 10 crossovers within the limit in %d days lookback." % consts.EMA_CROSSOVERS_LOOKBACK)
+			self.__logger.debug("Total no. of EMA 10 crossovers: %d" % totalEMACrossovers)
+			self.__logger.debug("Crossover Range Low: %d" % self.__crossoverLowRange)
+			self.__logger.debug("Crossover Range High: %d" % self.__crossoverHighRange)
+
 
 		# Check the price jump
 		# +1 because we need one additional entry to compute the candle jump
@@ -1314,54 +1318,6 @@ class EMABreachMTM(strategy.BacktestingStrategy):
 			self.__logger.debug("Support check passed.")
 
 		# Check price against the averages
-		if "Averages" in self.__inpStrategy["EMA_Breach_Mtm_Put"] and "AND" in self.__inpStrategy["EMA_Breach_Mtm_Put"]["Averages"]:
-			if "AND" in self.__inpStrategy["EMA_Breach_Mtm_Put"]["Averages"] and "Price_Check" in self.__inpStrategy["EMA_Breach_Mtm_Put"]["Averages"]["AND"]:
-				closePrice = bar.getClose()
-				if closePrice * consts.AVG_PRICECHECK_SHORT > self.__ema1:
-					self.__logger.debug("Price comparison against EMA 10 failed.")
-					self.__logger.debug("Price: %.2f" % closePrice)
-					self.__logger.debug("EMA 10: %.2f" % self.__ema1)
-					return False
-				'''
-				if closePrice * consts.AVG_PRICECHECK_SHORT > self.__ema2:
-					self.__logger.debug("Price comparison against EMA 20 failed.")
-					self.__logger.debug("Price: %.2f" % closePrice)
-					self.__logger.debug("EMA 20: %.2f" % self.__ema2)
-					return False
-				if closePrice * consts.AVG_PRICECHECK_SHORT > self.__ema3:
-					self.__logger.debug("Price comparison against EMA 20 failed.")
-					self.__logger.debug("Price: %.2f" % closePrice)
-					self.__logger.debug("EMA 20: %.2f" % self.__ema2)
-					return False
-				'''
-				self.__logger.debug("Price check against EMA and SMA averages passed.")
-
-		# Check the top of the wick against the averages
-		if "Averages" in self.__inpStrategy["EMA_Breach_Mtm_Put"] and "AND" in self.__inpStrategy["EMA_Breach_Mtm_Put"]["Averages"]:
-			if "AND" in self.__inpStrategy["EMA_Breach_Mtm_Put"]["Averages"] and "Wick_Top_Check" in self.__inpStrategy["EMA_Breach_Mtm_Put"]["Averages"]["AND"]:
-				wick = bar.getLow()
-				if wick * consts.AVG_WICKCHECK_SHORT > self.__ema1:
-					self.__logger.debug("Price comparison against EMA 10 failed.")
-					self.__logger.debug("Price: %.2f" % closePrice)
-					self.__logger.debug("EMA 10: %.2f" % self.__ema1)
-					return False
-				'''
-				if wick * consts.AVG_WICKCHECK_SHORT > self.__ema2:
-					self.__logger.debug("Price comparison against EMA 20 failed.")
-					self.__logger.debug("Price: %.2f" % closePrice)
-					self.__logger.debug("EMA 20: %.2f" % self.__ema2)
-					return False
-				if wick * consts.AVG_WICKCHECK_SHORT > self.__ema3:
-					self.__logger.debug("Price comparison against EMA 20 failed.")
-					self.__logger.debug("Price: %.2f" % closePrice)
-					self.__logger.debug("EMA 20: %.2f" % self.__ema2)
-					return False
-				'''
-				self.__logger.debug("Price check against EMA and SMA averages passed.")
-				self.__logger.debug("Wick check against EMA and SMA averages passed.")
-
-		'''
-		# Check price against the averages
 		closePrice = bar.getClose()
 		if "Averages" in self.__inpStrategy["EMA_Breach_Mtm_Put"] and "AND" in self.__inpStrategy["EMA_Breach_Mtm_Put"]["Averages"]:
 			if "AND" in self.__inpStrategy["EMA_Breach_Mtm_Put"]["Averages"] and "Price_Check" in self.__inpStrategy["EMA_Breach_Mtm_Put"]["Averages"]["AND"]:
@@ -1422,7 +1378,6 @@ class EMABreachMTM(strategy.BacktestingStrategy):
 					self.__logger.debug("SMA 200: %.2f" % self.__sma2)
 					return False
 				self.__logger.debug("Wick check against EMA and SMA averages passed.")
-		'''
 
 		# Check RSI, should be moving through the upper limit and pointing down.
 		if "RSI" in self.__inpStrategy["EMA_Breach_Mtm_Put"] and "AND" in self.__inpStrategy["EMA_Breach_Mtm_Put"]["RSI"]:
@@ -1440,7 +1395,7 @@ class EMABreachMTM(strategy.BacktestingStrategy):
 					return False
 			#if "AND" in self.__inpStrategy["EMA_Breach_Mtm_Put"]["RSI"] and "Less_Than_Overbought" in self.__inpStrategy["EMA_Breach_Mtm_Put"]["RSI"]["AND"]:
 				#if (self.__rsi[-1] <= consts.RSI_UPPER_LIMIT):
-				#	self.__logger.debug("RSI upper limit check failed.")
+				#	self.__logger.debug("RSI still not greater/equal to Overbought.")
 				#	return False
 			self.__logger.debug("RSI check passed.")
 
@@ -1503,25 +1458,38 @@ class EMABreachMTM(strategy.BacktestingStrategy):
 			return False
 		else:
 			stopPrice = 0.0
+			self.__adjRatio = self.__priceDS[-1] / bar.getAdjClose()
 			execInfo = self.__longPos.getEntryOrder().getExecutionInfo()
 			entryPrice = execInfo.getPrice()
 			candleLen = bar.getClose() - bar.getOpen()
-			if bar.getClose() - entryPrice > consts.EMA_10_PRICE_DELTA:
-				if candleLen >= 0:
-					stopPrice = bar.getOpen() - consts.EMA_10_OTHER_DAY_STOP_PRICE_DELTA
+			if bar.getClose() - entryPrice > consts.EMA_PROFIT_CHECK * self.__adjRatio:
+				if consts.EMA_STOP_PRICE_PERCENT_OR_ABS.lower() == 'percent':
+					stopPriceDelta = bar.getClose() * consts.EMA_OTHER_DAY_STOP_PRICE_PERCENT
 				else:
-					stopPrice = bar.getOpen() + consts.EMA_10_OTHER_DAY_STOP_PRICE_DELTA
+					stopPriceDelta = consts.EMA_OTHER_DAY_STOP_PRICE_ABS
+				if candleLen >= 0:
+					stopPrice = bar.getOpen() - stopPriceDelta
+				else:
+					stopPrice = bar.getClose() - stopPriceDelta
 			else:
-				stopPrice =  self.getEMASHORT1()[-1] - consts.EMA_10_ENTRY_DAY_STOP_PRICE_DELTA
+				if consts.EMA_STOP_PRICE_PERCENT_OR_ABS.lower() == 'percent':
+					stopPriceDelta = bar.getClose() * consts.EMA_ENTRY_DAY_STOP_PRICE_PERCENT 
+				else:
+					stopPriceDelta = consts.EMA_ENTRY_DAY_STOP_PRICE_ABS
+				if consts.EMA_PROGRESS_STOP_LOSS:
+					stopPrice =  self.__emaDS[-1] - stopPriceDelta
+				else:
+					stopPrice = self.__longPos.getExitOrder().getStopPrice()
+					# The stop price is already adjusted.
+					stopPrice = float(stopPrice / self.__adjRatio)
 
-			# No need to adjust the stop price as the entry was based on the adjusted price.
-			self.__adjStopPrice = stopPrice
+			self.__adjStopPrice = stopPrice * self.__adjRatio
 			self.__longPos.cancelExit()
 			self.__longPos.exitStop(self.__adjStopPrice, True)
 			t = bar.getDateTime()
 			tInSecs = xiquantFuncs.secondsSinceEpoch(t + datetime.timedelta(seconds=2))
 			existingOrdersForTime = self.__orders.setdefault(tInSecs, [])
-			existingOrdersForTime.append((self.__instrument, 'Stop-Sell', self.__adjStopPrice, consts.DUMMY_ADJ_RATIO, consts.DUMMY_RANK))
+			existingOrdersForTime.append((self.__instrument, 'Stop-Sell', self.__adjStopPrice, self.__orderID, consts.DUMMY_ADJ_RATIO, consts.DUMMY_RANK))
 			self.__orders[tInSecs] = existingOrdersForTime
 			self.__logger.info("%s: New Stop Loss SELL order for %d %s shares set to %.2f" % (self.getCurrentDateTime(), self.__longPos.getShares(), self.__instrument, self.__adjStopPrice))
 			# Not the entry or the next day, so reset entry day
@@ -1548,26 +1516,38 @@ class EMABreachMTM(strategy.BacktestingStrategy):
 			return False
 		else:
 			stopPrice = 0.0
+			self.__adjRatio = self.__priceDS[-1] / bar.getAdjClose()
 			execInfo = self.__shortPos.getEntryOrder().getExecutionInfo()
 			entryPrice = execInfo.getPrice()
 			candleLen = bar.getClose() - bar.getOpen()
-			if entryPrice - bar.getClose() > consts.EMA_10_PRICE_DELTA:
-				if candleLen >= 0:
-					stopPrice = bar.getOpen() - consts.EMA_10_OTHER_DAY_STOP_PRICE_DELTA
+			if entryPrice - bar.getClose() > consts.EMA_PROFIT_CHECK * self.__adjRatio:
+				if consts.EMA_STOP_PRICE_PERCENT_OR_ABS.lower() == 'percent':
+					stopPriceDelta = bar.getClose() * consts.EMA_OTHER_DAY_STOP_PRICE_PERCENT
 				else:
-					stopPrice = bar.getOpen() + consts.EMA_10_OTHER_DAY_STOP_PRICE_DELTA
+					stopPriceDelta = consts.EMA_OTHER_DAY_STOP_PRICE_ABS
+				if candleLen >= 0:
+					stopPrice = bar.getClose() + stopPriceDelta
+				else:
+					stopPrice = bar.getOpen() + stopPriceDelta
 			else:
-				stopPrice =  self.getEMASHORT1()[-1] - consts.EMA_ENTRY_PRICE_DELTA
+				if consts.EMA_STOP_PRICE_PERCENT_OR_ABS.lower() == 'percent':
+					stopPriceDelta = bar.getClose() * consts.EMA_ENTRY_DAY_STOP_PRICE_PERCENT 
+				else:
+					stopPriceDelta = consts.EMA_ENTRY_DAY_STOP_PRICE_ABS
+				if consts.EMA_PROGRESS_STOP_LOSS:
+					stopPrice =  self.__emaDS[-1] - stopPriceDelta
+				else:
+					stopPrice = self.__shortPos.getExitOrder().getStopPrice()
+					# The stop price is already adjusted.
+					stopPrice = float(stopPrice / self.__adjRatio)
 
-			stopPrice = self.__entryDayStopPrice
-			# No need to adjust the stop price as the entry was based on the adjusted price.
-			self.__adjStopPrice = stopPrice
+			self.__adjStopPrice = stopPrice * self.__adjRatio
 			self.__shortPos.cancelExit()
 			self.__shortPos.exitStop(self.__adjStopPrice, True)
 			t = bar.getDateTime()
 			tInSecs = xiquantFuncs.secondsSinceEpoch(t + datetime.timedelta(seconds=2))
 			existingOrdersForTime = self.__orders.setdefault(tInSecs, [])
-			existingOrdersForTime.append((self.__instrument, 'Stop-Buy', self.__adjStopPrice, consts.DUMMY_ADJ_RATIO, consts.DUMMY_RANK))
+			existingOrdersForTime.append((self.__instrument, 'Stop-Buy', self.__adjStopPrice, self.__orderID, consts.DUMMY_ADJ_RATIO, consts.DUMMY_RANK))
 			self.__orders[tInSecs] = existingOrdersForTime
 			self.__logger.info("%s: New Stop Loss BUY order for %d %s shares set to %.2f" % (self.getCurrentDateTime(), self.__shortPos.getShares(), self.__instrument, self.__adjStopPrice))
 
@@ -1575,7 +1555,7 @@ class EMABreachMTM(strategy.BacktestingStrategy):
 			self.__entryDay = None
 			return False
 
-def run_strategy(bBandsPeriod, instrument, startPortfolio, startPeriod, endPeriod, plot=False):
+def run_strategy(bBandsPeriod, instrument, startPortfolio, startPeriod, endPeriod, xoverRangeLow, xoverRangeHigh, plot=False):
 	# Download the bars
 	feed = xiquantPlatform.redis_build_feed_EOD_RAW(instrument, startPeriod, endPeriod)
 
@@ -1592,46 +1572,28 @@ def run_strategy(bBandsPeriod, instrument, startPortfolio, startPeriod, endPerio
 	# Get the earnings calendar for the period
 	earningsCalList = xiquantFuncs.getEarningsCalendar(instrument, startPeriod, endPeriod)
 
-	strat = BBSpread(feedAdjustedToEndDate, feed, instrument, bBandsPeriod, earningsCalList, startPortfolio)
+	strat = EMACrossover(feedAdjustedToEndDate, feed, instrument, bBandsPeriod, earningsCalList, startPortfolio, xoverRangeLow, xoverRangeHigh)
 	strat.run()
+	if not strat.getOrders():
+		return False
 	print strat.getOrders()
-
-	'''
-	if plot:
-		plt = plotter.StrategyPlotter(strat, True, True, True)
-		plt.getInstrumentSubplot(instrument).addDataSeries("upper", strat.getBollingerBands().getUpperBand())
-		plt.getInstrumentSubplot(instrument).addDataSeries("middle", strat.getBollingerBands().getMiddleBand())
-		plt.getInstrumentSubplot(instrument).addDataSeries("lower", strat.getBollingerBands().getLowerBand())
-		plt1 = plotter.StrategyPlotter(strat, True, True, True)
-		plt1.getInstrumentSubplot(instrument).addDataSeries("RSI", strat.getRSI())
-		plt1.getInstrumentSubplot(instrument).addDataSeries("EMA Fast", strat.getEMAFast())
-		plt1.getInstrumentSubplot(instrument).addDataSeries("EMA Slow", strat.getEMASlow())
-		plt1.getInstrumentSubplot(instrument).addDataSeries("EMA Signal", strat.getEMASignal())
-
-		strat.run()
-		print strat.getOrders()
-
-		if plot:
-			plt.plot()
-			plt1.plot()
-			fileNameRoot = 'BB_spread_' + instrument
-			(plt.buildFigure()).savefig(fileNameRoot + '_1_' + '.png', dpi=800)
-			Image.open(fileNameRoot + '_1_' + '.png').save(fileNameRoot + '_1_' + '.jpg', 'JPEG')
-			(plt1.buildFigure()).savefig(fileNameRoot + '_2_' + '.png', dpi=800)
-			Image.open(fileNameRoot + '_2_' + '.png').save(fileNameRoot + '_2_' + '.jpg', 'JPEG')
-		'''
+	return True
 
 def main(plot):
 	import dateutil.parser
 	startDate = dateutil.parser.parse('2005-06-30T08:00:00.000Z')
 	endDate = dateutil.parser.parse('2014-12-31T08:00:00.000Z')
 
-	instruments = ["AAPL"]
+	instruments = ["NFLX"]
 	bBandsPeriod = 20
 	startPortfolio = 1000000
 	for inst in instruments:
-		run_strategy(bBandsPeriod, inst, startPortfolio, startDate, endDate, plot)
-
+		ret = run_strategy(bBandsPeriod, inst, startPortfolio, startDate, endDate, consts.EMA_CROSSOVERS_LIMIT_1_LOW_RANGE, consts.EMA_CROSSOVERS_LIMIT_1_HIGH_RANGE, plot)
+		# Progressive sifting for EMA 10 xover.
+		if not ret:
+			ret1 = run_strategy(bBandsPeriod, inst, startPortfolio, startDate, endDate, consts.EMA_CROSSOVERS_LIMIT_2_LOW_RANGE, consts.EMA_CROSSOVERS_LIMIT_2_HIGH_RANGE, plot)
+			if not ret1:
+				run_strategy(bBandsPeriod, inst, startPortfolio, startDate, endDate, consts.EMA_CROSSOVERS_LIMIT_3_LOW_RANGE, consts.EMA_CROSSOVERS_LIMIT_3_HIGH_RANGE, plot)
 
 if __name__ == "__main__":
 	main(True)

@@ -1,0 +1,4 @@
+Instrument,Trade-Type,Entry-Date,Entry-Price,Quantity,StopLoss-Exit-Date,StopLoss-Exit-Price,StopLoss-Exit-PorL,Profit-Exit-Date,Profit-Exit-Price,Profit-Exit-PorL,Exit-Date,Exit-Price,PorL,Actual-PorL,Strategy,Current-Pos
+WHR,LONG,2011-01-21,79.69,1192,No-Exit,0.0,0.0,2011-01-21,81.30,1921.29,2011-02-01,78.52,-1385.74,1921.29,EMA 50 Xover Mtm,[]
+WHR,LONG,2014-03-04,142.87,657,No-Exit,0.0,0.0,2014-03-06,145.79,1920.72,2014-03-13,139.44,-2254.09,1920.72,EMA 50 Xover Mtm,[]
+WHR,LONG,2014-05-12,150.88,606,No-Exit,0.0,0.0,2014-05-12,153.95,1862.55,2014-05-14,145.88,-3033.67,1862.55,EMA 50 Xover Mtm,[]

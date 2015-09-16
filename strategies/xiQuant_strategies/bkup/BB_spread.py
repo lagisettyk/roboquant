@@ -27,7 +27,6 @@ import xiquantFuncs
 import xiquantStrategyParams as consts
 import divergence
 import xiquantPlatform
-
 import os
 
 #import dateutil.parser
@@ -89,6 +88,7 @@ class BBSpread(strategy.BacktestingStrategy):
 		self.__bandBreachByTolerance = False
 		self.__noBandBreachOrTouchEntryPrice = 0.0
 		self.__progressStopLosses = False
+		self.__orderID = None
 
 	def initLogging(self):
 		logger = logging.getLogger("xiQuant")
@@ -179,6 +179,7 @@ class BBSpread(strategy.BacktestingStrategy):
 		jsonExitPrice.close()
 
 
+
 	def onFinish(self, bars):
 		self.stopLogging()
 
@@ -192,6 +193,7 @@ class BBSpread(strategy.BacktestingStrategy):
 			row.append(value[0][2])
 			row.append(value[0][3])
 			row.append(value[0][4])
+			row.append(value[0][5])
 			dataRows.append(row)
 
 		# This is for ordering orders by timestamp and rank....
@@ -209,16 +211,23 @@ class BBSpread(strategy.BacktestingStrategy):
 		execInfo = position.getEntryOrder().getExecutionInfo()
 		t = self.__priceDS.getDateTimes()[-1]
 		tInSecs = xiquantFuncs.secondsSinceEpoch(t)
+		# Set the orderID; this is added to support overlapping orders, from the same
+		# or different strategies, for the same instrument.
+		self.__orderID = str(consts.BB_SPREAD_ID) + '_' + str(tInSecs)
 		if self.__longPos == position:
 			self.__logger.info("%s: BOUGHT %d at $%.2f" % (execInfo.getDateTime(), execInfo.getQuantity(), execInfo.getPrice()))
 			existingOrdersForTime = self.__orders.setdefault(self.__entryOrderTime, [])
-			existingOrdersForTime.append(self.__entryOrderTuple)
+			# The orderID in the entryOrderTuple is None and hence should be set.
+			entryOrderTupleWithOrderID = (self.__entryOrderTuple[0], self.__entryOrderTuple[1], self.__entryOrderTuple[2], self.__orderID, self.__entryOrderTuple[4], self.__entryOrderTuple[5])
+			existingOrdersForTime.append(entryOrderTupleWithOrderID)
 			self.__orders[self.__entryOrderTime] = existingOrdersForTime
 			self.__logger.info("Portfolio cash after BUY: $%.2f" % self.getBroker().getCash(includeShort=False))
 		elif self.__shortPos == position:
 			self.__logger.info("%s: SOLD %d at $%.2f" % (execInfo.getDateTime(), execInfo.getQuantity(), execInfo.getPrice()))
 			existingOrdersForTime = self.__orders.setdefault(self.__entryOrderTime, [])
-			existingOrdersForTime.append(self.__entryOrderTuple)
+			# The orderID in the entryOrderTuple is None and hence should be set.
+			entryOrderTupleWithOrderID = (self.__entryOrderTuple[0], self.__entryOrderTuple[1], self.__entryOrderTuple[2], self.__orderID, self.__entryOrderTuple[4], self.__entryOrderTuple[5])
+			existingOrdersForTime.append(entryOrderTupleWithOrderID)
 			self.__orders[self.__entryOrderTime] = existingOrdersForTime
 			self.__logger.info("Portfolio cash after SELL: $%.2f" % self.getBroker().getCash(includeShort=False))
 
@@ -230,7 +239,7 @@ class BBSpread(strategy.BacktestingStrategy):
 			# processing phase.
 			tInSecs = xiquantFuncs.secondsSinceEpoch(t + datetime.timedelta(seconds=1))
 			existingOrdersForTime = self.__orders.setdefault(tInSecs, [])
-			existingOrdersForTime.append((self.__instrument, 'Stop-Sell', self.__entryDayAdjStopPrice, consts.DUMMY_ADJ_RATIO, consts.DUMMY_RANK))
+			existingOrdersForTime.append((self.__instrument, 'Stop-Sell', self.__entryDayAdjStopPrice, self.__orderID, consts.DUMMY_ADJ_RATIO, consts.DUMMY_RANK))
 			self.__orders[tInSecs] = existingOrdersForTime
 			self.__logger.info("%s: Stop Loss SELL order of %d %s shares set at %.2f" % (self.getCurrentDateTime(), self.__longPos.getShares(), self.__instrument, self.__entryDayStopPrice))
 		elif self.__shortPos == position: 
@@ -240,7 +249,7 @@ class BBSpread(strategy.BacktestingStrategy):
 			# processing phase.
 			tInSecs = xiquantFuncs.secondsSinceEpoch(t + datetime.timedelta(seconds=1))
 			existingOrdersForTime = self.__orders.setdefault(tInSecs, [])
-			existingOrdersForTime.append((self.__instrument, 'Stop-Buy', self.__entryDayAdjStopPrice, consts.DUMMY_ADJ_RATIO, consts.DUMMY_RANK))
+			existingOrdersForTime.append((self.__instrument, 'Stop-Buy', self.__entryDayAdjStopPrice, self.__orderID, consts.DUMMY_ADJ_RATIO, consts.DUMMY_RANK))
 			self.__orders[tInSecs] = existingOrdersForTime
 			self.__logger.info("%s: Stop Loss BUY order of %d %s shares set at %.2f" % (self.getCurrentDateTime(), self.__shortPos.getShares(), self.__instrument, self.__entryDayStopPrice))
 
@@ -263,6 +272,9 @@ class BBSpread(strategy.BacktestingStrategy):
 		execInfo = position.getExitOrder().getExecutionInfo()
 		t = self.__priceDS.getDateTimes()[-1]
 		tInSecs = xiquantFuncs.secondsSinceEpoch(t)
+
+		# Reset the orderID in preparation for the next order.
+		self.__orderID = None
 		self.__progressStopLosses = False
 		self.__bandBreachByWick = False
 		self.__bandBreachByTolerance = False
@@ -365,9 +377,9 @@ class BBSpread(strategy.BacktestingStrategy):
 		self.__openDS = feedLookbackEndAdj.getOpenDataSeries(self.__instrumentAdj)
 		self.__closeDS = feedLookbackEndAdj.getCloseDataSeries(self.__instrumentAdj)
 		self.__volumeDS = feedLookbackEndAdj.getVolumeDataSeries(self.__instrumentAdj)
-		self.__upperBBDataSeries, self.__middleBBDataSeries, self.__lowerBBDataSeries = indicator.BBANDS(self.__closeDS, len(self.__closeDS), 20, 1.5, 3.0)
-		self.__upperSPYBBDataSeries, self.__middleSPYBBDataSeries, self.__lowerSPYBBDataSeries = indicator.BBANDS(self.__spyDS, len(self.__spyDS), 20, 1.5, 3.0)
-		self.__upperQQQBBDataSeries, self.__middleQQQBBDataSeries, self.__lowerQQQBBDataSeries = indicator.BBANDS(self.__qqqDS, len(self.__qqqDS), 20, 1.5, 3.0)
+		self.__upperBBDataSeries, self.__middleBBDataSeries, self.__lowerBBDataSeries = indicator.BBANDS(self.__closeDS, len(self.__closeDS), self.__bbPeriod, 2.0, 2.0)
+		self.__upperSPYBBDataSeries, self.__middleSPYBBDataSeries, self.__lowerSPYBBDataSeries = indicator.BBANDS(self.__spyDS, len(self.__spyDS), self.__bbPeriod, 2.0, 2.0)
+		self.__upperQQQBBDataSeries, self.__middleQQQBBDataSeries, self.__lowerQQQBBDataSeries = indicator.BBANDS(self.__qqqDS, len(self.__qqqDS), self.__bbPeriod, 2.0, 2.0)
 		self.__rsi = indicator.RSI(self.__closeDS, len(self.__closeDS), consts.RSI_SETTING)
 		#print "RSI: ", self.__rsi
 		self.__lowPriceDS = feedLookbackEndAdj.getLowDataSeries(self.__instrumentAdj)
@@ -445,12 +457,6 @@ class BBSpread(strategy.BacktestingStrategy):
 		self.__dmiPlus = indicator.PLUS_DI(feedLookbackEndAdj.getBarSeries(self.__instrumentAdj), len(feedLookbackEndAdj.getBarSeries(self.__instrumentAdj)), consts.DMI_PERIOD)
 		self.__dmiMinus = indicator.MINUS_DI(feedLookbackEndAdj.getBarSeries(self.__instrumentAdj), len(feedLookbackEndAdj.getBarSeries(self.__instrumentAdj)), consts.DMI_PERIOD)
 
-
-		############Compute Money Flow Index which is more appropriate check then cash flow Index.....
-		self.__mfi = indicator.MFI(feedLookbackEndAdj.getBarSeries(self.__instrumentAdj), len(feedLookbackEndAdj.getBarSeries(self.__instrumentAdj)), consts.MFI_PERIOD)
-		self.__cmo = indicator.CMO(self.__closeDS, len(self.__closeDS), consts.CMO_PERIOD)
-		################################################################
-		
 		self.__ema1 = self.getEMASHORT1()[-1]
 		self.__ema2 = self.getEMASHORT2()[-1]
 		self.__ema3 = self.getEMASHORT3()[-1]
@@ -484,7 +490,7 @@ class BBSpread(strategy.BacktestingStrategy):
 			t = bar.getDateTime()
 			tInSecs = xiquantFuncs.secondsSinceEpoch(t)
 			existingOrdersForTime = self.__orders.setdefault(tInSecs, [])
-			existingOrdersForTime.append((self.__instrument, 'Sell-Market', consts.DUMMY_MARKET_PRICE, consts.DUMMY_ADJ_RATIO, consts.DUMMY_RANK))
+			existingOrdersForTime.append((self.__instrument, 'Sell-Market', consts.DUMMY_MARKET_PRICE, self.__orderID, consts.DUMMY_ADJ_RATIO, consts.DUMMY_RANK))
 			self.__orders[tInSecs] = existingOrdersForTime
 			self.__logger.info("Exiting a LONG position")
 			self.__logger.info("Portfolio Cash: $%.2f" % self.getBroker().getCash(includeShort=False))
@@ -495,7 +501,7 @@ class BBSpread(strategy.BacktestingStrategy):
 			t = bar.getDateTime()
 			tInSecs = xiquantFuncs.secondsSinceEpoch(t)
 			existingOrdersForTime = self.__orders.setdefault(tInSecs, [])
-			existingOrdersForTime.append((self.__instrument, 'Buy-Market' , consts.DUMMY_MARKET_PRICE, consts.DUMMY_ADJ_RATIO, consts.DUMMY_RANK))
+			existingOrdersForTime.append((self.__instrument, 'Buy-Market' , consts.DUMMY_MARKET_PRICE, self.__orderID, consts.DUMMY_ADJ_RATIO, consts.DUMMY_RANK))
 			self.__orders[tInSecs] = existingOrdersForTime
 			self.__logger.debug("Exiting a SHORT position")
 			self.__logger.debug("Portfolio Cash: $%.2f" % self.getBroker().getCash(includeShort=False))
@@ -549,10 +555,10 @@ class BBSpread(strategy.BacktestingStrategy):
 				tInSecs = xiquantFuncs.secondsSinceEpoch(t)
 				self.__entryOrderForFile = "%s,%s,Buy,%.2f\n" % (str(tInSecs), self.__instrument, self.__adjEntryPrice)
 				#existingOrdersForTime = self.__orders.setdefault(tInSecs, [])
-				#existingOrdersForTime.append((self.__instrument, 'Buy', entryPrice, consts.DUMMY_ADJ_RATIO, consts.DUMMY_RANK))
+				#existingOrdersForTime.append((self.__instrument, 'Buy', entryPrice, self.__orderID, consts.DUMMY_ADJ_RATIO, consts.DUMMY_RANK))
 				#self.__orders[tInSecs] = existingOrdersForTime
 				self.__entryOrderTime = tInSecs
-				self.__entryOrderTuple = (self.__instrument, 'Buy', self.__adjEntryPrice, self.__adjRatio, consts.DUMMY_RANK)
+				self.__entryOrderTuple = (self.__instrument, 'Buy', self.__adjEntryPrice, self.__orderID, self.__adjRatio, consts.DUMMY_RANK)
 				if self.__longPos == None:
 					self.__logger.debug("For whatever reason, couldn't go LONG %d shares" % sharesToBuy)
 				else:
@@ -623,10 +629,10 @@ class BBSpread(strategy.BacktestingStrategy):
 				tInSecs = xiquantFuncs.secondsSinceEpoch(t)
 				self.__entryOrderForFile = "%s,%s,Sell,%.2f\n" % (str(tInSecs), self.__instrument, self.__adjEntryPrice)
 				#existingOrdersForTime = self.__orders.setdefault(tInSecs, [])
-				#existingOrdersForTime.append((self.__instrument, 'Sell', entryPrice, consts.DUMMY_ADJ_RATIO, consts.DUMMY_RANK))
+				#existingOrdersForTime.append((self.__instrument, 'Sell', entryPrice, self.__orderID, consts.DUMMY_ADJ_RATIO, consts.DUMMY_RANK))
 				#self.__orders[tInSecs] = existingOrdersForTime
 				self.__entryOrderTime = tInSecs
-				self.__entryOrderTuple = (self.__instrument, 'Sell', self.__adjEntryPrice, self.__adjRatio, consts.DUMMY_RANK)
+				self.__entryOrderTuple = (self.__instrument, 'Sell', self.__adjEntryPrice, self.__orderID, self.__adjRatio, consts.DUMMY_RANK)
 				if self.__shortPos == None:
 					self.__logger.debug("For whatever reason, couldn't SHORT %d shares" % sharesToBuy)
 				else:
@@ -929,18 +935,28 @@ class BBSpread(strategy.BacktestingStrategy):
 						return False 
 			self.__logger.debug("Volume check passed.")
 
-		
-
-
 		# Check cash flow 
 		if "Cash_Flow" in self.__inpStrategy["BB_Spread_Call"] and "Cash_Flow_Check" in self.__inpStrategy["BB_Spread_Call"]["Cash_Flow"]:
-			############## Momentum Oscillator Indicators for proxying Cash Flow/Money Flow #################
-			priceArrayInLookback = xiquantFuncs.dsToNumpyArray(self.__closeDS, consts.CASH_FLOW_LOOKBACK_WINDOW)
-			if self.__mfi[-1] <= self.__mfi[-4:].mean() or priceArrayInLookback[-1] <= priceArrayInLookback[-4:].mean():
-				self.__logger.debug("Money Flow Index check failed.")
+			if len(self.__priceDS) < consts.CASH_FLOW_LOOKBACK_WINDOW: 
+				self.__logger.debug("Not enough entries for cashflow lookback")
+				self.__logger.debug("Cashflow lookback: %d" % consts.CASH_FLOW_LOOKBACK_WINDOW)
+				self.__logger.debug("Number of entries: %d" % len(self.__priceDS))
 				return False
-			############################# MFI CHECK added by Kiran ###########################################
-			
+			priceArrayInLookback = xiquantFuncs.dsToNumpyArray(self.__closeDS, consts.CASH_FLOW_LOOKBACK_WINDOW)
+			analysisPriceArray = priceArrayInLookback[(consts.CASH_FLOW_LOOKBACK_WINDOW - 1) * -1:]
+			prevPriceArray = priceArrayInLookback[consts.CASH_FLOW_LOOKBACK_WINDOW * -1:-1]
+			priceDiffArrayInLookback = analysisPriceArray - prevPriceArray
+			volumeArrayInLookback = xiquantFuncs.dsToNumpyArray(self.__volumeDS, consts.CASH_FLOW_LOOKBACK_WINDOW - 1)
+			cashFlowArrayInLookback = priceDiffArrayInLookback * volumeArrayInLookback
+			if float(cashFlowArrayInLookback[(consts.CASH_FLOW_LOOKBACK_WINDOW - 1) * -1:].sum() / (consts.CASH_FLOW_LOOKBACK_WINDOW -1)) <= float(cashFlowArrayInLookback[consts.CASH_FLOW_LOOKBACK_WINDOW * -1:-1].sum() / (consts.CASH_FLOW_LOOKBACK_WINDOW -1)):
+				self.__logger.debug("Avg Cashflow: %.2f" % float(cashFlowArrayInLookback[(consts.CASH_FLOW_LOOKBACK_WINDOW - 1) * -1:].sum() / (consts.CASH_FLOW_LOOKBACK_WINDOW -1))) 
+				self.__logger.debug("Avg Cashflow in lookback: %.2f" % float(cashFlowArrayInLookback[consts.CASH_FLOW_LOOKBACK_WINDOW * -1:-1].sum() / (consts.CASH_FLOW_LOOKBACK_WINDOW -1))) 
+				self.__logger.debug("Cashflow check failed.")
+				return False
+
+			self.__logger.debug("Avg Cashflow: %.2f" % cashFlowArrayInLookback[-1]) 
+			self.__logger.debug("Avg Cashflow in lookback: %.2f" % float(cashFlowArrayInLookback[:-1].sum() / (consts.CASH_FLOW_LOOKBACK_WINDOW -1))) 
+			self.__logger.debug("Cashflow check passed.")
 
 		# Check resistance
 		if "Resistance_Or_Support" in self.__inpStrategy["BB_Spread_Call"] and "Resistance_Check" in self.__inpStrategy["BB_Spread_Call"]["Resistance_Or_Support"]:
@@ -983,23 +999,33 @@ class BBSpread(strategy.BacktestingStrategy):
 			self.__logger.debug("Resistance check passed.")
 
 		# Check price against the averages
+		closePrice = bar.getClose()
 		if "Averages" in self.__inpStrategy["BB_Spread_Call"] and "AND" in self.__inpStrategy["BB_Spread_Call"]["Averages"]:
 			if "AND" in self.__inpStrategy["BB_Spread_Call"]["Averages"] and "Price_Check" in self.__inpStrategy["BB_Spread_Call"]["Averages"]["AND"]:
-				closePrice = bar.getClose()
-				if closePrice * consts.AVG_PRICECHECK_LONG < self.__ema1:
+				if abs(closePrice - self.__ema1) < consts.PRICE_AVG_CHECK_DELTA:
 					self.__logger.debug("Price comparison against EMA 10 failed.")
 					self.__logger.debug("Price: %.2f" % closePrice)
 					self.__logger.debug("EMA 10: %.2f" % self.__ema1)
 					return False
-				if closePrice * consts.AVG_PRICECHECK_LONG < self.__ema2:
+				if abs(closePrice - self.__ema2) < consts.PRICE_AVG_CHECK_DELTA:
 					self.__logger.debug("Price comparison against EMA 20 failed.")
 					self.__logger.debug("Price: %.2f" % closePrice)
 					self.__logger.debug("EMA 20: %.2f" % self.__ema2)
 					return False
-				if closePrice * consts.AVG_PRICECHECK_LONG < self.__sma_short[-1]:
-					self.__logger.debug("Price comparison against SMA 20 failed.")
+				if abs(closePrice - self.__ema3) < consts.PRICE_AVG_CHECK_DELTA:
+					self.__logger.debug("Price comparison against EMA 50 failed.")
+					self.__logger.debug("Price: %.2f" % closePrice)
+					self.__logger.debug("EMA 50: %.2f" % self.__ema3)
+					return False
+				if abs(closePrice - self.__sma1) < consts.PRICE_AVG_CHECK_DELTA:
+					self.__logger.debug("Price comparison against SMA 100 failed.")
 					self.__logger.debug("Price: %.2f" % closePrice)
 					self.__logger.debug("SMA 100: %.2f" % self.__sma1)
+					return False
+				if abs(closePrice - self.__sma2) < consts.PRICE_AVG_CHECK_DELTA:
+					self.__logger.debug("Price comparison against SMA 200 failed.")
+					self.__logger.debug("Price: %.2f" % closePrice)
+					self.__logger.debug("SMA 200: %.2f" % self.__sma2)
 					return False
 				self.__logger.debug("Price check against EMA and SMA averages passed.")
 
@@ -1007,20 +1033,30 @@ class BBSpread(strategy.BacktestingStrategy):
 		if "Averages" in self.__inpStrategy["BB_Spread_Call"] and "AND" in self.__inpStrategy["BB_Spread_Call"]["Averages"]:
 			if "AND" in self.__inpStrategy["BB_Spread_Call"]["Averages"] and "Wick_Top_Check" in self.__inpStrategy["BB_Spread_Call"]["Averages"]["AND"]:
 				wick = bar.getHigh()
-				if wick * consts.AVG_WICKCHECK_LONG < self.__ema1:
+				if abs(wick - self.__ema1) < consts.WICK_PRICE_AVG_CHECK_DELTA:
 					self.__logger.debug("Price comparison against EMA 10 failed.")
 					self.__logger.debug("Price: %.2f" % closePrice)
 					self.__logger.debug("EMA 10: %.2f" % self.__ema1)
 					return False
-				if wick * consts.AVG_WICKCHECK_LONG < self.__ema2:
+				if abs(wick - self.__ema2) < consts.WICK_PRICE_AVG_CHECK_DELTA:
 					self.__logger.debug("Price comparison against EMA 20 failed.")
 					self.__logger.debug("Price: %.2f" % closePrice)
 					self.__logger.debug("EMA 20: %.2f" % self.__ema2)
 					return False
-				if wick * consts.AVG_WICKCHECK_LONG < self.__sma_short[-1]:
-					self.__logger.debug("Price comparison against SMA 20 failed.")
+				if abs(wick - self.__ema3) < consts.WICK_PRICE_AVG_CHECK_DELTA:
+					self.__logger.debug("Price comparison against EMA 50 failed.")
+					self.__logger.debug("Price: %.2f" % closePrice)
+					self.__logger.debug("EMA 50: %.2f" % self.__ema3)
+					return False
+				if abs(wick - self.__sma1) < consts.WICK_PRICE_AVG_CHECK_DELTA:
+					self.__logger.debug("Price comparison against SMA 100 failed.")
 					self.__logger.debug("Price: %.2f" % closePrice)
 					self.__logger.debug("SMA 100: %.2f" % self.__sma1)
+					return False
+				if abs(wick - self.__sma2) < consts.WICK_PRICE_AVG_CHECK_DELTA:
+					self.__logger.debug("Price comparison against SMA 200 failed.")
+					self.__logger.debug("Price: %.2f" % closePrice)
+					self.__logger.debug("SMA 200: %.2f" % self.__sma2)
 					return False
 				self.__logger.debug("Wick check against EMA and SMA averages passed.")
 
@@ -1361,13 +1397,26 @@ class BBSpread(strategy.BacktestingStrategy):
 
 		# Check cash flow 
 		if "Cash_Flow" in self.__inpStrategy["BB_Spread_Put"] and "Cash_Flow_Check" in self.__inpStrategy["BB_Spread_Put"]["Cash_Flow"]:
-			############## Momentum Oscillator Indicators for proxying Cash Flow/Money Flow #################
-			priceArrayInLookback = xiquantFuncs.dsToNumpyArray(self.__closeDS, consts.CASH_FLOW_LOOKBACK_WINDOW)
-			if self.__mfi[-1] >= self.__mfi[-4:].mean() or priceArrayInLookback[-1] >= priceArrayInLookback[-4:].mean():
-				self.__logger.debug("Money Flow Index check failed.")
+			if len(self.__priceDS) < consts.CASH_FLOW_LOOKBACK_WINDOW: 
+				self.__logger.debug("Not enough entries for cashflow lookback")
+				self.__logger.debug("Cashflow lookback: %d" % consts.CASH_FLOW_LOOKBACK_WINDOW)
+				self.__logger.debug("Number of entries: %d" % len(self.__priceDS))
 				return False
-			############################# MFI CHECK added by Kiran ###########################################
-			
+			priceArrayInLookback = xiquantFuncs.dsToNumpyArray(self.__closeDS, consts.CASH_FLOW_LOOKBACK_WINDOW)
+			analysisPriceArray = priceArrayInLookback[(consts.CASH_FLOW_LOOKBACK_WINDOW - 1) * -1:]
+			prevPriceArray = priceArrayInLookback[consts.CASH_FLOW_LOOKBACK_WINDOW * -1:-1]
+			priceDiffArrayInLookback = analysisPriceArray - prevPriceArray
+			volumeArrayInLookback = xiquantFuncs.dsToNumpyArray(self.__volumeDS, consts.CASH_FLOW_LOOKBACK_WINDOW - 1)
+			cashFlowArrayInLookback = priceDiffArrayInLookback * volumeArrayInLookback
+			if float(cashFlowArrayInLookback[(consts.CASH_FLOW_LOOKBACK_WINDOW - 1) * -1:].sum() / (consts.CASH_FLOW_LOOKBACK_WINDOW -1)) >= float(cashFlowArrayInLookback[consts.CASH_FLOW_LOOKBACK_WINDOW * -1:-1].sum() / (consts.CASH_FLOW_LOOKBACK_WINDOW -1)):
+				self.__logger.debug("Avg Cashflow: %.2f" % float(cashFlowArrayInLookback[(consts.CASH_FLOW_LOOKBACK_WINDOW - 1) * -1:].sum() / (consts.CASH_FLOW_LOOKBACK_WINDOW -1))) 
+				self.__logger.debug("Avg Cashflow in lookback: %.2f" % float(cashFlowArrayInLookback[consts.CASH_FLOW_LOOKBACK_WINDOW * -1:-1].sum() / (consts.CASH_FLOW_LOOKBACK_WINDOW -1))) 
+				self.__logger.debug("Cashflow check failed.")
+				return False
+
+			self.__logger.debug("Avg Cashflow: %.2f" % cashFlowArrayInLookback[-1]) 
+			self.__logger.debug("Avg Cashflow in lookback: %.2f" % float(cashFlowArrayInLookback[:-1].sum() / (consts.CASH_FLOW_LOOKBACK_WINDOW -1))) 
+			self.__logger.debug("Cashflow check passed.")
 
 		# Check support
 		if "Resistance_Or_Support" in self.__inpStrategy["BB_Spread_Put"] and "Support_Check" in self.__inpStrategy["BB_Spread_Put"]["Resistance_Or_Support"]:
@@ -1410,23 +1459,33 @@ class BBSpread(strategy.BacktestingStrategy):
 			self.__logger.debug("Support check passed.")
 
 		# Check price against the averages
+		closePrice = bar.getClose()
 		if "Averages" in self.__inpStrategy["BB_Spread_Call"] and "AND" in self.__inpStrategy["BB_Spread_Call"]["Averages"]:
 			if "AND" in self.__inpStrategy["BB_Spread_Call"]["Averages"] and "Price_Check" in self.__inpStrategy["BB_Spread_Call"]["Averages"]["AND"]:
-				closePrice = bar.getClose()
-				if closePrice * consts.AVG_PRICECHECK_SHORT > self.__ema1:
+				if abs(closePrice - self.__ema1) < consts.PRICE_AVG_CHECK_DELTA:
 					self.__logger.debug("Price comparison against EMA 10 failed.")
 					self.__logger.debug("Price: %.2f" % closePrice)
 					self.__logger.debug("EMA 10: %.2f" % self.__ema1)
 					return False
-				if closePrice * consts.AVG_PRICECHECK_SHORT > self.__ema2:
+				if abs(closePrice - self.__ema2) < consts.PRICE_AVG_CHECK_DELTA:
 					self.__logger.debug("Price comparison against EMA 20 failed.")
 					self.__logger.debug("Price: %.2f" % closePrice)
 					self.__logger.debug("EMA 20: %.2f" % self.__ema2)
 					return False
-				if closePrice * consts.AVG_PRICECHECK_SHORT > self.__sma_short[-1]:
-					self.__logger.debug("Price comparison against SMA 20 failed.")
+				if abs(closePrice - self.__ema3) < consts.PRICE_AVG_CHECK_DELTA:
+					self.__logger.debug("Price comparison against EMA 50 failed.")
+					self.__logger.debug("Price: %.2f" % closePrice)
+					self.__logger.debug("EMA 50: %.2f" % self.__ema3)
+					return False
+				if abs(closePrice - self.__sma1) < consts.PRICE_AVG_CHECK_DELTA:
+					self.__logger.debug("Price comparison against SMA 100 failed.")
 					self.__logger.debug("Price: %.2f" % closePrice)
 					self.__logger.debug("SMA 100: %.2f" % self.__sma1)
+					return False
+				if abs(closePrice - self.__sma2) < consts.PRICE_AVG_CHECK_DELTA:
+					self.__logger.debug("Price comparison against SMA 200 failed.")
+					self.__logger.debug("Price: %.2f" % closePrice)
+					self.__logger.debug("SMA 200: %.2f" % self.__sma2)
 					return False
 				self.__logger.debug("Price check against EMA and SMA averages passed.")
 
@@ -1434,22 +1493,31 @@ class BBSpread(strategy.BacktestingStrategy):
 		if "Averages" in self.__inpStrategy["BB_Spread_Call"] and "AND" in self.__inpStrategy["BB_Spread_Call"]["Averages"]:
 			if "AND" in self.__inpStrategy["BB_Spread_Call"]["Averages"] and "Wick_Top_Check" in self.__inpStrategy["BB_Spread_Call"]["Averages"]["AND"]:
 				wick = bar.getLow()
-				if wick * consts.AVG_WICKCHECK_SHORT > self.__ema1:
+				if abs(wick - self.__ema1) < consts.WICK_PRICE_AVG_CHECK_DELTA:
 					self.__logger.debug("Price comparison against EMA 10 failed.")
 					self.__logger.debug("Price: %.2f" % closePrice)
 					self.__logger.debug("EMA 10: %.2f" % self.__ema1)
 					return False
-				if wick * consts.AVG_WICKCHECK_SHORT > self.__ema2:
+				if abs(wick - self.__ema2) < consts.WICK_PRICE_AVG_CHECK_DELTA:
 					self.__logger.debug("Price comparison against EMA 20 failed.")
 					self.__logger.debug("Price: %.2f" % closePrice)
 					self.__logger.debug("EMA 20: %.2f" % self.__ema2)
 					return False
-				if wick * consts.AVG_WICKCHECK_SHORT > self.__sma_short[-1]:
-					self.__logger.debug("Price comparison against SMA 20 failed.")
+				if abs(wick - self.__ema3) < consts.WICK_PRICE_AVG_CHECK_DELTA:
+					self.__logger.debug("Price comparison against EMA 50 failed.")
+					self.__logger.debug("Price: %.2f" % closePrice)
+					self.__logger.debug("EMA 50: %.2f" % self.__ema3)
+					return False
+				if abs(wick - self.__sma1) < consts.WICK_PRICE_AVG_CHECK_DELTA:
+					self.__logger.debug("Price comparison against SMA 100 failed.")
 					self.__logger.debug("Price: %.2f" % closePrice)
 					self.__logger.debug("SMA 100: %.2f" % self.__sma1)
 					return False
-				self.__logger.debug("Price check against EMA and SMA averages passed.")
+				if abs(wick - self.__sma2) < consts.WICK_PRICE_AVG_CHECK_DELTA:
+					self.__logger.debug("Price comparison against SMA 200 failed.")
+					self.__logger.debug("Price: %.2f" % closePrice)
+					self.__logger.debug("SMA 200: %.2f" % self.__sma2)
+					return False
 				self.__logger.debug("Wick check against EMA and SMA averages passed.")
 
 		# Check RSI, should be moving through the upper limit and pointing down.
@@ -1579,7 +1647,7 @@ class BBSpread(strategy.BacktestingStrategy):
 			t = bar.getDateTime()
 			tInSecs = xiquantFuncs.secondsSinceEpoch(t + datetime.timedelta(seconds=2))
 			existingOrdersForTime = self.__orders.setdefault(tInSecs, [])
-			existingOrdersForTime.append((self.__instrument, 'Tightened-Stop-Sell', self.__adjStopPrice, consts.DUMMY_ADJ_RATIO, consts.DUMMY_RANK))
+			existingOrdersForTime.append((self.__instrument, 'Tightened-Stop-Sell', self.__adjStopPrice, self.__orderID, consts.DUMMY_ADJ_RATIO, consts.DUMMY_RANK))
 			self.__orders[tInSecs] = existingOrdersForTime
 			self.__logger.info("%s: Tightened Stop Loss SELL order, due to lower band curving in, of %d %s shares set to %.2f" % (self.getCurrentDateTime(), self.__longPos.getShares(), self.__instrument, self.__adjStopPrice))
 			self.__entryDayStopPrice = self.__adjStopPrice
@@ -1594,7 +1662,7 @@ class BBSpread(strategy.BacktestingStrategy):
 			t = bar.getDateTime()
 			tInSecs = xiquantFuncs.secondsSinceEpoch(t + datetime.timedelta(seconds=2))
 			existingOrdersForTime = self.__orders.setdefault(tInSecs, [])
-			existingOrdersForTime.append((self.__instrument, 'Stop-Sell', self.__adjStopPrice, consts.DUMMY_ADJ_RATIO, consts.DUMMY_RANK))
+			existingOrdersForTime.append((self.__instrument, 'Stop-Sell', self.__adjStopPrice, self.__orderID, consts.DUMMY_ADJ_RATIO, consts.DUMMY_RANK))
 			self.__orders[tInSecs] = existingOrdersForTime
 			self.__logger.info("%s: New Stop Loss SELL order for %d %s shares set to %.2f" % (self.getCurrentDateTime(), self.__longPos.getShares(), self.__instrument, self.__adjStopPrice))
 
@@ -1677,7 +1745,7 @@ class BBSpread(strategy.BacktestingStrategy):
 			t = bar.getDateTime()
 			tInSecs = xiquantFuncs.secondsSinceEpoch(t + datetime.timedelta(seconds=2))
 			existingOrdersForTime = self.__orders.setdefault(tInSecs, [])
-			existingOrdersForTime.append((self.__instrument, 'Tightened-Stop-Buy', self.__adjStopPrice, consts.DUMMY_ADJ_RATIO, consts.DUMMY_RANK))
+			existingOrdersForTime.append((self.__instrument, 'Tightened-Stop-Buy', self.__adjStopPrice, self.__orderID, consts.DUMMY_ADJ_RATIO, consts.DUMMY_RANK))
 			self.__orders[tInSecs] = existingOrdersForTime
 			self.__logger.info("%s: Tightened Stop Loss BUY order, due to upper band curving in, of %d %s shares set to %.2f" % (self.getCurrentDateTime(), self.__shortPos.getShares(), self.__instrument, self.__adjStopPrice))
 			self.__entryDayStopPrice = self.__adjStopPrice
@@ -1692,7 +1760,7 @@ class BBSpread(strategy.BacktestingStrategy):
 			t = bar.getDateTime()
 			tInSecs = xiquantFuncs.secondsSinceEpoch(t + datetime.timedelta(seconds=2))
 			existingOrdersForTime = self.__orders.setdefault(tInSecs, [])
-			existingOrdersForTime.append((self.__instrument, 'Stop-Buy', self.__adjStopPrice, consts.DUMMY_ADJ_RATIO, consts.DUMMY_RANK))
+			existingOrdersForTime.append((self.__instrument, 'Stop-Buy', self.__adjStopPrice, self.__orderID, consts.DUMMY_ADJ_RATIO, consts.DUMMY_RANK))
 			self.__orders[tInSecs] = existingOrdersForTime
 			self.__logger.info("%s: New Stop Loss BUY order for %d %s shares set to %.2f" % (self.getCurrentDateTime(), self.__shortPos.getShares(), self.__instrument, self.__adjStopPrice))
 

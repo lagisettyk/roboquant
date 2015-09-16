@@ -84,11 +84,12 @@
 										},
 					"xWick_Rel_To_Candle": "Cutoff_Check",
 					"xCandle_Len_Check": "Against_Average_Length",
+					"xCrossover_Check": "Total",
 					"xPrice_Jump": "Price_Jump_Check",
 					"xVolume": "Volume_Check",
 					"xCash_Flow": "Cash_Flow_Check",
 					"xResistance_Or_Support": "Resistance_Check",
-					"Averages": {
+					"xAverages": {
 								"AND": [
 										"Price_Check",
 										"Wick_Top_Check"
@@ -101,7 +102,7 @@
 								]
 						},
 					"xMACD": "No_Divergence",
-					"xADX_And_DMI": {
+					"XADX_And_DMI": {
 									"AND": [
 											"DMI_Plus_Higher",
 											"DMI_Minus_Lower",
@@ -118,11 +119,12 @@
 										},
 					"xWick_Rel_To_Candle": "Cutoff_Check",
 					"xCandle_Len_Check": "Against_Average_Length",
+					"xCrossover_Check": "Total",
 					"xPrice_Jump": "Price_Jump_Check",
 					"xVolume": "Volume_Check",
 					"xCash_Flow": "Cash_Flow_Check",
 					"xResistance_Or_Support": "Resistance_Check",
-					"Averages": {
+					"xAverages": {
 								"AND": [
 										"Price_Check",
 										"Wick_Top_Check"
@@ -135,7 +137,7 @@
 								]
 						},
 					"xMACD": "No_Divergence",
-					"xADX_And_DMI": {
+					"XADX_And_DMI": {
 									"AND": [
 											"DMI_Plus_Higher",
 											"DMI_Minus_Lower",
@@ -152,11 +154,12 @@
 										},
 					"xWick_Rel_To_Candle": "Cutoff_Check",
 					"xCandle_Len_Check": "Against_Average_Length",
+					"xCrossover_Check": "Total",
 					"xPrice_Jump": "Price_Jump_Check",
 					"xVolume": "Volume_Check",
 					"xCash_Flow": "Cash_Flow_Check",
 					"xResistance_Or_Support": "Resistance_Check",
-					"Averages": {
+					"xAverages": {
 								"AND": [
 										"Price_Check",
 										"Wick_Top_Check"
@@ -186,11 +189,12 @@
 										},
 					"xWick_Rel_To_Candle": "Cutoff_Check",
 					"xCandle_Len_Check": "Against_Average_Length",
+					"xCrossover_Check": "Total",
 					"xPrice_Jump": "Price_Jump_Check",
 					"xVolume": "Volume_Check",
 					"xCash_Flow": "Cash_Flow_Check",
 					"xResistance_Or_Support": "Resistance_Check",
-					"Averages": {
+					"xAverages": {
 								"AND": [
 										"Price_Check",
 										"Wick_Top_Check"

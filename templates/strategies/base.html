@@ -16,6 +16,8 @@
 
     <link href="http://getbootstrap.com/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="http://getbootstrap.com/examples/dashboard/dashboard.css" rel="stylesheet">
+    <!-- Handsontable related css file -->
+    <link rel="stylesheet" media="screen" href="http://handsontable.com/dist/handsontable.full.css">
   </head>
 
   <body>
@@ -44,8 +46,8 @@
                     {% else %}
                          <li><a href="{% url 'account_login' %}">Log In</a></li>    
                     {% endif %}
-                        <!--<li><a href="{% url 'display_matplotlib' %}">Demo-Charts</a></li>
-                        <li><a href="{% url 'display_hichart' %}">Demo-HiStock</a></li>-->
+                        <li><a href="{% url 'display_matplotlib' %}">Demo-Spreadsheet</a></li>
+                        <li><a href="{% url 'display_hichart' %}">Demo-HiStock</a></li>
                         <li><a href="{% url 'about' %}">About</a></li>
 
               </ul>
@@ -83,11 +85,14 @@
     <!--<script src="{% static "js/jquery.js" %}"></script>-->
     <script type="text/javascript" src="{% static "js/moment.min.js" %}"></script>
     <script type="text/javascript" src="{% static "js/daterangepicker.js" %}"></script>
+    <!-- handsontable spreadsheet functionality purpose... -->
+    <script src="http://handsontable.com/dist/handsontable.full.js"></script>
     <!-- Slider functionality purpose... -->
     <script type="text/javascript" src="{% static "js/jssor.slider.mini.js" %}"></script>
     <script src="{% static "js/highstock.js" %}"></script>
     <script src="{% static "js/highstock-exporting.js" %}"></script>
     <script src="{% static "js/strategies-jquery-ajax.js" %}"></script>
+    <!--<script src="{% static "js/spreadsheet-support.js" %}"></script>-->
     <!-- Slider functionality purpose... -->
     <script type="text/javascript" src="{% static "js/typeahead.jquery.min.js" %}"></script>
   </body>

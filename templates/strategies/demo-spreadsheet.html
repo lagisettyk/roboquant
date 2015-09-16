@@ -1,0 +1,36 @@
+{% extends 'strategies/base.html' %}
+
+{% load staticfiles %}
+
+{% load bootstrap_toolkit %}
+
+{% block title %}Handsontable Example{% endblock %}
+
+{% block body_block %}
+	<div class="page-header">
+		<h2>Handsontable Demo</h2>
+	</div>
+    <form class="form-inline"> 
+        <div class="form-group">
+         <label for="InitialCash">Initial Amount</label>
+         <input type="number" class="form-control" id="InitialCash" min="10000" max="2500000">
+        </div>
+        <div id="reportrange2" class="btn" style="display: inline-block; background: #fff; cursor: pointer; padding: 5px 10px; border: 1px solid #ccc">
+          <i class="glyphicon glyphicon-calendar fa fa-calendar"></i>
+          <span></span> <b class="caret"></b>
+       </div>
+        <div class="form-group">
+           <label for="rank">Rank</label>
+           <input type="number" class="form-control" id="rank" min="5" max="10000">
+        </div>
+        <div id="sList" class="btn-group">
+          <button type="button" id="stratLabel" data-toggle="dropdown" class="btn btn-primary dropdown-toggle">Strategy List<span class="caret"></span></button>
+          <ul class="dropdown-menu" id="showStratList">
+              <li><a href="#" id="Simulate">strategy</a></li>
+          </ul>
+      </div>
+     </form>
+     <pre>
+        <div id="example1" class="hot handsontable htRowHeaders htColumnHeaders"></div>
+    </pre>
+{% endblock %}

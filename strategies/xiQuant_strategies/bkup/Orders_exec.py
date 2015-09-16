@@ -26,16 +26,16 @@ class OrdersFile:
 		self.__instruments = []
 
 		if fakecsv:
-			reader = csv.DictReader(ordersFile, fieldnames=["timeSinceEpoch", "symbol", "action", "stopPrice", "adjRatio", "rank"])
+			reader = csv.DictReader(ordersFile, fieldnames=["timeSinceEpoch", "symbol", "action", "stopPrice", "orderID", "adjRatio", "rank"])
 		else:
-			reader = csv.DictReader(open(ordersFile, "r"), fieldnames=["timeSinceEpoch", "symbol", "action", "stopPrice", "adjRatio", "rank"])
+			reader = csv.DictReader(open(ordersFile, "r"), fieldnames=["timeSinceEpoch", "symbol", "action", "stopPrice", "orderID", "adjRatio", "rank"])
 		for row in reader:
 			order = None
 			timeSinceEpoch = int(row["timeSinceEpoch"])
 			ordersList = self.__orders.setdefault(timeSinceEpoch, [])
 			if int(row["rank"]) <= rank or rank == -1:
 				if filterAction.lower == 'both' or row["action"].lower() != filterAction.lower():
-					order = (row["symbol"], row["action"], float(row["stopPrice"]), float(row["adjRatio"]))
+					order = (row["symbol"], row["action"], float(row["stopPrice"]), row["orderID"], float(row["adjRatio"]))
 					#print "Order being processed from the file: "
 					#print order
 					#print "Time of the order: "
@@ -88,6 +88,7 @@ class MyStrategy(strategy.BacktestingStrategy):
 		self.__longPos = {}
 		self.__shortPos = {}
 		self.__results = {}
+		self.__strategiesOutput = None
 		self.__intraDayExits = {}
 		self.__spyNullified = {}
 		self.__stopLossExitPOrL = {}
@@ -101,12 +102,18 @@ class MyStrategy(strategy.BacktestingStrategy):
 		self.__prevBarDate = datetime.datetime.now()
 		self.__cashKeptAsideForShortLoss = 0.0
 		self.__adjRatio = {}
+		self.__orderIDs = {}
 		self.getBroker().setCommission(backtesting.NoCommission())
 		self.__SPYExceptions = consts.SPY_EXCEPTIONS
 
+	def getStrategiesOutput(self):
+		return self.__strategiesOutput
+
 	def onStart(self):
 		self.__resultsFile = open(consts.RESULTS_FILE, 'w')
-		self.__resultsFile.write("Instrument,Trade-Type,Entry-Date,Entry-Price,Quantity,StopLoss-Exit-Date,StopLoss-Exit-Price,StopLoss-Exit-PorL,Profit-Exit-Date,Profit-Exit-Price,Profit-Exit-PorL,Exit-Date,Exit-Price,PorL,Actual-PorL,Current-Pos\n")
+		outStr = "Instrument,Trade-Type,Entry-Date,Entry-Price,Quantity,StopLoss-Exit-Date,StopLoss-Exit-Price,StopLoss-Exit-PorL,Profit-Exit-Date,Profit-Exit-Price,Profit-Exit-PorL,Exit-Date,Exit-Price,PorL,Actual-PorL,Strategy,Current-Pos\n"
+		self.__resultsFile.write(outStr)
+		self.__strategiesOutput = outStr
 		self.__unexecutedOrdersFile = open(consts.UNEXECUTED_ORDERS_FILE, 'w')
 		self.__unexecutedOrdersFile.write("Unexecuted Orders\n")
 
@@ -118,6 +125,29 @@ class MyStrategy(strategy.BacktestingStrategy):
 		instrument = position.getEntryOrder().getInstrument()
 		execInfo = position.getEntryOrder().getExecutionInfo()
 		execTime = execInfo.getDateTime()
+		#execTimeInSecs = xiquantFuncs.secondsSinceEpoch(execTime)
+		#execInstrOrderIDTuple = (instrument, str(execTimeInSecs))
+		#orderID = self.__orderIDs[execInstrOrderIDTuple]
+		# Due to potentially multiple orders, for the same instrument, on the same
+		# day, we have to use the approach below for getting the orderID. Using
+		# just the timestamp won't give us the correct orderID -- as the context
+		# of which strategy lead to that order would be lost.
+		orderID = None
+		for tuple, pos in self.__longPos.items():
+			#self.info("tuple: %s" % str(tuple))
+			#self.info("pos: %s" % str(pos))
+			if pos == position:
+				orderID = tuple[1]
+				#self.info("orderID: %s" % orderID)
+		if orderID == None:
+			for tuple, pos in self.__shortPos.items():
+				#self.info("tuple: %s" % str(tuple))
+				#self.info("pos: %s" % str(pos))
+				if pos == position:
+					orderID = tuple[1]
+					#self.info("orderID: %s" % orderID)
+		entryInstrOrderIDTuple = (instrument, orderID)
+		#self.info("entryInstrOrderIDTuple: %s" % str(entryInstrOrderIDTuple))
 		cashBefore = "%0.2f" % self.__portfolioCashBefore
 		portfolioBefore = "%0.2f" % self.__portfolioBefore
 		cashAfter = "%0.2f" % self.getBroker().getCash(includeShort=False)
@@ -146,40 +176,65 @@ class MyStrategy(strategy.BacktestingStrategy):
 		# Check if SPY opened higher/lower on T than T-1's 20 SMA value for
 		# bullinsh/bearish trades, otherwise nullify the trade.
 		if consts.SIMULATE_SPY_TRADE_NULLIFICATION:
-			self.__spyNullified[instrument] = False
+			self.__spyNullified[entryInstrOrderIDTuple] = False
 			if not instrument in self.__SPYExceptions:
 				if action.lower() == "long":
 					if self.__spyOpenDS[-1] < self.__smaSPYShort1[-2]:
 						action = consts.SPY_BASED_LONG_TRADE_NULLIFICATION
-						self.__spyNullified[instrument] = True
+						self.__spyNullified[entryInstrOrderIDTuple] = True
 				elif action.lower() == "short":
 					if self.__spyOpenDS[-1] > self.__smaSPYShort1[-2]:
 						action = consts.SPY_BASED_SHORT_TRADE_NULLIFICATION
-						self.__spyNullified[instrument] = True
+						self.__spyNullified[entryInstrOrderIDTuple] = True
 
-		self.__results[instrument] = instrument + ',' + action + ',' + str(execTime.date()) + ',' + buyPrice + ',' + quantity + ','
+		self.__results[entryInstrOrderIDTuple] = instrument + ',' + action + ',' + str(execTime.date()) + ',' + buyPrice + ',' + quantity + ','
 		self.info("Entered %s for %s, %s shares at %s" % (action, instrument, quantity, buyPrice))
-		self.__intraDayExits[instrument] = False
-		self.__profitExitPOrL[instrument] = 0.0
-		self.__profitExitDate[instrument] = None
-		self.__profitExitPrice[instrument] = 0.0
-		self.__stopLossExitPOrL[instrument] = 0.0
-		self.__stopLossExitDate[instrument] = None
-		self.__stopLossExitPrice[instrument] = 0.0
+		self.__intraDayExits[entryInstrOrderIDTuple] = False
+		self.__profitExitPOrL[entryInstrOrderIDTuple] = 0.0
+		self.__profitExitDate[entryInstrOrderIDTuple] = None
+		self.__profitExitPrice[entryInstrOrderIDTuple] = 0.0
+		self.__stopLossExitPOrL[entryInstrOrderIDTuple] = 0.0
+		self.__stopLossExitDate[entryInstrOrderIDTuple] = None
+		self.__stopLossExitPrice[entryInstrOrderIDTuple] = 0.0
 
 		# The following is not required but still adding it to deal with the stop-buy 
 		# and stop-sell issue due to the short or long orders not getting executed for some reason.
 		if action.lower() == "long":
-			self.__longPos[instrument] = position
-			self.__shortPos[instrument] = None
+			self.__longPos[entryInstrOrderIDTuple] = position
+			self.__shortPos[entryInstrOrderIDTuple] = None
 		elif action.lower() == "short":
-			self.__shortPos[instrument] = position
-			self.__longPos[instrument] = None
+			self.__shortPos[entryInstrOrderIDTuple] = position
+			self.__longPos[entryInstrOrderIDTuple] = None
 
 	def onExitOk(self, position):
 		instrument = position.getExitOrder().getInstrument()
 		execInfo = position.getExitOrder().getExecutionInfo()
 		execTime = execInfo.getDateTime()
+		#entryExecInfo = position.getEntryOrder().getExecutionInfo()
+		#entryExecTime = entryExecInfo.getDateTime()
+		#entryExecTimeInSecs = xiquantFuncs.secondsSinceEpoch(entryExecTime)
+		#execInstrOrderIDTuple = (instrument, str(entryExecTimeInSecs))
+		#orderID = self.__orderIDs[execInstrOrderIDTuple]
+		# Due to potentially multiple orders, for the same instrument, on the same
+		# day, we have to use the approach below for getting the orderID. Using
+		# just the timestamp won't give us the correct orderID -- as the context
+		# of which strategy lead to that order would be lost.
+		orderID = None
+		for tuple, pos in self.__longPos.items():
+			#self.info("tuple: %s" % str(tuple))
+			#self.info("pos: %s" % str(pos))
+			if pos == position:
+				orderID = tuple[1]
+				#self.info("orderID: %s" % orderID)
+		if orderID == None:
+			for tuple, pos in self.__shortPos.items():
+				#self.info("tuple: %s" % str(tuple))
+				#self.info("pos: %s" % str(pos))
+				if pos == position:
+					orderID = tuple[1]
+					#self.info("orderID: %s" % orderID)
+		entryInstrOrderIDTuple = (instrument, orderID)
+		#self.info("entryInstrOrderIDTuple: %s" % str(entryInstrOrderIDTuple))
 		cashBefore = "%0.2f" % self.__portfolioCashBefore
 		portfolioBefore = "%0.2f" % self.__portfolioBefore
 		cashAfter = "%0.2f" % self.getBroker().getCash(includeShort=False)
@@ -205,17 +260,17 @@ class MyStrategy(strategy.BacktestingStrategy):
 		profitPOrL = "0.0"
 		profitExitDate = "No-Exit"
 		profitExitPrice = "0.0"
-		if consts.SIMULATE_INTRA_DAY_EXIT and self.__profitExitPrice[instrument] != 0:
-			profitPOrL = "%0.2f" % self.__profitExitPOrL[instrument]
-			profitExitDate = self.__profitExitDate[instrument]
-			profitExitPrice = "%0.2f" % self.__profitExitPrice[instrument]
+		if consts.SIMULATE_INTRA_DAY_EXIT and self.__profitExitPrice[entryInstrOrderIDTuple] != 0:
+			profitPOrL = "%0.2f" % self.__profitExitPOrL[entryInstrOrderIDTuple]
+			profitExitDate = self.__profitExitDate[entryInstrOrderIDTuple]
+			profitExitPrice = "%0.2f" % self.__profitExitPrice[entryInstrOrderIDTuple]
 		stopLossPOrL = "0.0"
 		stopLossExitDate = "No-Exit"
 		stopLossExitPrice = "0.0"
-		if consts.SIMULATE_INTRA_DAY_EXIT and self.__stopLossExitPrice[instrument] != 0:
-			stopLossPOrL = "%0.2f" % self.__stopLossExitPOrL[instrument]
-			stopLossExitDate = self.__stopLossExitDate[instrument]
-			stopLossExitPrice = "%0.2f" % self.__stopLossExitPrice[instrument]
+		if consts.SIMULATE_INTRA_DAY_EXIT and self.__stopLossExitPrice[entryInstrOrderIDTuple] != 0:
+			stopLossPOrL = "%0.2f" % self.__stopLossExitPOrL[entryInstrOrderIDTuple]
+			stopLossExitDate = self.__stopLossExitDate[entryInstrOrderIDTuple]
+			stopLossExitPrice = "%0.2f" % self.__stopLossExitPrice[entryInstrOrderIDTuple]
 		currPos = self.getBroker().getPositions()
 		listOfCurrInstrs = list(currPos.keys())
 		realPorL = profitOrLoss
@@ -226,17 +281,35 @@ class MyStrategy(strategy.BacktestingStrategy):
 
 		# Check if the trade was nullifed due to SPY value check.
 		if consts.SIMULATE_SPY_TRADE_NULLIFICATION:
-			if self.__spyNullified[instrument]:
+			if self.__spyNullified[entryInstrOrderIDTuple]:
 				realPorL = "0.0"
 
-		exitStr = stopLossExitDate + ',' + stopLossExitPrice + ',' + stopLossPOrL + ',' + profitExitDate + ',' + profitExitPrice + ',' + profitPOrL + ',' + exitDate + ',' + sellPrice + ',' + profitOrLoss + ',' + realPorL + ',' + str(listOfCurrInstrs) + '\n'
+		strat = ''
+		stratID = int(orderID[0:2])
+		if stratID == consts.BB_SPREAD_ID:
+			strat = consts.BB_SPREAD_STR
+		elif stratID == consts.BB_SMA_20_CROSSOVER_MTM_ID:
+			strat = consts.BB_SMA_20_CROSSOVER_MTM_STR
+		elif stratID == consts.BB_SMA_100_CROSSOVER_MTM_ID:
+			strat = consts.BB_SMA_100_CROSSOVER_MTM_STR
+		elif stratID == consts.BB_SMA_200_CROSSOVER_MTM_ID:
+			strat = consts.BB_SMA_200_CROSSOVER_MTM_STR
+		elif stratID == consts.EMA_10_CROSSOVER_MTM_ID:
+			strat = consts.EMA_10_CROSSOVER_MTM_STR
+		elif stratID == consts.EMA_20_CROSSOVER_MTM_ID:
+			strat = consts.EMA_20_CROSSOVER_MTM_STR
+		elif stratID == consts.EMA_50_CROSSOVER_MTM_ID:
+			strat = consts.EMA_50_CROSSOVER_MTM_STR
+
+		exitStr = stopLossExitDate + ',' + stopLossExitPrice + ',' + stopLossPOrL + ',' + profitExitDate + ',' + profitExitPrice + ',' + profitPOrL + ',' + exitDate + ',' + sellPrice + ',' + profitOrLoss + ',' + realPorL + ',' + strat + ',' + str(listOfCurrInstrs) + '\n'
 		self.info("Exited %s for %s, %s shares at %s" % (action, instrument, quantity, sellPrice))
-		if self.__results[instrument] is not None:
-			self.__results[instrument] += exitStr
-			self.__resultsFile.write(self.__results[instrument])
+		if self.__results[entryInstrOrderIDTuple] is not None:
+			self.__results[entryInstrOrderIDTuple] += exitStr
+			self.__resultsFile.write(self.__results[entryInstrOrderIDTuple])
+			self.__strategiesOutput += self.__results[entryInstrOrderIDTuple]
 		else:
 			self.info("exitStr causing problem: %s" % exitStr)
-		self.__results[instrument] = None
+		self.__results[entryInstrOrderIDTuple] = None
 
 		# Adjust the portfolio cash if we closed a short position.
 		##### When a short position is closed, the exit should be a BUY_TO_COVER but due to some
@@ -247,22 +320,23 @@ class MyStrategy(strategy.BacktestingStrategy):
 			self.info("Cash for this buy-close adjustment: %.2f" % shortCashAdjustment)
 			self.info("Total cash for short adjustments: %.2f" % self.__cashKeptAsideForShortLoss)
 
-		self.__intraDayExits[instrument] = False
-		self.__spyNullified[instrument] = False
-		self.__profitExitPOrL[instrument] = 0.0
-		self.__profitExitDate[instrument] = None
-		self.__profitExitPrice[instrument] = 0.0
-		self.__stopLossExitPOrL[instrument] = 0.0
-		self.__stopLossExitDate[instrument] = None
-		self.__stopLossExitPrice[instrument] = 0.0
-		self.__adjRatio[instrument] = 0.0
+		self.__intraDayExits[entryInstrOrderIDTuple] = False
+		self.__spyNullified[entryInstrOrderIDTuple] = False
+		self.__profitExitPOrL[entryInstrOrderIDTuple] = 0.0
+		self.__profitExitDate[entryInstrOrderIDTuple] = None
+		self.__profitExitPrice[entryInstrOrderIDTuple] = 0.0
+		self.__stopLossExitPOrL[entryInstrOrderIDTuple] = 0.0
+		self.__stopLossExitDate[entryInstrOrderIDTuple] = None
+		self.__stopLossExitPrice[entryInstrOrderIDTuple] = 0.0
+		self.__adjRatio[entryInstrOrderIDTuple] = 0.0
+		self.__orderIDs[entryInstrOrderIDTuple] = None
 
 		#The following is not required but still adding it to deal with the issue of stop-buy 
 		# and stop-sell issue due to the short or long orders not getting executed for some reason.
 		if action.lower() == "sell":
-			self.__longPos[instrument] = None
+			self.__longPos[entryInstrOrderIDTuple] = None
 		elif action.lower() == "buy_to_cover":
-			self.__shortPos[instrument] = None
+			self.__shortPos[entryInstrOrderIDTuple] = None
 
 	def onOrderUpdated(self, order):
 		if order.isCanceled():
@@ -280,14 +354,20 @@ class MyStrategy(strategy.BacktestingStrategy):
 			#self.info("%s open: %0.2f" % (instrument, self.__openDS[-1]))
 			#self.info("%s low: %0.2f" % (instrument, self.__lowDS[-1]))
 			#self.info("%s high: %0.2f" % (instrument, self.__highDS[-1]))
-			if self.__longPos.get(instrument, None) and self.__longPos[instrument] and self.__longPos[instrument].entryActive():
-				self.__longPos[instrument].cancelEntry()
-				self.info("Cancelled a LONG order for %s as it didn't get executed." % instrument)
-				self.__longPos[instrument] = None
-			if self.__shortPos.get(instrument, None) and self.__shortPos[instrument] and self.__shortPos[instrument].entryActive():
-				self.__shortPos[instrument].cancelEntry()
-				self.info("Cancelled a SHORT order for %s as it didn't get executed." % instrument)
-				self.__shortPos[instrument] = None
+			for instrOrderIDTuple in self.__longPos:
+				for instrument in instrOrderIDTuple:
+					#self.info("instrOrderIDTuple: %s" % str(instrOrderIDTuple))
+					if self.__longPos.get(instrOrderIDTuple, None) and self.__longPos[instrOrderIDTuple] and self.__longPos[instrOrderIDTuple].entryActive():
+						self.__longPos[instrOrderIDTuple].cancelEntry()
+						self.info("Cancelled a LONG order for %s as it didn't get executed." % instrument)
+						self.__longPos[instrOrderIDTuple] = None
+			for instrOrderIDTuple in self.__shortPos:
+				for instrument in instrOrderIDTuple:
+					#self.info("instrOrderIDTuple: %s" % str(instrOrderIDTuple))
+					if self.__shortPos.get(instrOrderIDTuple, None) and self.__shortPos[instrOrderIDTuple] and self.__shortPos[instrOrderIDTuple].entryActive():
+						self.__shortPos[instrOrderIDTuple].cancelEntry()
+						self.info("Cancelled a SHORT order for %s as it didn't get executed." % instrument)
+						self.__shortPos[instrOrderIDTuple] = None
 
 		#bar = bars[self.__instrument]
 		#barDateTimeinSecs = int((bars.getDateTime() - datetime.datetime(1970,1,1,0,0,0)).total_seconds())
@@ -299,20 +379,27 @@ class MyStrategy(strategy.BacktestingStrategy):
 		self.info("Total no. of orders: %d" % noOfOrders)
 		# Some of the orders could be stop loss orders so we shouldn't be allocating any money
 		# to those orders.
-		for (instrument, action, price, adjRatio) in self.__ordersFile.getOrdersForTime(barDateTimeinSecs):
+		for (instrument, action, price, orderID, adjRatio) in self.__ordersFile.getOrdersForTime(barDateTimeinSecs):
 			if action.lower() != "buy" and action.lower() != "sell":
 				noOfOrders -= 1
 		cashAvailable = float(self.getBroker().getCash(includeShort=False) * consts.PERCENT_OF_CASH_BALANCE_FOR_ENTRY)
 		self.info("Available cash: %.2f" % cashAvailable)
 
-		for instrument, action, stopPrice, adjRatio in self.__ordersFile.getOrdersForTime(barDateTimeinSecs):
+		for instrument, action, stopPrice, orderID, adjRatio in self.__ordersFile.getOrdersForTime(barDateTimeinSecs):
+			instrOrderIDTuple = (instrument, orderID)
+			#self.info("instrOrderIDTuple: %s" % str(instrOrderIDTuple))
+			orderTimeStamp = orderID[3:]
+			self.info("orderTimeStamp: %s" % str(orderTimeStamp))
+			self.__orderIDs[(instrument, orderTimeStamp)] = orderID
+			self.info("orderID: %s" % orderID)
+			self.info("orderIDs entry: %s" % str((instrument, orderTimeStamp)))
 			# Ensure that there's enough cach remaining in the portfolio for closing a short
 			# position, with potential losses.
 			cashAvailable -= self.__cashKeptAsideForShortLoss
 			self.info("Available cash after short adjustment: %.2f" % cashAvailable)
 			if action.lower() == "buy":
 				if adjRatio != 0:
-					self.__adjRatio[instrument] = adjRatio
+					self.__adjRatio[instrOrderIDTuple] = adjRatio
 				cashForInstrument = float(cashAvailable / noOfOrders)
 				if cashForInstrument > float(cashAvailable * consts.MAX_ALLOCATED_MONEY_FOR_EACH_TRADE):
 					cashForInstrument = float(cashAvailable * consts.MAX_ALLOCATED_MONEY_FOR_EACH_TRADE)
@@ -322,7 +409,7 @@ class MyStrategy(strategy.BacktestingStrategy):
 					# Buy at least 1 share
 					if stopPrice < cashAvailable:
 						self.info("%s %s of %s at $%.2f" % (action, '1', instrument, stopPrice))
-						self.__longPos[instrument] = self.enterLongStop(instrument, stopPrice, 1, True)
+						self.__longPos[instrOrderIDTuple] = self.enterLongStop(instrument, stopPrice, 1, True)
 						cashAvailable -= stopPrice
 						noOfOrders -= 1
 						continue
@@ -335,12 +422,12 @@ class MyStrategy(strategy.BacktestingStrategy):
 						self.__unexecutedOrdersFile.write("%s, %s, %s\n" % (instrument, 'Buy', str(stopPrice)))
 						continue 
 				self.info("%s %d of %s at $%.2f" % (action, sharesToBuy, instrument, stopPrice))
-				self.__longPos[instrument] = self.enterLongStop(instrument, stopPrice, sharesToBuy, True)
+				self.__longPos[instrOrderIDTuple] = self.enterLongStop(instrument, stopPrice, sharesToBuy, True)
 				cashAvailable -= cashForInstrument
 				noOfOrders -= 1
 			elif action.lower() == "sell":
 				if adjRatio != 0:
-					self.__adjRatio[instrument] = adjRatio
+					self.__adjRatio[instrOrderIDTuple] = adjRatio
 				cashForInstrument = float(cashAvailable / noOfOrders)
 				if cashForInstrument > float(cashAvailable * consts.MAX_ALLOCATED_MONEY_FOR_EACH_TRADE):
 					cashForInstrument = float(cashAvailable * consts.MAX_ALLOCATED_MONEY_FOR_EACH_TRADE)
@@ -350,7 +437,7 @@ class MyStrategy(strategy.BacktestingStrategy):
 					# Buy at least 1 share
 					if stopPrice < cashAvailable:
 						self.info("%s %s of %s at $%.2f" % (action, '1', instrument, stopPrice))
-						self.__shortPos[instrument] = self.enterShortStop(instrument, stopPrice, 1, True)
+						self.__shortPos[instrOrderIDTuple] = self.enterShortStop(instrument, stopPrice, 1, True)
 						#self.__cashKeptAsideForShortLoss += 1 * consts.MAX_EXPECTED_LOSS_PER_SHORT_SHARE
 						cashAvailable -= stopPrice
 						noOfOrders -= 1
@@ -364,38 +451,45 @@ class MyStrategy(strategy.BacktestingStrategy):
 						self.__unexecutedOrdersFile.write("%s, %s, %s\n" % (instrument, 'Sell', str(stopPrice)))
 						continue 
 				self.info("%s %d of %s at $%.2f" % (action, sharesToBuy, instrument, stopPrice))
-				self.__shortPos[instrument] = self.enterShortStop(instrument, stopPrice, sharesToBuy, True)
+				self.__shortPos[instrOrderIDTuple] = self.enterShortStop(instrument, stopPrice, sharesToBuy, True)
 				#self.__cashKeptAsideForShortLoss += sharesToBuy * consts.MAX_EXPECTED_LOSS_PER_SHORT_SHARE
 				cashAvailable -= cashForInstrument
 				noOfOrders -= 1
 			elif action.lower() == "tightened-stop-buy" or action.lower() == "stop-buy":
-				if self.__shortPos.get(instrument, None) and self.__shortPos[instrument]:
-					self.__shortPos[instrument].cancelExit()
-					self.__shortPos[instrument].exitStop(stopPrice, True)
+				if self.__shortPos.get(instrOrderIDTuple, None) and self.__shortPos[instrOrderIDTuple]:
+					self.__shortPos[instrOrderIDTuple].cancelExit()
+					self.__shortPos[instrOrderIDTuple].exitStop(stopPrice, True)
 			elif action.lower() == "tightened-stop-sell" or action.lower() == "stop-sell":
-				if self.__longPos.get(instrument, None) and self.__longPos[instrument]:
-					self.__longPos[instrument].cancelExit()
-					self.__longPos[instrument].exitStop(stopPrice, True)
+				if self.__longPos.get(instrOrderIDTuple, None) and self.__longPos[instrOrderIDTuple]:
+					self.__longPos[instrOrderIDTuple].cancelExit()
+					self.__longPos[instrOrderIDTuple].exitStop(stopPrice, True)
 			elif action.lower() == "buy-market":
-				if self.__shortPos.get(instrument, None) and self.__shortPos[instrument]:
+				if self.__shortPos.get(instrOrderIDTuple, None) and self.__shortPos[instrOrderIDTuple]:
 					self.info("Processing a Buy-Market order.")
-					self.__shortPos[instrument].cancelExit()
-					self.__shortPos[instrument].exitMarket()
+					self.__shortPos[instrOrderIDTuple].cancelExit()
+					self.__shortPos[instrOrderIDTuple].exitMarket()
 			elif action.lower() == "sell-market":
-				if self.__longPos.get(instrument, None) and self.__longPos[instrument]:
+				if self.__longPos.get(instrOrderIDTuple, None) and self.__longPos[instrOrderIDTuple]:
 					self.info("Processing a Sell-Market order.")
-					self.__longPos[instrument].cancelExit()
-					self.__longPos[instrument].exitMarket()
+					self.__longPos[instrOrderIDTuple].cancelExit()
+					self.__longPos[instrOrderIDTuple].exitMarket()
 			else:
 				pass # No need to take any action for Cover-Buy or Sell-Close entries.
 		# There must be a stop loss order to process if a Buy or Sell order was processed in the
 		# above step.
 		stopLossDateTime = xiquantFuncs.secondsSinceEpoch(bars.getDateTime() + datetime.timedelta(seconds=1))
-		for instrument, action, stopLossPrice, adjRatio in self.__ordersFile.getOrdersForTime(stopLossDateTime):
+		for instrument, action, stopLossPrice, orderID, adjRatio in self.__ordersFile.getOrdersForTime(stopLossDateTime):
 			self.info("Entry Day:%s: %s %s at $%.2f" % (str(stopLossDateTime), action, instrument, stopLossPrice))
-			if self.__longPos.get(instrument, None) and self.__longPos[instrument]:
-				self.__longPos[instrument].cancelExit()
-				self.__longPos[instrument].exitStop(stopLossPrice, True)
+			instrOrderIDTuple = (instrument, orderID)
+			#self.info("instrOrderIDTuple: %s" % str(instrOrderIDTuple))
+			orderTimeStamp = orderID[3:]
+			self.info("orderTimeStamp: %s" % str(orderTimeStamp))
+			self.__orderIDs[(instrument, orderTimeStamp)] = orderID
+			self.info("orderID: %s" % orderID)
+			self.info("orderIDs entry: %s" % str((instrument, orderTimeStamp)))
+			if self.__longPos.get(instrOrderIDTuple, None) and self.__longPos[instrOrderIDTuple]:
+				self.__longPos[instrOrderIDTuple].cancelExit()
+				self.__longPos[instrOrderIDTuple].exitStop(stopLossPrice, True)
 				# Check if exit could have happened on the entry day itself and adjust the profit
 				# or loss accordingly.
 				actualPorL =  0.0
@@ -414,16 +508,16 @@ class MyStrategy(strategy.BacktestingStrategy):
 				# none as it was never instantiated in onEnterOk (since the 
 				# next unfiltered Buy/Sell is not yet executed). 
 				# A very unique case :^)
-				if not self.__longPos[instrument].entryActive() and self.__intraDayExits.get(instrument, None) != None and not self.__intraDayExits[instrument]:
+				if not self.__longPos[instrOrderIDTuple].entryActive() and self.__intraDayExits.get(instrOrderIDTuple, None) != None and not self.__intraDayExits[instrOrderIDTuple]:
 					self.__lowDS = self.__feed[instrument].getLowDataSeries()
 					self.__highDS = self.__feed[instrument].getHighDataSeries()
 					self.__openDS = self.__feed[instrument].getOpenDataSeries()
-					execInfo = self.__longPos[instrument].getEntryOrder().getExecutionInfo()
+					execInfo = self.__longPos[instrOrderIDTuple].getEntryOrder().getExecutionInfo()
 					if execInfo == None:
 						continue
 					# Adjust the profit lock price -- the price is already adjusted by the ratio
 					# so the profit should be as well.
-					lockProfitPrice = execInfo.getPrice() + consts.PROFIT_LOCK * self.__adjRatio[instrument]
+					lockProfitPrice = execInfo.getPrice() + consts.PROFIT_LOCK * self.__adjRatio[instrOrderIDTuple]
 					self.info("lockProfitPrice: %0.2f" % lockProfitPrice)
 					if self.__openDS[-1] <= stopLossPrice:
 						exitPrice = self.__openDS[-1]
@@ -435,10 +529,10 @@ class MyStrategy(strategy.BacktestingStrategy):
 						self.info("exitPrice: %0.2f" % exitPrice)
 						actualPorL =  (exitPrice - execInfo.getPrice()) * execInfo.getQuantity()
 						self.info("Actual P or L for long %s %d shares is %0.2f" % (instrument, execInfo.getQuantity(), actualPorL))
-						self.__intraDayExits[instrument] = True
-						self.__stopLossExitPOrL[instrument] = actualPorL
-						self.__stopLossExitPrice[instrument] = exitPrice
-						self.__stopLossExitDate[instrument] = str(bars.getDateTime().date())
+						self.__intraDayExits[instrOrderIDTuple] = True
+						self.__stopLossExitPOrL[instrOrderIDTuple] = actualPorL
+						self.__stopLossExitPrice[instrOrderIDTuple] = exitPrice
+						self.__stopLossExitDate[instrOrderIDTuple] = str(bars.getDateTime().date())
 					exitPrice = 0.0
 					if self.__highDS[-1] >= lockProfitPrice:
 						exitPrice = lockProfitPrice
@@ -447,14 +541,14 @@ class MyStrategy(strategy.BacktestingStrategy):
 						self.info("exitPrice: %0.2f" % exitPrice)
 						actualPorL =  (exitPrice - execInfo.getPrice()) * execInfo.getQuantity()
 						self.info("Actual P or L for long %s %d shares is %0.2f" % (instrument, execInfo.getQuantity(), actualPorL))
-						self.__intraDayExits[instrument] = True
-						self.__profitExitPOrL[instrument] = actualPorL
-						self.__profitExitPrice[instrument] = exitPrice
-						self.__profitExitDate[instrument] = str(bars.getDateTime().date())
-					#self.__results[instrument] += str(actualPorL) + ',' + str(bars.getDateTime().date()) + ','
-			if self.__shortPos.get(instrument, None) and self.__shortPos[instrument]:
-				self.__shortPos[instrument].cancelExit()
-				self.__shortPos[instrument].exitStop(stopLossPrice, True)
+						self.__intraDayExits[instrOrderIDTuple] = True
+						self.__profitExitPOrL[instrOrderIDTuple] = actualPorL
+						self.__profitExitPrice[instrOrderIDTuple] = exitPrice
+						self.__profitExitDate[instrOrderIDTuple] = str(bars.getDateTime().date())
+					#self.__results[instrOrderIDTuple] += str(actualPorL) + ',' + str(bars.getDateTime().date()) + ','
+			if self.__shortPos.get(instrOrderIDTuple, None) and self.__shortPos[instrOrderIDTuple]:
+				self.__shortPos[instrOrderIDTuple].cancelExit()
+				self.__shortPos[instrOrderIDTuple].exitStop(stopLossPrice, True)
 				# Check if exit could have happened on the entry day itself and adjust the profit
 				# or loss accordingly.
 				actualPorL =  0.0
@@ -473,16 +567,16 @@ class MyStrategy(strategy.BacktestingStrategy):
 				# none as it was never instantiated in onEnterOk (since the 
 				# next unfiltered Buy/Sell is not yet executed). 
 				# A very unique case :^)
-				if not self.__shortPos[instrument].entryActive() and self.__intraDayExits.get(instrument, None) != None and not self.__intraDayExits[instrument]:
+				if not self.__shortPos[instrOrderIDTuple].entryActive() and self.__intraDayExits.get(instrOrderIDTuple, None) != None and not self.__intraDayExits[instrOrderIDTuple]:
 					self.__lowDS = self.__feed[instrument].getLowDataSeries()
 					self.__highDS = self.__feed[instrument].getHighDataSeries()
 					self.__openDS = self.__feed[instrument].getOpenDataSeries()
-					execInfo = self.__shortPos[instrument].getEntryOrder().getExecutionInfo()
+					execInfo = self.__shortPos[instrOrderIDTuple].getEntryOrder().getExecutionInfo()
 					if execInfo == None:
 						continue
 					# Adjust the profit lock price -- the price is already adjusted by the ratio
 					# so the profit should be as well.
-					lockProfitPrice = execInfo.getPrice() - consts.PROFIT_LOCK * self.__adjRatio[instrument]
+					lockProfitPrice = execInfo.getPrice() - consts.PROFIT_LOCK * self.__adjRatio[instrOrderIDTuple]
 					self.info("lockProfitPrice: %0.2f" % lockProfitPrice)
 					if self.__openDS[-1] >= stopLossPrice:
 						exitPrice = self.__openDS[-1]
@@ -494,10 +588,10 @@ class MyStrategy(strategy.BacktestingStrategy):
 						self.info("exitPrice: %0.2f" % exitPrice)
 						actualPorL =  (exitPrice - execInfo.getPrice()) * -1 * execInfo.getQuantity()
 						self.info("Actual P or L for long %s %d shares is %0.2f" % (instrument, execInfo.getQuantity(), actualPorL))
-						self.__intraDayExits[instrument] = True
-						self.__stopLossExitPOrL[instrument] = actualPorL
-						self.__stopLossExitPrice[instrument] = exitPrice
-						self.__stopLossExitDate[instrument] = str(bars.getDateTime().date())
+						self.__intraDayExits[instrOrderIDTuple] = True
+						self.__stopLossExitPOrL[instrOrderIDTuple] = actualPorL
+						self.__stopLossExitPrice[instrOrderIDTuple] = exitPrice
+						self.__stopLossExitDate[instrOrderIDTuple] = str(bars.getDateTime().date())
 					exitPrice = 0.0
 					if self.__lowDS[-1] <= lockProfitPrice:
 						exitPrice = lockProfitPrice
@@ -506,41 +600,55 @@ class MyStrategy(strategy.BacktestingStrategy):
 						self.info("exitPrice: %0.2f" % exitPrice)
 						actualPorL =  (exitPrice - execInfo.getPrice()) * -1 * execInfo.getQuantity()
 						self.info("Actual P or L for short %s %d shares is %0.2f" % (instrument, execInfo.getQuantity(), actualPorL))
-						self.__intraDayExits[instrument] = True
-						self.__profitExitPOrL[instrument] = actualPorL
-						self.__profitExitPrice[instrument] = exitPrice
-						self.__profitExitDate[instrument] = str(bars.getDateTime().date())
-					#self.__results[instrument] += str(actualPorL) + ','  + str(bars.getDateTime().date()) + ','
+						self.__intraDayExits[instrOrderIDTuple] = True
+						self.__profitExitPOrL[instrOrderIDTuple] = actualPorL
+						self.__profitExitPrice[instrOrderIDTuple] = exitPrice
+						self.__profitExitDate[instrOrderIDTuple] = str(bars.getDateTime().date())
+				#self.__results[instrOrderIDTuple] += str(actualPorL) + ','  + str(bars.getDateTime().date()) + ','
 		# Process any tightened stop loss orders
 		stopLossDateTime = xiquantFuncs.secondsSinceEpoch(bars.getDateTime() + datetime.timedelta(seconds=2))
 		self.info("Later Day stop loss order time: %s" % str(stopLossDateTime))
-		for instrument, action, stopLossPrice, adjRatio in self.__ordersFile.getOrdersForTime(stopLossDateTime):
+		for instrument, action, stopLossPrice, orderID, adjRatio in self.__ordersFile.getOrdersForTime(stopLossDateTime):
 			self.info("Later Day:%s: %s %s at $%.2f" % (str(stopLossDateTime), action, instrument, stopLossPrice))
-			if self.__longPos.get(instrument, None) and self.__longPos[instrument]:
-				self.__longPos[instrument].cancelExit()
-				self.__longPos[instrument].exitStop(stopLossPrice, True)
-			if self.__shortPos.get(instrument, None) and self.__shortPos[instrument]:
-				self.__shortPos[instrument].cancelExit()
-				self.__shortPos[instrument].exitStop(stopLossPrice, True)
+			instrOrderIDTuple = (instrument, orderID)
+			#self.info("instrOrderIDTuple: %s" % str(instrOrderIDTuple))
+			orderTimeStamp = orderID[3:]
+			self.info("orderTimeStamp: %s" % str(orderTimeStamp))
+			self.__orderIDs[(instrument, orderTimeStamp)] = orderID
+			self.info("orderID: %s" % orderID)
+			self.info("orderIDs entry: %s" % str((instrument, orderTimeStamp)))
+			if self.__longPos.get(instrOrderIDTuple, None) and self.__longPos[instrOrderIDTuple]:
+				self.__longPos[instrOrderIDTuple].cancelExit()
+				self.__longPos[instrOrderIDTuple].exitStop(stopLossPrice, True)
+			if self.__shortPos.get(instrOrderIDTuple, None) and self.__shortPos[instrOrderIDTuple]:
+				self.__shortPos[instrOrderIDTuple].cancelExit()
+				self.__shortPos[instrOrderIDTuple].exitStop(stopLossPrice, True)
 
 		# Simulate intraday exit to lock profit
 		stopLossDateTime = xiquantFuncs.secondsSinceEpoch(self.__prevBarDate + datetime.timedelta(seconds=2))
 		self.info("stopLossDateTime: %s" % str(stopLossDateTime))
-		for instrument, action, stopLossPrice, adjRatio in self.__ordersFile.getOrdersForTime(stopLossDateTime):
+		for instrument, action, stopLossPrice, orderID, adjRatio in self.__ordersFile.getOrdersForTime(stopLossDateTime):
 			self.info("Later Day:%s: %s %s at $%.2f" % (str(stopLossDateTime), action, instrument, stopLossPrice))
-			if self.__longPos.get(instrument, None) and self.__longPos[instrument]:
+			instrOrderIDTuple = (instrument, orderID)
+			#self.info("instrOrderIDTuple: %s" % str(instrOrderIDTuple))
+			orderTimeStamp = orderID[3:]
+			self.info("orderTimeStamp: %s" % str(orderTimeStamp))
+			self.__orderIDs[(instrument, orderTimeStamp)] = orderID
+			self.info("orderID: %s" % orderID)
+			self.info("orderIDs entry: %s" % str((instrument, orderTimeStamp)))
+			if self.__longPos.get(instrOrderIDTuple, None) and self.__longPos[instrOrderIDTuple]:
 				actualPorL =  0.0
 				exitPrice = 0.0
-				if not self.__longPos[instrument].entryActive() and self.__intraDayExits.get(instrument, None) != None and not self.__intraDayExits[instrument]:
+				if not self.__longPos[instrOrderIDTuple].entryActive() and self.__intraDayExits.get(instrOrderIDTuple, None) != None and not self.__intraDayExits[instrOrderIDTuple]:
 					self.__lowDS = self.__feed[instrument].getLowDataSeries()
 					self.__highDS = self.__feed[instrument].getHighDataSeries()
 					self.__openDS = self.__feed[instrument].getOpenDataSeries()
-					execInfo = self.__longPos[instrument].getEntryOrder().getExecutionInfo()
+					execInfo = self.__longPos[instrOrderIDTuple].getEntryOrder().getExecutionInfo()
 					if execInfo == None:
 						continue
 					# Adjust the profit lock price -- the price is already adjusted by the ratio
 					# so the profit should be as well.
-					lockProfitPrice = execInfo.getPrice() + consts.PROFIT_LOCK * self.__adjRatio[instrument]
+					lockProfitPrice = execInfo.getPrice() + consts.PROFIT_LOCK * self.__adjRatio[instrOrderIDTuple]
 					self.info("lockProfitPrice: %0.2f" % lockProfitPrice)
 					if self.__openDS[-1] <= stopLossPrice:
 						exitPrice = self.__openDS[-1]
@@ -552,10 +660,10 @@ class MyStrategy(strategy.BacktestingStrategy):
 						self.info("exitPrice: %0.2f" % exitPrice)
 						actualPorL =  (exitPrice - execInfo.getPrice()) * execInfo.getQuantity()
 						self.info("Actual P or L for long %s %d shares is %0.2f" % (instrument, execInfo.getQuantity(), actualPorL))
-						self.__intraDayExits[instrument] = True
-						self.__stopLossExitPOrL[instrument] = actualPorL
-						self.__stopLossExitPrice[instrument] = exitPrice
-						self.__stopLossExitDate[instrument] = str(bars.getDateTime().date())
+						self.__intraDayExits[instrOrderIDTuple] = True
+						self.__stopLossExitPOrL[instrOrderIDTuple] = actualPorL
+						self.__stopLossExitPrice[instrOrderIDTuple] = exitPrice
+						self.__stopLossExitDate[instrOrderIDTuple] = str(bars.getDateTime().date())
 					exitPrice = 0.0
 					if self.__highDS[-1] >= lockProfitPrice:
 						exitPrice = lockProfitPrice
@@ -564,24 +672,24 @@ class MyStrategy(strategy.BacktestingStrategy):
 						self.info("exitPrice: %0.2f" % exitPrice)
 						actualPorL =  (exitPrice - execInfo.getPrice()) * execInfo.getQuantity()
 						self.info("Actual P or L for long %s %d shares is %0.2f" % (instrument, execInfo.getQuantity(), actualPorL))
-						self.__intraDayExits[instrument] = True
-						self.__profitExitPOrL[instrument] = actualPorL
-						self.__profitExitPrice[instrument] = exitPrice
-						self.__profitExitDate[instrument] = str(bars.getDateTime().date())
-					#self.__results[instrument] += str(actualPorL) + ',' + str(bars.getDateTime().date()) + ','
-			if self.__shortPos.get(instrument, None) and self.__shortPos[instrument]:
+						self.__intraDayExits[instrOrderIDTuple] = True
+						self.__profitExitPOrL[instrOrderIDTuple] = actualPorL
+						self.__profitExitPrice[instrOrderIDTuple] = exitPrice
+						self.__profitExitDate[instrOrderIDTuple] = str(bars.getDateTime().date())
+					#self.__results[instrOrderIDTuple] += str(actualPorL) + ',' + str(bars.getDateTime().date()) + ','
+			if self.__shortPos.get(instrOrderIDTuple, None) and self.__shortPos[instrOrderIDTuple]:
 				actualPorL =  0.0
 				exitPrice = 0.0
-				if not self.__shortPos[instrument].entryActive() and self.__intraDayExits.get(instrument, None) != None and not self.__intraDayExits[instrument]:
+				if not self.__shortPos[instrOrderIDTuple].entryActive() and self.__intraDayExits.get(instrOrderIDTuple, None) != None and not self.__intraDayExits[instrOrderIDTuple]:
 					self.__lowDS = self.__feed[instrument].getLowDataSeries()
 					self.__highDS = self.__feed[instrument].getHighDataSeries()
 					self.__openDS = self.__feed[instrument].getOpenDataSeries()
-					execInfo = self.__shortPos[instrument].getEntryOrder().getExecutionInfo()
+					execInfo = self.__shortPos[instrOrderIDTuple].getEntryOrder().getExecutionInfo()
 					if execInfo == None:
 						continue
 					# Adjust the profit lock price -- the price is already adjusted by the ratio
 					# so the profit should be as well.
-					lockProfitPrice = execInfo.getPrice() - consts.PROFIT_LOCK * self.__adjRatio[instrument]
+					lockProfitPrice = execInfo.getPrice() - consts.PROFIT_LOCK * self.__adjRatio[instrOrderIDTuple]
 					self.info("lockProfitPrice: %0.2f" % lockProfitPrice)
 					if self.__openDS[-1] >= stopLossPrice:
 						exitPrice = self.__openDS[-1]
@@ -593,10 +701,10 @@ class MyStrategy(strategy.BacktestingStrategy):
 						self.info("exitPrice: %0.2f" % exitPrice)
 						actualPorL =  (exitPrice - execInfo.getPrice()) * -1 * execInfo.getQuantity()
 						self.info("Actual P or L for long %s %d shares is %0.2f" % (instrument, execInfo.getQuantity(), actualPorL))
-						self.__intraDayExits[instrument] = True
-						self.__stopLossExitPOrL[instrument] = actualPorL
-						self.__stopLossExitPrice[instrument] = exitPrice
-						self.__stopLossExitDate[instrument] = str(bars.getDateTime().date())
+						self.__intraDayExits[instrOrderIDTuple] = True
+						self.__stopLossExitPOrL[instrOrderIDTuple] = actualPorL
+						self.__stopLossExitPrice[instrOrderIDTuple] = exitPrice
+						self.__stopLossExitDate[instrOrderIDTuple] = str(bars.getDateTime().date())
 					exitPrice = 0.0
 					if self.__lowDS[-1] <= lockProfitPrice:
 						exitPrice = lockProfitPrice
@@ -605,11 +713,11 @@ class MyStrategy(strategy.BacktestingStrategy):
 						self.info("exitPrice: %0.2f" % exitPrice)
 						actualPorL =  (exitPrice - execInfo.getPrice()) * -1 * execInfo.getQuantity()
 						self.info("Actual P or L for short %s %d shares is %0.2f" % (instrument, execInfo.getQuantity(), actualPorL))
-						self.__intraDayExits[instrument] = True
-						self.__profitExitPOrL[instrument] = actualPorL
-						self.__profitExitPrice[instrument] = exitPrice
-						self.__profitExitDate[instrument] = str(bars.getDateTime().date())
-					#self.__results[instrument] += str(actualPorL) + ','  + str(bars.getDateTime().date()) + ','
+						self.__intraDayExits[instrOrderIDTuple] = True
+						self.__profitExitPOrL[instrOrderIDTuple] = actualPorL
+						self.__profitExitPrice[instrOrderIDTuple] = exitPrice
+						self.__profitExitDate[instrOrderIDTuple] = str(bars.getDateTime().date())
+					#self.__results[instrOrderIDTuple] += str(actualPorL) + ','  + str(bars.getDateTime().date()) + ','
 		self.__prevBarDate = bars.getDateTime()
 		portfolioValue = self.getBroker().getEquity()
 		self.info("Portfolio value: $%.2f" % (portfolioValue))
@@ -671,38 +779,7 @@ def main():
 	print "Average Daily Return: %.2f %%" % (stats.mean(retAnalyzer.getReturns()) * 100)
 	print "Std. Dev. Daily Return: %.4f" % (stats.stddev(retAnalyzer.getReturns()))
 	print "Sharpe Ratio: %.2f" % (sharpeRatioAnalyzer.getSharpeRatio(0))
-
-
-	'''
-	# Download the CSV files from Yahoo Finance
-	for instrument in ordersFile.getInstruments():
-		tempFeed = yahoofinance.build_feed([instrument], startPeriod, endPeriod, ".")
-
-	feed = yahoofeed.Feed()
-	for instrument in ordersFile.getInstruments():
-		for year in range(startPeriod, endPeriod + 1):
-			csvFileName = instrument + "-" + str(year) + "-yahoofinance.csv"
-			feed.addBarsFromCSV(instrument, csvFileName)
-
-	# Run the strategy.
-	cash = 100000
-	useAdjustedClose = True
-	myStrategy = MyStrategy(feed, cash, ordersFile, useAdjustedClose)
-
-	# Attach returns and sharpe ratio analyzers.
-	retAnalyzer = returns.Returns()
-	myStrategy.attachAnalyzer(retAnalyzer)
-	sharpeRatioAnalyzer = sharpe.SharpeRatio()
-	myStrategy.attachAnalyzer(sharpeRatioAnalyzer)
-
-	myStrategy.run()
-
-	# Print the results.
-	print "Final portfolio value: $%.2f" % myStrategy.getResult()
-	print "Anual return: %.2f %%" % (retAnalyzer.getCumulativeReturns()[-1] * 100)
-	print "Average daily return: %.2f %%" % (stats.mean(retAnalyzer.getReturns()) * 100)
-	print "Std. dev. daily return: %.4f" % (stats.stddev(retAnalyzer.getReturns()))
-	print "Sharpe ratio: %.2f" % (sharpeRatioAnalyzer.getSharpeRatio(0))
-	'''
+	print "Strategy Results:\n" 
+	print myStrategy.getStrategiesOutput()
 
 #main()

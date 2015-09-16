@@ -1,22 +1,115 @@
 $(document).ready( function() {
 
-    // JQuery code to related to rango application to be added in here.
-    // For all the JQury commands they follow a similar pattern: Select & Act
-    // Select an element, and then act on the element
-    // Code aalso reflects ajax functions...
 
-    /////block corrosponds too date-range picker....
-    $('#reportrange2 span').html(moment().subtract(29, 'days').format('MMMM D, YYYY') + ' - ' + moment().format('MMMM D, YYYY'));
-    $("#reportrange2").daterangepicker({
-                    format: 'MM/DD/YYYY',
-                    minDate: '01/01/2005',
-                    maxDate: '12/31/2014',
-                    dateLimit: { days: 250 },
-                  }, function(start, end, label) {
-                    //alert("You clicked the button using JQuery!");
-                    console.log(start.toISOString(), end.toISOString(), label);
-                    $('#reportrange2 span').html(start.format('MMMM D, YYYY') + ' - ' + end.format('MMMM D, YYYY'));
-                  });
+  /// Functions related to handsontable .....
+
+  // Instead of creating a new Handsontable instance
+    // with the container element passed as an argument,
+    // you can simply call .handsontable method on a jQuery DOM object.
+  var $container = $("#example1");
+  
+  function BindData(data) {
+    $container.handsontable({
+      //data: getData(),
+      data: data,
+      rowHeaders: true,
+      colHeaders: true,
+      contextMenu: true
+    });
+  }
+
+  $("#sList").on('click', '#stratLabel', function(event) {
+    alert("You clicked the button xxxList using JQuery!");
+    $('#showStratList').empty()
+    $('#showStratList').html('<li><a href="#" id="Simulate">Abhi-26</a>'
+                         +'</li><li><a href="#" id="Simulate">CBOE-r100</a></li>'
+                         +'</li><li><a href="#" id="Simulate">SP-500</a></li>'
+                         +'</li><li><a href="#" id="Simulate">CBOE-r1000</a></li>'
+                         +'</li><li><a href="#" id="Simulate">CBOE-ALL</a></li>'
+                         +'</li><li><a href="#" id="Simulate">SP-500-CBOE-r1000</a></li>'
+                         +'</li><li><a href="#" id="Simulate">SP-100</a></li>'
+                        );
+  });
+
+  $('#sList').on('click','#Simulate',function(){
+      var amount = $('#InitialCash').val();
+      var drp = $('#reportrange2').data('daterangepicker');
+      var rank = $('#rank').val();
+      var strategy = $(this).text();
+      var jobid = "NEW" /// This is to indicate new vs existing job polling...
+      //alert( "Initializing Portfolio simulation... rank: "+rank );
+      var intervalId = setInterval(function(){
+          //Set cursor to processing....
+          $("*").css("cursor", "progress");
+          $.ajax({
+                  url: '/strategies/backtest_portfolio/?strategy='+strategy+'&jobid='+jobid+'&amount='+amount+'&rank='+rank+"&stdate="+drp.startDate.toISOString()+"&enddate="+drp.endDate.toISOString(),
+                  type: 'GET',
+                  async: true,
+                  dataType: "json",
+                  beforeSend: function( xhr, status ) {
+                           //alert( "Before calling function" );
+                           //Indicates progress bar...
+                           $("*").css("cursor", "progress");
+                  }, 
+                  success: function (data) {
+                    if (data.jobstatus == "SUCCESS")
+                    {
+                        //// CLear the interval & set back the cursor...
+                        clearInterval(intervalId); 
+                        $("*").css("cursor", "default");
+                        
+                        console.log("Inside Success");
+                        /*
+                        portseries = []
+                        portseries[0] = {name: "portfolio value", data: data.seriesData};
+                        portseries[1] = {name: "trades", data: data.flagData};
+                        portseries[2] = {name: "trades", data: data.cumulativereturns};
+                        */
+                        //displayPortfolioSimulation(portseries)
+                        BindData(data.seriesData)
+                    }
+                    else
+                    {
+                      /// Let set interval make another calll with the returned jobid via status
+                      jobid = data.jobstatus
+                      //alert( "Inside polling loop...: " + jobid );
+                    } 
+                  },
+                  // Code to run if the request fails; the raw request and
+                  // status codes are passed to the function
+                  error: function( xhr, status, errorThrown ) {
+                        alert( "Sorry, there was a problem!" );
+                        console.log( "Error: " + errorThrown );
+                        console.log( "Status: " + status );
+                        console.dir( xhr );
+                  },
+                  // Code to run regardless of success or failure
+                  complete: function( data, xhr, status ) {
+                   //alert( "The request is complete!" );
+                  } 
+            });
+      }, 3000); /// interval function.....
+  });
+
+
+
+  // JQuery code to related to rango application to be added in here.
+  // For all the JQury commands they follow a similar pattern: Select & Act
+  // Select an element, and then act on the element
+  // Code aalso reflects ajax functions...
+
+  /////block corrosponds too date-range picker....
+  $('#reportrange2 span').html(moment().subtract(29, 'days').format('MMMM D, YYYY') + ' - ' + moment().format('MMMM D, YYYY'));
+  $("#reportrange2").daterangepicker({
+                  format: 'MM/DD/YYYY',
+                  minDate: '01/01/2005',
+                  maxDate: '12/31/2014',
+                  dateLimit: { days: 250 },
+                }, function(start, end, label) {
+                  //alert("You clicked the button using JQuery!");
+                  console.log(start.toISOString(), end.toISOString(), label);
+                  $('#reportrange2 span').html(start.format('MMMM D, YYYY') + ' - ' + end.format('MMMM D, YYYY'));
+                });
 
 
     $("#about-btn").addClass('btn btn-primary');
@@ -1417,7 +1510,6 @@ $('#Ticker .typeahead').typeahead({
   name: 'tickers',
   source: substringMatcher(tickers)
 });
-
 
 
 }); //end of ready function
