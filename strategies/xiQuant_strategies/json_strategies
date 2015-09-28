@@ -146,7 +146,7 @@
 										]
 								}
 						},
-"EMA_Breach_Mtm_Call": {"10_EMA": {
+"EMA_Breach_Mtm_Call": {"EMA": {
 											"AND": [
 													"Crossover",
 													"First_Breach"
@@ -181,7 +181,7 @@
 										]
 								}
 						},
-"EMA_Breach_Mtm_Put": {"10_EMA": {
+"EMA_Breach_Mtm_Put": {"EMA": {
 											"AND": [
 													"Crossover",
 													"First_Breach"

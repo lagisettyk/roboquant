@@ -1,6 +1,6 @@
 from rq import Queue
 import redis
-from update_redis_ds import populate_redis_moneyflow_history, populate_redis_eod_today_raw
+from update_redis_ds import populate_redis_moneyflow_history, populate_redis_eod_today_raw, populate_redis_eod_today_yahoo
 import time
 import datetime
 from apscheduler.schedulers.blocking import BlockingScheduler
@@ -12,8 +12,9 @@ import dateutil.parser
 
 #tickerList = util.getTickerListWithSPY()
 #tickerList = util.getTickerList('CBOE-ALL')
-tickerList = util.getTickerList('SP-500')
-#tickerList = ['AAPL', 'QQQ', 'SPY']
+#tickerList = util.getTickerList('FTSE-100')
+tickerList = util.getTickerList('HKG-100')
+#tickerList = ['HKG_0144']
 
 def get_redis_conn():
 	return util.get_redis_conn_nopool()
@@ -45,7 +46,7 @@ def scheduled_job():
 	print job.result   # => 889
 
 
-#@sched.scheduled_job('date')
+@sched.scheduled_job('date')
 #@sched.scheduled_job('cron', day_of_week='mon-fri', hour=17)
 def populate_moneyflow():
 	print('This job is to populate cashflow')
@@ -63,6 +64,30 @@ def populate_rawEOD():
 	redis_conn = util.get_redis_conn()
 	q = Queue(connection=redis_conn)
 	job = q.enqueue(populate_redis_eod_today_raw, "EOD", tickerList)
+	print job.result   # => None
+	time.sleep(10)
+	print job.result   # => 889
+
+
+#@sched.scheduled_job('date')
+#@sched.scheduled_job('cron', day_of_week='mon-fri', hour=17)
+def populate_rawEOD_GOOG():
+	print('This job is run every weekday at 7pm.')
+	redis_conn = util.get_redis_conn()
+	q = Queue(connection=redis_conn)
+	job = q.enqueue(populate_redis_eod_today_yahoo, "GOOG", tickerList)
+	print job.result   # => None
+	time.sleep(10)
+	print job.result   # => 889
+
+
+#@sched.scheduled_job('date')
+#@sched.scheduled_job('cron', day_of_week='mon-fri', hour=17)
+def populate_rawEOD_YAHOO():
+	print('This job is run every weekday at 7pm.')
+	redis_conn = util.get_redis_conn()
+	q = Queue(connection=redis_conn)
+	job = q.enqueue(populate_redis_eod_today_yahoo, "YAHOO", tickerList)
 	print job.result   # => None
 	time.sleep(10)
 	print job.result   # => 889

@@ -15,7 +15,7 @@ sys.path.append('/home/parallels/Code/heroku-envbased/roboquant/strategies')
 from xiQuant_strategies import xiQuantStrategyUtil, xiquantStrategyParams
 
 
-listStr = 'SP-500'
+listStr = 'HKG-100'
 
 tickerList = util.getTickerList(listStr)
 
@@ -75,7 +75,7 @@ def test_parallel_strategy():
 
 	# Tell RQ what Redis connection to use
 	redis_conn = util.get_redis_conn()
-	q = Queue(connection=redis_conn)  # no args implies the default queue
+	q = Queue(connection=redis_conn, default_timeout=1500)  # no args implies the default queue
 	import dateutil.parser
 	startdate = dateutil.parser.parse('2005-06-30T08:00:00.000Z')
 	enddate = dateutil.parser.parse('2014-12-31T08:00:00.000Z')
@@ -408,8 +408,8 @@ def process_Options_History():
 	
 #test_parallel_strategy()
 #run_parallel_BBSMAXOverMTM()
-run_parallel_EMABreachMTM()
-#run_parallel_EMATrend()
+#run_parallel_EMABreachMTM()
+run_parallel_EMATrend()
 #run_singlestock_analysis()
 #process_Options_History()
 

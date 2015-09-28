@@ -65,6 +65,12 @@ def getTickerList(strategy):
 			file_tickerlist = getRelativePath('Abhi_26.csv')
 		if strategy == 'SP-100':
 			file_tickerlist = getRelativePath('SP100.csv')
+		if strategy == 'CUSTOM-RANK5':
+			file_tickerlist = getRelativePath('CUSTOM-RANK5.csv')
+		if strategy == 'FTSE-100':
+			file_tickerlist = getRelativePath('FTSE-100.csv')
+		if strategy == 'HKG-100':
+			file_tickerlist = getRelativePath('HKG-100.csv')
 		with open(file_tickerlist, 'rU') as csvfile:
 			reader = csv.DictReader(csvfile)
 			for row in reader:

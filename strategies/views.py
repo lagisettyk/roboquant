@@ -104,12 +104,13 @@ def computeIndicators(request):
 	start_date = dateutil.parser.parse(stdate)
 	end_date = dateutil.parser.parse(enddate)
 	if indicator == 'BBands':
-		upper, middle, lower, adjOHLCSeries = xiQuantStrategyUtil.compute_BBands(ticker, start_date, end_date)
+		upper, middle, lower, adjOHLCSeries, ema10 = xiQuantStrategyUtil.compute_BBands(ticker, start_date, end_date)
 		results = {
 			"upper": upper,
 			"middle": middle,
 			"lower": lower,
-			"price": adjOHLCSeries
+			"price": adjOHLCSeries,
+			"ema_10": ema10
 			}
 	elif indicator == 'SMA-20':
 		sma_20, adjOHLCSeries = xiQuantStrategyUtil.compute_SMA(ticker, start_date, end_date)

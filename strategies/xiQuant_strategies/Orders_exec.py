@@ -81,7 +81,7 @@ class MyStrategy(strategy.BacktestingStrategy):
 		strategy.BacktestingStrategy.__init__(self, feed, cash)
 		self.__feed = feed
 		self.__backtestingEndDate = endPeriod
-		self.__SPYFeed = feed["SPY"]
+		self.__SPYFeed = feed[consts.MARKET]
 		self.__spyDS = self.__SPYFeed.getCloseDataSeries()
 		self.__spyOpenDS = self.__SPYFeed.getOpenDataSeries()
 		self.__smaSPYShort1 = ma.SMA(self.__spyDS, consts.SMA_SHORT_1)
@@ -801,12 +801,12 @@ def main():
 	# Add the SPY bars to support the simulation of whether we should have
 	# entered certain trades or not -- based on the SPY opening higher/lower
 	# than 20 SMA value for bullish/bearish trades.
-	feed = xiquantPlatform.add_feeds_EODRAW_CSV(feed, 'SPY', startPeriod, endPeriod)
+	feed = xiquantPlatform.add_feeds_EODRAW_CSV(feed, consts.MARKET, startPeriod, endPeriod)
 
 	barsDictForCurrAdj = {}
 	for instrument in ordersFile.getInstruments():
 		barsDictForCurrAdj[instrument] = feed.getBarSeries(instrument)
-	barsDictForCurrAdj['SPY'] = feed.getBarSeries('SPY')
+	barsDictForCurrAdj[consts.MARKET] = feed.getBarSeries(consts.MARKET)
 	feedAdjustedToEndDate = xiquantPlatform.adjustBars(barsDictForCurrAdj, startPeriod, endPeriod, keyFlag=False)
 
 	cash = 100000

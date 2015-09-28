@@ -29,5 +29,15 @@
 					"OR": {
 							"Breach": "Close_Minus_Price_Delta"
 						}
+				},
+"EMA_Trend_Call": {
+					"OR": {
+							"Breach": "Close_Plus_Price_Delta"
+						}
+				},
+"EMA_Trend_Put": {
+					"OR": {
+							"Breach": "Close_Minus_Price_Delta"
+						}
 				}
 		}

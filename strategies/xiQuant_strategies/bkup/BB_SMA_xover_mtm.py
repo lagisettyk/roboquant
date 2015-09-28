@@ -38,8 +38,8 @@ class BBSMACrossover(strategy.BacktestingStrategy):
 
 		barsDict = {}
 		barsDict[instrument] = feedRaw.getBarSeries(instrument)
-		barsDict['SPY'] = feedRaw.getBarSeries('SPY')
-		barsDict['QQQ'] = feedRaw.getBarSeries('QQQ')
+		barsDict[consts.MARKET] = feedRaw.getBarSeries(consts.MARKET)
+		barsDict[consts.TECH_SECTOR] = feedRaw.getBarSeries(consts.TECH_SECTOR)
 		self.__barsDict = barsDict
 
 		self.__feedLookbackAdjusted = feedRaw
@@ -88,7 +88,8 @@ class BBSMACrossover(strategy.BacktestingStrategy):
 		self.__progressStopLosses = False
 		self.__smaDS = None
 		self.__strategyID = None
-		self.__orderID = None
+		self.__orderIDLong = None
+		self.__orderIDShort = None
 
 	def initLogging(self):
 		logger = logging.getLogger("xiQuant")
@@ -176,23 +177,23 @@ class BBSMACrossover(strategy.BacktestingStrategy):
 		jsonEntryPrice.close()
 		jsonExitPrice.close()
 
-
-
 	def onFinish(self, bars):
+		self.__logger.info("Final portfolio value: $%.2f" % self.getBroker().getEquity())
 		self.stopLogging()
 
 		# Write the in-memory orders to a file.
 		dataRows = []
-		for key, value in self.__orders.iteritems():
-			row = []
-			row.append(key)
-			row.append(value[0][0])
-			row.append(value[0][1])
-			row.append(value[0][2])
-			row.append(value[0][3])
-			row.append(value[0][4])
-			row.append(value[0][5])
-			dataRows.append(row)
+		for key, orderList in self.__orders.iteritems():
+			for i in range(len(orderList)):
+				row = []
+				row.append(key)
+				row.append(orderList[i][0])
+				row.append(orderList[i][1])
+				row.append(orderList[i][2])
+				row.append(orderList[i][3])
+				row.append(orderList[i][4])
+				row.append(orderList[i][5])
+				dataRows.append(row)
 
 		# This is for ordering orders by timestamp and rank....
 		dataRows.sort(key = operator.itemgetter(0, 1))
@@ -210,22 +211,25 @@ class BBSMACrossover(strategy.BacktestingStrategy):
 		t = self.__priceDS.getDateTimes()[-1]
 		tInSecs = xiquantFuncs.secondsSinceEpoch(t)
 
-		# Set the orderID. The order ID is added to support overlapping orders, from
-		# the same or different strategies, for the same instrument.
-		self.__orderID = str(self.__strategyID) + '_' + str(tInSecs)
 		if self.__longPos == position:
+			# Set the orderID. The order ID is added to support overlapping orders, from
+			# the same or different strategies, for the same instrument.
+			self.__orderIDLong = str(self.__strategyID) + '_' + str(tInSecs)
 			self.__logger.info("%s: BOUGHT %d at $%.2f" % (execInfo.getDateTime(), execInfo.getQuantity(), execInfo.getPrice()))
 			existingOrdersForTime = self.__orders.setdefault(self.__entryOrderTime, [])
 			# The orderID in the entryOrderTuple is None and hence should be set.
-			entryOrderTupleWithOrderID = (self.__entryOrderTuple[0], self.__entryOrderTuple[1], self.__entryOrderTuple[2], self.__orderID, self.__entryOrderTuple[4], self.__entryOrderTuple[5])
+			entryOrderTupleWithOrderID = (self.__entryOrderTuple[0], self.__entryOrderTuple[1], self.__entryOrderTuple[2], self.__orderIDLong, self.__entryOrderTuple[4], self.__entryOrderTuple[5])
 			existingOrdersForTime.append(entryOrderTupleWithOrderID)
 			self.__orders[self.__entryOrderTime] = existingOrdersForTime
 			self.__logger.info("Portfolio cash after BUY: $%.2f" % self.getBroker().getCash(includeShort=False))
 		elif self.__shortPos == position:
+			# Set the orderID. The order ID is added to support overlapping orders, from
+			# the same or different strategies, for the same instrument.
+			self.__orderIDShort = str(self.__strategyID) + '_' + str(tInSecs)
 			self.__logger.info("%s: SOLD %d at $%.2f" % (execInfo.getDateTime(), execInfo.getQuantity(), execInfo.getPrice()))
 			existingOrdersForTime = self.__orders.setdefault(self.__entryOrderTime, [])
 			# The orderID in the entryOrderTuple is None and hence should be set.
-			entryOrderTupleWithOrderID = (self.__entryOrderTuple[0], self.__entryOrderTuple[1], self.__entryOrderTuple[2], self.__orderID, self.__entryOrderTuple[4], self.__entryOrderTuple[5])
+			entryOrderTupleWithOrderID = (self.__entryOrderTuple[0], self.__entryOrderTuple[1], self.__entryOrderTuple[2], self.__orderIDShort, self.__entryOrderTuple[4], self.__entryOrderTuple[5])
 			existingOrdersForTime.append(entryOrderTupleWithOrderID)
 			self.__orders[self.__entryOrderTime] = existingOrdersForTime
 			self.__logger.info("Portfolio cash after SELL: $%.2f" % self.getBroker().getCash(includeShort=False))
@@ -238,7 +242,7 @@ class BBSMACrossover(strategy.BacktestingStrategy):
 			# processing phase.
 			tInSecs = xiquantFuncs.secondsSinceEpoch(t + datetime.timedelta(seconds=1))
 			existingOrdersForTime = self.__orders.setdefault(tInSecs, [])
-			existingOrdersForTime.append((self.__instrument, 'Stop-Sell', self.__entryDayAdjStopPrice, self.__orderID, consts.DUMMY_ADJ_RATIO, consts.DUMMY_RANK))
+			existingOrdersForTime.append((self.__instrument, 'Stop-Sell', self.__entryDayAdjStopPrice, self.__orderIDLong, consts.DUMMY_ADJ_RATIO, consts.DUMMY_RANK))
 			self.__orders[tInSecs] = existingOrdersForTime
 			self.__logger.info("%s: Stop Loss SELL order of %d %s shares set at %.2f" % (self.getCurrentDateTime(), self.__longPos.getShares(), self.__instrument, self.__entryDayStopPrice))
 		elif self.__shortPos == position: 
@@ -248,7 +252,7 @@ class BBSMACrossover(strategy.BacktestingStrategy):
 			# processing phase.
 			tInSecs = xiquantFuncs.secondsSinceEpoch(t + datetime.timedelta(seconds=1))
 			existingOrdersForTime = self.__orders.setdefault(tInSecs, [])
-			existingOrdersForTime.append((self.__instrument, 'Stop-Buy', self.__entryDayAdjStopPrice, self.__orderID, consts.DUMMY_ADJ_RATIO, consts.DUMMY_RANK))
+			existingOrdersForTime.append((self.__instrument, 'Stop-Buy', self.__entryDayAdjStopPrice, self.__orderIDShort, consts.DUMMY_ADJ_RATIO, consts.DUMMY_RANK))
 			self.__orders[tInSecs] = existingOrdersForTime
 			self.__logger.info("%s: Stop Loss BUY order of %d %s shares set at %.2f" % (self.getCurrentDateTime(), self.__shortPos.getShares(), self.__instrument, self.__entryDayStopPrice))
 
@@ -272,17 +276,19 @@ class BBSMACrossover(strategy.BacktestingStrategy):
 		t = self.__priceDS.getDateTimes()[-1]
 		tInSecs = xiquantFuncs.secondsSinceEpoch(t)
 
-		# Reset the orderID in preparation for the next order.
-		self.__orderID = None
 		self.__progressStopLosses = False
 		if self.__longPos == position: 
 			self.__logger.info("%s: SOLD CLOSE %d at $%.2f" % (execInfo.getDateTime(), execInfo.getQuantity(), execInfo.getPrice()))
 			self.__logger.info("Portfolio after SELL CLOSE: $%.2f" % self.getBroker().getCash(includeShort=False))
 			self.__longPos = None 
+			# Reset the specific orderID in preparation for the next order.
+			self.__orderIDLong = None
 		elif self.__shortPos == position: 
 			self.__logger.info("%s: COVER BUY %d at $%.2f" % (execInfo.getDateTime(), execInfo.getQuantity(), execInfo.getPrice()))
 			self.__logger.info("Portfolio after COVER BUY: $%.2f" % self.getBroker().getCash(includeShort=False))
 			self.__shortPos = None 
+			# Reset the specific orderID in preparation for the next order.
+			self.__orderIDShort = None
 		else: 
 			assert(False)
 
@@ -359,8 +365,8 @@ class BBSMACrossover(strategy.BacktestingStrategy):
 
 		bar = feedLookbackEndAdj.getBarSeries(self.__instrumentAdj)[-1]
 
-		self.__spyDS = feedLookbackEndAdj.getCloseDataSeries('SPY_adjusted')
-		self.__qqqDS = feedLookbackEndAdj.getCloseDataSeries('QQQ_adjusted')
+		self.__spyDS = feedLookbackEndAdj.getCloseDataSeries(consts.MARKET + '_adjusted')
+		self.__qqqDS = feedLookbackEndAdj.getCloseDataSeries(consts.TECH_SECTOR + '_adjusted')
 		self.__openDS = feedLookbackEndAdj.getOpenDataSeries(self.__instrumentAdj)
 		self.__closeDS = feedLookbackEndAdj.getCloseDataSeries(self.__instrumentAdj)
 		self.__volumeDS = feedLookbackEndAdj.getVolumeDataSeries(self.__instrumentAdj)
@@ -386,7 +392,7 @@ class BBSMACrossover(strategy.BacktestingStrategy):
 		self.__smaSPYShort1 = indicator.SMA(self.__spyDS, len(self.__spyDS), consts.SMA_SHORT_1)
 		#print "SMA SPY Short1: ", self.__smaSPYShort1
 		self.__smaQQQShort1 = indicator.SMA(self.__qqqDS, len(self.__qqqDS), consts.SMA_SHORT_1)
-		#print "QQQ SPY Short1: ", self.__smaQQQShort1
+		#print "QQQ Short1: ", self.__smaQQQShort1
 		self.__smaLowerTiny = indicator.SMA(self.__lowerBBDataSeries, len(self.__lowerBBDataSeries), consts.SMA_TINY)
 		#print "SMA Lower Tiny: ", self.__smaLowerTiny
 		self.__smaUpperTiny = indicator.SMA(self.__upperBBDataSeries, len(self.__upperBBDataSeries), consts.SMA_TINY)
@@ -484,7 +490,7 @@ class BBSMACrossover(strategy.BacktestingStrategy):
 			t = bar.getDateTime()
 			tInSecs = xiquantFuncs.secondsSinceEpoch(t)
 			existingOrdersForTime = self.__orders.setdefault(tInSecs, [])
-			existingOrdersForTime.append((self.__instrument, 'Sell-Market', consts.DUMMY_MARKET_PRICE, self.__orderID, consts.DUMMY_ADJ_RATIO, consts.DUMMY_RANK))
+			existingOrdersForTime.append((self.__instrument, 'Sell-Market', consts.DUMMY_MARKET_PRICE, self.__orderIDLong, consts.DUMMY_ADJ_RATIO, consts.DUMMY_RANK))
 			self.__orders[tInSecs] = existingOrdersForTime
 			self.__logger.info("Exiting a LONG position")
 			self.__logger.info("Portfolio Cash: $%.2f" % self.getBroker().getCash(includeShort=False))
@@ -495,7 +501,7 @@ class BBSMACrossover(strategy.BacktestingStrategy):
 			t = bar.getDateTime()
 			tInSecs = xiquantFuncs.secondsSinceEpoch(t)
 			existingOrdersForTime = self.__orders.setdefault(tInSecs, [])
-			existingOrdersForTime.append((self.__instrument, 'Buy-Market' , consts.DUMMY_MARKET_PRICE, self.__orderID, consts.DUMMY_ADJ_RATIO, consts.DUMMY_RANK))
+			existingOrdersForTime.append((self.__instrument, 'Buy-Market' , consts.DUMMY_MARKET_PRICE, self.__orderIDShort, consts.DUMMY_ADJ_RATIO, consts.DUMMY_RANK))
 			self.__orders[tInSecs] = existingOrdersForTime
 			self.__logger.debug("Exiting a SHORT position")
 			self.__logger.debug("Portfolio Cash: $%.2f" % self.getBroker().getCash(includeShort=False))
@@ -522,10 +528,14 @@ class BBSMACrossover(strategy.BacktestingStrategy):
 					candleLen = consts.DUMMY_CANDLE_LEN
 				relWickLen = (wickLen / candleLen) * 100
 				# Set the entry price based on the relative wick length
-				entryPrice = 0
+				entryPrice = 0.0
+				entryPriceDelta = 0.0
 				if "OR" in self.__inpEntry["BB_SMA_Crossover_Mtm_Call"] and "Breach" in self.__inpEntry["BB_SMA_Crossover_Mtm_Call"]["OR"]:
-					#entryPrice = bar.getClose() + consts.SMA_ENTRY_PRICE_DELTA
-					entryPrice = bar.getClose() + bar.getClose() * consts.SMA_ENTRY_DAY_STOP_PRICE_PERCENT
+					if consts.SMA_ENTRY_PRICE_DELTA_PERCENT_OR_ABS.lower() == 'percent':
+						entryPriceDelta = bar.getClose() * consts.SMA_ENTRY_PRICE_DELTA_PERCENT / float(100)
+					else:
+						entryPriceDelta = consts.SMA_ENTRY_PRICE_DELTA_ABS
+					entryPrice = bar.getClose() + entryPriceDelta
 				self.__logger.debug("%s: Entry Price: %.4f" % (bar.getDateTime(), entryPrice))
 				self.__adjRatio = self.__priceDS[-1] / bar.getAdjClose()
 				print "=================================================================:adjRatio:=============================: ", self.__adjRatio, bar.getAdjClose(), self.__priceDS[-1], lookbackEndDate
@@ -534,13 +544,17 @@ class BBSMACrossover(strategy.BacktestingStrategy):
 				self.__logger.debug("%s: Adj Entry Price: %.4f" % (bar.getDateTime(), self.__adjEntryPrice))
 				sharesToBuy = int((self.getBroker().getCash(includeShort=False) * consts.PERCENT_OF_CASH_BALANCE_FOR_ENTRY) / self.__adjEntryPrice)
 				self.__logger.debug("Shares To Buy: %d" % sharesToBuy)
+				if sharesToBuy < 1:
+					self.__logger.debug("Not enough cash to buy shares.")
+					return
+
 				self.__portfolioCashBefore = self.getBroker().getCash(includeShort=False)
 				self.__longPos = self.enterLongStop(self.__instrumentAdj, self.__adjEntryPrice, sharesToBuy, True)
 				t = bar.getDateTime()
 				tInSecs = xiquantFuncs.secondsSinceEpoch(t)
 				self.__entryOrderForFile = "%s,%s,Buy,%.2f\n" % (str(tInSecs), self.__instrument, self.__adjEntryPrice)
 				self.__entryOrderTime = tInSecs
-				self.__entryOrderTuple = (self.__instrument, 'Buy', self.__adjEntryPrice, self.__orderID, self.__adjRatio, consts.DUMMY_RANK)
+				self.__entryOrderTuple = (self.__instrument, 'Buy', self.__adjEntryPrice, self.__orderIDLong, self.__adjRatio, consts.DUMMY_RANK)
 				if self.__longPos == None:
 					self.__logger.debug("For whatever reason, couldn't go LONG %d shares" % sharesToBuy)
 				else:
@@ -560,7 +574,7 @@ class BBSMACrossover(strategy.BacktestingStrategy):
 					stopPrice = xiquantFuncs.computeStopPrice(bullishCandle, "bullish", openPrice, closePrice, stopPriceDelta)
 					# Adjust the stop price based on the last day of the backtesting period
 					if consts.SMA_STOP_PRICE_PERCENT_OR_ABS.lower() == 'percent':
-						stopPriceDelta = bar.getClose() * consts.SMA_ENTRY_DAY_STOP_PRICE_PERCENT
+						stopPriceDelta = bar.getClose() * consts.SMA_ENTRY_DAY_STOP_PRICE_PERCENT / float(100)
 					else:
 						stopPriceDelta = consts.SMA_ENTRY_DAY_STOP_PRICE_ABS
 					stopPrice = self.__smaDS[-1] - stopPriceDelta
@@ -589,10 +603,14 @@ class BBSMACrossover(strategy.BacktestingStrategy):
 					candleLen = consts.DUMMY_CANDLE_LEN
 				relWickLen = (wickLen / candleLen) * 100
 				# Set the entry price based on the relative wick length
-				entryPrice = 0
+				entryPrice = 0.0
+				entryPriceDelta = 0.0
 				if "OR" in self.__inpEntry["BB_SMA_Crossover_Mtm_Put"] and "Breach" in self.__inpEntry["BB_SMA_Crossover_Mtm_Put"]["OR"]:
-					#entryPrice = bar.getClose() - consts.SMA_ENTRY_PRICE_DELTA
-					entryPrice = bar.getClose() - bar.getClose() * consts.SMA_ENTRY_DAY_STOP_PRICE_PERCENT
+					if consts.SMA_ENTRY_PRICE_DELTA_PERCENT_OR_ABS.lower() == 'percent':
+						entryPriceDelta = bar.getClose() * consts.SMA_ENTRY_PRICE_DELTA_PERCENT / float(100)
+					else:
+						entryPriceDelta = consts.SMA_ENTRY_PRICE_DELTA_ABS
+					entryPrice = bar.getClose() - entryPriceDelta
 				self.__logger.debug( "%s: Entry Price: %.2f" % (bar.getDateTime(), entryPrice))
 				self.__adjRatio = self.__priceDS[-1] / bar.getAdjClose()
 				self.__logger.debug("Adj Ratio: %0.4f" % self.__adjRatio)
@@ -601,13 +619,17 @@ class BBSMACrossover(strategy.BacktestingStrategy):
 				sharesToBuy = int((self.getBroker().getCash(includeShort=False) / 
 								self.__adjEntryPrice) * consts.PERCENT_OF_CASH_BALANCE_FOR_ENTRY)
 				self.__logger.debug( "Shares To Buy: %d" % sharesToBuy)
+				if sharesToBuy < 1:
+					self.__logger.debug("Not enough cash to buy shares.")
+					return
+
 				self.__portfolioCashBefore = self.getBroker().getCash(includeShort=False)
 				self.__shortPos = self.enterShortStop(self.__instrumentAdj, self.__adjEntryPrice, sharesToBuy, True)
 				t = bar.getDateTime()
 				tInSecs = xiquantFuncs.secondsSinceEpoch(t)
 				self.__entryOrderForFile = "%s,%s,Sell,%.2f\n" % (str(tInSecs), self.__instrument, self.__adjEntryPrice)
 				self.__entryOrderTime = tInSecs
-				self.__entryOrderTuple = (self.__instrument, 'Sell', self.__adjEntryPrice, self.__orderID, self.__adjRatio, consts.DUMMY_RANK)
+				self.__entryOrderTuple = (self.__instrument, 'Sell', self.__adjEntryPrice, self.__orderIDShort, self.__adjRatio, consts.DUMMY_RANK)
 				if self.__shortPos == None:
 					self.__logger.debug("For whatever reason, couldn't SHORT %d shares" % sharesToBuy)
 				else:
@@ -628,7 +650,7 @@ class BBSMACrossover(strategy.BacktestingStrategy):
 					stopPrice = xiquantFuncs.computeStopPrice(bearishCandle, "bearish", openPrice, closePrice, stopPriceDelta)
 					# Adjust the stop price based on the last day of the backtesting period
 					if consts.SMA_STOP_PRICE_PERCENT_OR_ABS.lower() == 'percent':
-						stopPriceDelta = bar.getClose() * consts.SMA_ENTRY_DAY_STOP_PRICE_PERCENT
+						stopPriceDelta = bar.getClose() * consts.SMA_ENTRY_DAY_STOP_PRICE_PERCENT / float(100)
 					else:
 						stopPriceDelta = consts.SMA_ENTRY_DAY_STOP_PRICE_ABS
 					stopPrice = self.__smaDS[-1] + stopPriceDelta
@@ -1452,9 +1474,16 @@ class BBSMACrossover(strategy.BacktestingStrategy):
 			self.__logger.debug("%s: Earnings day today, so exit." % bar.getDateTime())
 			return True
 
+		# Check if we need to force exit the position due to being held for the
+		# specified number of days.
+		entryDate = self.__longPos.getEntryOrder().getExecutionInfo().getDateTime()
+		if bar.getDateTime().date() >= (entryDate + datetime.timedelta(days=consts.FORCE_EXIT_HOLDING_DAYS)).date():
+			self.__logger.debug("Force exiting the position due to being held for the specified no. of days.")
+			return True
+
 		if (self.__entryDay == xiquantFuncs.timestamp_from_datetime(self.__priceDS.getDateTimes()[-1])) or (self.__entryDay == xiquantFuncs.timestamp_from_datetime(self.__priceDS.getDateTimes()[-2])):
 			# The stop loss order for the entry day and the day after has already been set.
-			self.__logger.debug("Analysis Day ot the trade day in %s" % self.__instrument)
+			self.__logger.debug("Analysis Day or the trade day in %s" % self.__instrument)
 			return False
 		else:
 			stopPrice = 0.0
@@ -1462,18 +1491,17 @@ class BBSMACrossover(strategy.BacktestingStrategy):
 			execInfo = self.__longPos.getEntryOrder().getExecutionInfo()
 			entryPrice = execInfo.getPrice()
 			candleLen = bar.getClose() - bar.getOpen()
-			if bar.getClose() - entryPrice > consts.SMA_PROFIT_CHECK * self.__adjRatio:
-				if consts.SMA_STOP_PRICE_PERCENT_OR_ABS.lower() == 'percent':
-					stopPriceDelta = bar.getClose() * consts.SMA_OTHER_DAY_STOP_PRICE_PERCENT
-				else:
-					stopPriceDelta = consts.SMA_OTHER_DAY_STOP_PRICE_ABS
-				if candleLen >= 0:
-					stopPrice = bar.getOpen() - stopPriceDelta
-				else:
-					stopPrice = bar.getClose() - stopPriceDelta
+			profitCheck = 0.0
+			if consts.SMA_PROFIT_CHECK_PERCENT_OR_ABS.lower() == 'percent':
+				profitCheck = bar.getClose() * consts.SMA_PROFIT_CHECK_PERCENT / float(100)
 			else:
+				profitCheck = consts.SMA_PROFIT_CHECK_ABS
+			# Adjust the profit check value
+			profitCheck *= self.__adjRatio
+			#if bar.getClose() - entryPrice > profitCheck:
+			if self.__smaDS[-1] - self.__smaDS[-2] > profitCheck:
 				if consts.SMA_STOP_PRICE_PERCENT_OR_ABS.lower() == 'percent':
-					stopPriceDelta = bar.getClose() * consts.SMA_ENTRY_DAY_STOP_PRICE_PERCENT
+					stopPriceDelta = bar.getClose() * consts.SMA_ENTRY_DAY_STOP_PRICE_PERCENT / float(100)
 				else:
 					stopPriceDelta = consts.SMA_ENTRY_DAY_STOP_PRICE_ABS
 				if consts.SMA_PROGRESS_STOP_LOSS:
@@ -1482,6 +1510,10 @@ class BBSMACrossover(strategy.BacktestingStrategy):
 					stopPrice = self.__longPos.getExitOrder().getStopPrice()
 					# The stop price is already adjusted.
 					stopPrice = float(stopPrice / self.__adjRatio)
+			else:
+				stopPrice = self.__longPos.getExitOrder().getStopPrice()
+				# The stop price is already adjusted.
+				stopPrice = float(stopPrice / self.__adjRatio)
 
 			self.__adjStopPrice = stopPrice * self.__adjRatio
 			self.__longPos.cancelExit()
@@ -1489,7 +1521,7 @@ class BBSMACrossover(strategy.BacktestingStrategy):
 			t = bar.getDateTime()
 			tInSecs = xiquantFuncs.secondsSinceEpoch(t + datetime.timedelta(seconds=2))
 			existingOrdersForTime = self.__orders.setdefault(tInSecs, [])
-			existingOrdersForTime.append((self.__instrument, 'Stop-Sell', self.__adjStopPrice, self.__orderID, consts.DUMMY_ADJ_RATIO, consts.DUMMY_RANK))
+			existingOrdersForTime.append((self.__instrument, 'Stop-Sell', self.__adjStopPrice, self.__orderIDLong, consts.DUMMY_ADJ_RATIO, consts.DUMMY_RANK))
 			self.__orders[tInSecs] = existingOrdersForTime
 			self.__logger.info("%s: New Stop Loss SELL order for %d %s shares set to %.2f" % (self.getCurrentDateTime(), self.__longPos.getShares(), self.__instrument, self.__adjStopPrice))
 			# Not the entry or the next day, so reset entry day
@@ -1510,6 +1542,13 @@ class BBSMACrossover(strategy.BacktestingStrategy):
 			self.__logger.debug("%s: Earnings day today, so exit." % bar.getDateTime())
 			return True
 
+		# Check if we need to force exit the position due to being held for the
+		# specified number of days.
+		entryDate = self.__shortPos.getEntryOrder().getExecutionInfo().getDateTime()
+		if bar.getDateTime().date() >= (entryDate + datetime.timedelta(days=consts.FORCE_EXIT_HOLDING_DAYS)).date():
+			self.__logger.debug("Force exiting the position due to being held for the specified no. of days.")
+			return True
+
 		if (self.__entryDay == xiquantFuncs.timestamp_from_datetime(self.__priceDS.getDateTimes()[-1])) and (self.__entryDay == xiquantFuncs.timestamp_from_datetime(self.__priceDS.getDateTimes()[-2])):
 			# The stop loss order for the entry or the next day has already been set.
 			self.__logger.debug("Analysis Day or the trade day for %s" % self.__instrument)
@@ -1520,18 +1559,17 @@ class BBSMACrossover(strategy.BacktestingStrategy):
 			execInfo = self.__shortPos.getEntryOrder().getExecutionInfo()
 			entryPrice = execInfo.getPrice()
 			candleLen = bar.getClose() - bar.getOpen()
-			if entryPrice - bar.getClose() > consts.SMA_PROFIT_CHECK * self.__adjRatio:
-				if consts.SMA_STOP_PRICE_PERCENT_OR_ABS.lower() == 'percent':
-					stopPriceDelta = bar.getClose() * consts.SMA_OTHER_DAY_STOP_PRICE_PERCENT
-				else:
-					stopPriceDelta = consts.SMA_OTHER_DAY_STOP_PRICE_ABS
-				if candleLen >= 0:
-					stopPrice = bar.getClose() + stopPriceDelta
-				else:
-					stopPrice = bar.getOpen() + stopPriceDelta
+			profitCheck = 0.0
+			if consts.SMA_PROFIT_CHECK_PERCENT_OR_ABS.lower() == 'percent':
+				profitCheck = bar.getClose() * consts.SMA_PROFIT_CHECK_PERCENT / float(100)
 			else:
+				profitCheck = consts.SMA_PROFIT_CHECK_ABS
+			# Adjust the profit check value
+			profitCheck *= self.__adjRatio
+			#if entryPrice - bar.getClose() > profitCheck:
+			if self.__smaDS[-2] - self.__smaDS[-1] > profitCheck:
 				if consts.SMA_STOP_PRICE_PERCENT_OR_ABS.lower() == 'percent':
-					stopPriceDelta = bar.getClose() * consts.SMA_ENTRY_DAY_STOP_PRICE_PERCENT
+					stopPriceDelta = bar.getClose() * consts.SMA_ENTRY_DAY_STOP_PRICE_PERCENT / float(100)
 				else:
 					stopPriceDelta = consts.SMA_ENTRY_DAY_STOP_PRICE_ABS
 				if consts.SMA_PROGRESS_STOP_LOSS:
@@ -1540,6 +1578,10 @@ class BBSMACrossover(strategy.BacktestingStrategy):
 					stopPrice = self.__shortPos.getExitOrder().getStopPrice()
 					# The stop price is already adjusted.
 					stopPrice = float(stopPrice / self.__adjRatio)
+			else:
+				stopPrice = self.__shortPos.getExitOrder().getStopPrice()
+				# The stop price is already adjusted.
+				stopPrice = float(stopPrice / self.__adjRatio)
 
 			self.__adjStopPrice = stopPrice * self.__adjRatio
 			self.__shortPos.cancelExit()
@@ -1547,7 +1589,7 @@ class BBSMACrossover(strategy.BacktestingStrategy):
 			t = bar.getDateTime()
 			tInSecs = xiquantFuncs.secondsSinceEpoch(t + datetime.timedelta(seconds=2))
 			existingOrdersForTime = self.__orders.setdefault(tInSecs, [])
-			existingOrdersForTime.append((self.__instrument, 'Stop-Buy', self.__adjStopPrice, self.__orderID, consts.DUMMY_ADJ_RATIO, consts.DUMMY_RANK))
+			existingOrdersForTime.append((self.__instrument, 'Stop-Buy', self.__adjStopPrice, self.__orderIDShort, consts.DUMMY_ADJ_RATIO, consts.DUMMY_RANK))
 			self.__orders[tInSecs] = existingOrdersForTime
 			self.__logger.info("%s: New Stop Loss BUY order for %d %s shares set to %.2f" % (self.getCurrentDateTime(), self.__shortPos.getShares(), self.__instrument, self.__adjStopPrice))
 
@@ -1561,12 +1603,12 @@ def run_strategy(bBandsPeriod, instrument, startPortfolio, startPeriod, endPerio
 
 	# Add the SPY and QQQ bars, which are used to determine if the market is Bullish or Bearish
 	# on a particular day.
-	feed = xiquantPlatform.add_feeds_EODRAW_CSV(feed, 'SPY', startPeriod, endPeriod)
-	feed = xiquantPlatform.add_feeds_EODRAW_CSV(feed, 'QQQ', startPeriod, endPeriod)
+	feed = xiquantPlatform.add_feeds_EODRAW_CSV(feed, consts.MARKET, startPeriod, endPeriod)
+	feed = xiquantPlatform.add_feeds_EODRAW_CSV(feed, consts.TECH_SECTOR, startPeriod, endPeriod)
 	barsDictForCurrAdj = {}
 	barsDictForCurrAdj[instrument] = feed.getBarSeries(instrument)
-	barsDictForCurrAdj['SPY'] = feed.getBarSeries('SPY')
-	barsDictForCurrAdj['QQQ'] = feed.getBarSeries('QQQ')
+	barsDictForCurrAdj[consts.MARKET] = feed.getBarSeries(consts.MARKET)
+	barsDictForCurrAdj[consts.TECH_SECTOR] = feed.getBarSeries(consts.TECH_SECTOR)
 	feedAdjustedToEndDate = xiquantPlatform.adjustBars(barsDictForCurrAdj, startPeriod, endPeriod)
 
 	# Get the earnings calendar for the period
@@ -1584,7 +1626,7 @@ def main(plot):
 	startDate = dateutil.parser.parse('2005-06-30T08:00:00.000Z')
 	endDate = dateutil.parser.parse('2014-12-31T08:00:00.000Z')
 
-	instruments = ["AAPL"]
+	instruments = ["LON_HSBA"]
 	bBandsPeriod = 20
 	startPortfolio = 1000000
 	for inst in instruments:

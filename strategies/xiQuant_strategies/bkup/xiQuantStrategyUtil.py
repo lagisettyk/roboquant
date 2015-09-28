@@ -6,6 +6,7 @@ import xiquantFuncs
 import BB_spread
 import BB_SMA_xover_mtm
 import EMA_breach_mtm
+import EMA_trend
 import Orders_exec
 import datetime
 import json
@@ -517,6 +518,19 @@ def redis_build_sma_3days(ticker, stdate, enddate):
         j +=1
     return sma_3days
 
+def topNMomentumTickerList(stdate, enddate, cutoff, sortOrder='Reverse'):
+
+    masterList = []
+    analysisDate = stdate
+    while analysisDate < enddate:
+        print "processing analysis date: ", analysisDate
+        tickerDict = tickersRankByCashFlow(analysisDate, sortOrder)
+        topN = dict((list(tickerDict.items())[:cutoff]))
+        masterList = list(set(masterList + topN.values()))
+        analysisDate = analysisDate + datetime.timedelta(days=15)
+
+    return masterList
+
 def tickersRankByCashFlow(date, sortOrder='Reverse'):
     import collections
 
@@ -905,15 +919,13 @@ def computeIndicators(instrument, indicator, startdate, enddate ):
         return compute_EMA(instrument,  startdate, enddate)
     
 
-    
-
 def run_strategy_redis(bBandsPeriod, instrument, startPortfolio, startdate, enddate, filterCriteria=20, indicators=True):
  
     feed = redis_build_feed_EOD_RAW(instrument, startdate, enddate)
     # Add the SPY bars, which are used to determine if the market is Bullish or Bearish
     # on a particular day.
-    feed = add_feeds_EOD_redis_RAW(feed, 'SPY', startdate, enddate)
-    feed = add_feeds_EOD_redis_RAW(feed, 'QQQ', startdate, enddate)
+    feed = add_feeds_EOD_redis_RAW(feed, consts.MARKET, startdate, enddate)
+    feed = add_feeds_EOD_redis_RAW(feed, consts.TECH_SECTOR, startdate, enddate)
     
 
     ###Get earnings calendar
@@ -921,14 +933,14 @@ def run_strategy_redis(bBandsPeriod, instrument, startPortfolio, startdate, endd
 
     barsDictForCurrAdj = {}
     barsDictForCurrAdj[instrument] = feed.getBarSeries(instrument)
-    barsDictForCurrAdj['SPY'] = feed.getBarSeries('SPY')
-    barsDictForCurrAdj['QQQ'] = feed.getBarSeries('QQQ')
+    barsDictForCurrAdj[consts.MARKET] = feed.getBarSeries(consts.MARKET)
+    barsDictForCurrAdj[consts.TECH_SECTOR] = feed.getBarSeries(consts.TECH_SECTOR)
     feedAdjustedToEndDate = xiquantPlatform.adjustBars(barsDictForCurrAdj, startdate, enddate)
 
 
     strat = BB_spread.BBSpread(feedAdjustedToEndDate, feed, instrument, bBandsPeriod, calList, startPortfolio)
 
-    instList = [instrument+"_adjusted", 'SPY'+"_adjusted", 'QQQ'+"_adjusted"]
+    instList = [instrument+"_adjusted", consts.MARKET+"_adjusted", consts.TECH_SECTOR+"_adjusted"]
 
     if indicators:
         # Attach a returns analyzers to the strategy.
@@ -993,17 +1005,17 @@ def run_master_strategy(initialcash, masterFile, startdate, enddate, filterActio
     # Add the SPY bars to support the simulation of whether we should have
     # entered certain trades or not -- based on the SPY opening higher/lower
     # than 20 SMA value for bullish/bearish trades.
-    feed = add_feeds_EOD_redis_RAW(feed, 'SPY', startdate, enddate)
+    feed = add_feeds_EOD_redis_RAW(feed, consts.MARKET, startdate, enddate)
 
     barsDictForCurrAdj = {}
     for instrument in ordersFile.getInstruments():
         barsDictForCurrAdj[instrument] = feed.getBarSeries(instrument)
-    barsDictForCurrAdj['SPY'] = feed.getBarSeries('SPY')
+    barsDictForCurrAdj[consts.MARKET] = feed.getBarSeries(consts.MARKET)
     feedAdjustedToEndDate = xiquantPlatform.adjustBars(barsDictForCurrAdj, startdate, enddate, keyFlag=False)
 
     cash = 100000
     useAdjustedClose = True
-    myStrategy = Orders_exec.MyStrategy(feedAdjustedToEndDate, initialcash, ordersFile, useAdjustedClose)
+    myStrategy = Orders_exec.MyStrategy(feedAdjustedToEndDate, enddate, initialcash, ordersFile, useAdjustedClose)
 
     returnsAnalyzer = Returns()
     results = StrategyResults( myStrategy, instList, returnsAnalyzer)
@@ -1021,8 +1033,8 @@ def run_strategy_BBSMAXOverMTM(bBandsPeriod, instrument, startPortfolio, startda
     feed = redis_build_feed_EOD_RAW(instrument, startdate, enddate)
     # Add the SPY bars, which are used to determine if the market is Bullish or Bearish
     # on a particular day.
-    feed = add_feeds_EOD_redis_RAW(feed, 'SPY', startdate, enddate)
-    feed = add_feeds_EOD_redis_RAW(feed, 'QQQ', startdate, enddate)
+    feed = add_feeds_EOD_redis_RAW(feed, consts.MARKET, startdate, enddate)
+    feed = add_feeds_EOD_redis_RAW(feed, consts.TECH_SECTOR, startdate, enddate)
     
 
     ###Get earnings calendar
@@ -1030,12 +1042,12 @@ def run_strategy_BBSMAXOverMTM(bBandsPeriod, instrument, startPortfolio, startda
 
     barsDictForCurrAdj = {}
     barsDictForCurrAdj[instrument] = feed.getBarSeries(instrument)
-    barsDictForCurrAdj['SPY'] = feed.getBarSeries('SPY')
-    barsDictForCurrAdj['QQQ'] = feed.getBarSeries('QQQ')
+    barsDictForCurrAdj[consts.MARKET] = feed.getBarSeries(consts.MARKET)
+    barsDictForCurrAdj[consts.TECH_SECTOR] = feed.getBarSeries(consts.TECH_SECTOR)
     feedAdjustedToEndDate = xiquantPlatform.adjustBars(barsDictForCurrAdj, startdate, enddate)
 
     #strat = BB_SMA_xover_mtm.BBSMAXOverMTM(feedAdjustedToEndDate, feed, instrument, bBandsPeriod, calList, startPortfolio)
-    instList = [instrument+"_adjusted", 'SPY'+"_adjusted", 'QQQ'+"_adjusted"]
+    instList = [instrument+"_adjusted", consts.MARKET+"_adjusted", consts.TECH_SECTOR+"_adjusted"]
 
     strat = BB_SMA_xover_mtm.BBSMACrossover(feedAdjustedToEndDate, feed, instrument, bBandsPeriod, earningsCalList, startPortfolio, consts.SMA_CROSSOVERS_LIMIT_1_LOW_RANGE, consts.SMA_CROSSOVERS_LIMIT_1_HIGH_RANGE)
     returnsAnalyzer = Returns()
@@ -1073,8 +1085,8 @@ def run_strategy_EMABreachMTM(bBandsPeriod, instrument, startPortfolio, startdat
     feed = redis_build_feed_EOD_RAW(instrument, startdate, enddate)
     # Add the SPY bars, which are used to determine if the market is Bullish or Bearish
     # on a particular day.
-    feed = add_feeds_EOD_redis_RAW(feed, 'SPY', startdate, enddate)
-    feed = add_feeds_EOD_redis_RAW(feed, 'QQQ', startdate, enddate)
+    feed = add_feeds_EOD_redis_RAW(feed, consts.MARKET, startdate, enddate)
+    feed = add_feeds_EOD_redis_RAW(feed, consts.TECH_SECTOR, startdate, enddate)
     
 
     ###Get earnings calendar
@@ -1082,11 +1094,11 @@ def run_strategy_EMABreachMTM(bBandsPeriod, instrument, startPortfolio, startdat
 
     barsDictForCurrAdj = {}
     barsDictForCurrAdj[instrument] = feed.getBarSeries(instrument)
-    barsDictForCurrAdj['SPY'] = feed.getBarSeries('SPY')
-    barsDictForCurrAdj['QQQ'] = feed.getBarSeries('QQQ')
+    barsDictForCurrAdj[consts.MARKET] = feed.getBarSeries(consts.MARKET)
+    barsDictForCurrAdj[consts.TECH_SECTOR] = feed.getBarSeries(consts.TECH_SECTOR)
     feedAdjustedToEndDate = xiquantPlatform.adjustBars(barsDictForCurrAdj, startdate, enddate)
 
-    instList = [instrument+"_adjusted", 'SPY'+"_adjusted", 'QQQ'+"_adjusted"]
+    instList = [instrument+"_adjusted", consts.MARKET+"_adjusted", consts.TECH_SECTOR+"_adjusted"]
 
     strat = EMA_breach_mtm.EMACrossover(feedAdjustedToEndDate, feed, instrument, bBandsPeriod, earningsCalList, startPortfolio, consts.EMA_CROSSOVERS_LIMIT_1_LOW_RANGE, consts.EMA_CROSSOVERS_LIMIT_1_LOW_RANGE)
     returnsAnalyzer = Returns()
@@ -1115,6 +1127,45 @@ def run_strategy_EMABreachMTM(bBandsPeriod, instrument, startPortfolio, startdat
     else:
         # This is to ensue we consume less memory on the portfolio simulation case ... main thread.......
         updatedOrders = updateOrdersRank(strat.getOrders(), instrument)
+        return updatedOrders
+
+
+def run_strategy_EMATrend(bBandsPeriod, instrument, startPortfolio, startdate, enddate, filterCriteria=20, indicators=True):
+ 
+    feed = redis_build_feed_EOD_RAW(instrument, startdate, enddate)
+    # Add the SPY bars, which are used to determine if the market is Bullish or Bearish
+    # on a particular day.
+    feed = add_feeds_EOD_redis_RAW(feed, consts.MARKET, startdate, enddate)
+    feed = add_feeds_EOD_redis_RAW(feed, consts.TECH_SECTOR, startdate, enddate)
+    
+
+    ###Get earnings calendar
+    calList = getEarningsCal(instrument)
+
+    barsDictForCurrAdj = {}
+    barsDictForCurrAdj[instrument] = feed.getBarSeries(instrument)
+    barsDictForCurrAdj[consts.MARKET] = feed.getBarSeries(consts.MARKET)
+    barsDictForCurrAdj[consts.TECH_SECTOR] = feed.getBarSeries(consts.TECH_SECTOR)
+    feedAdjustedToEndDate = xiquantPlatform.adjustBars(barsDictForCurrAdj, startdate, enddate)
+
+
+    strat = EMA_trend.EMATrend(feedAdjustedToEndDate, feed, instrument, bBandsPeriod, calList, startPortfolio)
+
+    instList = [instrument+"_adjusted", consts.MARKET+"_adjusted", consts.TECH_SECTOR+"_adjusted"]
+
+    if indicators:
+        # Attach a returns analyzers to the strategy.
+        returnsAnalyzer = Returns()
+        results = StrategyResults(strat, instList, returnsAnalyzer, plotSignals=True)
+        strat.run()
+        return results
+    else:
+        # This is to ensue we consume less memory on the portfolio simulation case ... main thread.......
+        returnsAnalyzer = Returns()
+        results = StrategyResults(strat, instList, returnsAnalyzer, plotSignals=False)
+        strat.run()
+        updatedOrders = updateOrdersRank(strat.getOrders(), instrument)
+
         return updatedOrders
 
 ####=========================================================================================================################

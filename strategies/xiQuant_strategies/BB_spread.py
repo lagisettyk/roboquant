@@ -38,8 +38,8 @@ class BBSpread(strategy.BacktestingStrategy):
 
 		barsDict = {}
 		barsDict[instrument] = feedRaw.getBarSeries(instrument)
-		barsDict['SPY'] = feedRaw.getBarSeries('SPY')
-		barsDict['QQQ'] = feedRaw.getBarSeries('QQQ')
+		barsDict[consts.MARKET] = feedRaw.getBarSeries(consts.MARKET)
+		barsDict[consts.TECH_SECTOR] = feedRaw.getBarSeries(consts.TECH_SECTOR)
 		self.__barsDict = barsDict
 
 		self.__feedLookbackAdjusted = feedRaw
@@ -108,9 +108,9 @@ class BBSpread(strategy.BacktestingStrategy):
 		return
 		
 	def isTechBullish(self):
-		self.__logger.debug("QQQ Close: $%.2f" % self.__qqqDS[-1])
-		self.__logger.debug("QQQ 20 SMA: $%.2f" % self.__smaQQQShort1[-1])
-		self.__logger.debug("QQQ Upper BBand: $%.2f" % self.__upperQQQBBDataSeries[-1])
+		self.__logger.debug("Tech Sector Close: $%.2f" % self.__qqqDS[-1])
+		self.__logger.debug("Tech Sector 20 SMA: $%.2f" % self.__smaQQQShort1[-1])
+		self.__logger.debug("Tech Sector Upper BBand: $%.2f" % self.__upperQQQBBDataSeries[-1])
 		if self.__qqqDS[-1] > self.__smaQQQShort1[-1]: 
 			self.__logger.debug("The tech sector is Bullish today.")
 			return True
@@ -119,9 +119,9 @@ class BBSpread(strategy.BacktestingStrategy):
 			return False
 
 	def isTechBearish(self):
-		self.__logger.debug("QQQ Close: $%.2f" % self.__qqqDS[-1])
-		self.__logger.debug("QQQ 20 SMA: $%.2f" % self.__smaQQQShort1[-1])
-		self.__logger.debug("QQQ Lower BBand: $%.2f" % self.__lowerQQQBBDataSeries[-1])
+		self.__logger.debug("Tech Sector Close: $%.2f" % self.__qqqDS[-1])
+		self.__logger.debug("Tech Sector 20 SMA: $%.2f" % self.__smaQQQShort1[-1])
+		self.__logger.debug("Tech Sector Lower BBand: $%.2f" % self.__lowerQQQBBDataSeries[-1])
 		if self.__qqqDS[-1] <= self.__smaQQQShort1[-1]:
 			self.__logger.debug("The tech sector is Bearish today.")
 			return True
@@ -130,9 +130,9 @@ class BBSpread(strategy.BacktestingStrategy):
 			return False
 
 	def isBullish(self):
-		self.__logger.debug("SPY Close: $%.2f" % self.__spyDS[-1])
-		self.__logger.debug("SPY 20 SMA: $%.2f" % self.__smaSPYShort1[-1])
-		self.__logger.debug("SPY Upper BBand: $%.2f" % self.__upperSPYBBDataSeries[-1])
+		self.__logger.debug("Market Close: $%.2f" % self.__spyDS[-1])
+		self.__logger.debug("Market 20 SMA: $%.2f" % self.__smaSPYShort1[-1])
+		self.__logger.debug("Market Upper BBand: $%.2f" % self.__upperSPYBBDataSeries[-1])
 		#if self.__spyDS[-1] > self.__smaSPYShort1[-1] and (self.__spyDS[-1] < self.__upperSPYBBDataSeries[-1] or self.__spyDS[-1] >= self.__upperSPYBBDataSeries[-1]):
 		if self.__spyDS[-1] > self.__smaSPYShort1[-1]:
 			self.__logger.debug("The market is Bullish today.")
@@ -142,9 +142,9 @@ class BBSpread(strategy.BacktestingStrategy):
 			return False
 
 	def isBearish(self):
-		self.__logger.debug("SPY Close: $%.2f" % self.__spyDS[-1])
-		self.__logger.debug("SPY 20 SMA: $%.2f" % self.__smaSPYShort1[-1])
-		self.__logger.debug("SPY Lower BBand: $%.2f" % self.__lowerSPYBBDataSeries[-1])
+		self.__logger.debug("Market Close: $%.2f" % self.__spyDS[-1])
+		self.__logger.debug("Market 20 SMA: $%.2f" % self.__smaSPYShort1[-1])
+		self.__logger.debug("Market Lower BBand: $%.2f" % self.__lowerSPYBBDataSeries[-1])
 		#if self.__spyDS[-1] < self.__smaSPYShort1[-1] and (self.__spyDS[-1] > self.__lowerSPYBBDataSeries[-1] or self.__spyDS[-1] <= self.__lowerSPYBBDataSeries[-1]):
 		if self.__spyDS[-1] <= self.__smaSPYShort1[-1]:
 			self.__logger.debug("The market is Bearish today.")
@@ -372,14 +372,14 @@ class BBSpread(strategy.BacktestingStrategy):
 
 		bar = feedLookbackEndAdj.getBarSeries(self.__instrumentAdj)[-1]
 
-		self.__spyDS = feedLookbackEndAdj.getCloseDataSeries('SPY_adjusted')
-		self.__qqqDS = feedLookbackEndAdj.getCloseDataSeries('QQQ_adjusted')
+		self.__spyDS = feedLookbackEndAdj.getCloseDataSeries(consts.MARKET + '_adjusted')
+		self.__qqqDS = feedLookbackEndAdj.getCloseDataSeries(consts.TECH_SECTOR + '_adjusted')
 		self.__openDS = feedLookbackEndAdj.getOpenDataSeries(self.__instrumentAdj)
 		self.__closeDS = feedLookbackEndAdj.getCloseDataSeries(self.__instrumentAdj)
 		self.__volumeDS = feedLookbackEndAdj.getVolumeDataSeries(self.__instrumentAdj)
-		self.__upperBBDataSeries, self.__middleBBDataSeries, self.__lowerBBDataSeries = indicator.BBANDS(self.__closeDS, len(self.__closeDS), self.__bbPeriod, 2.0, 2.0)
-		self.__upperSPYBBDataSeries, self.__middleSPYBBDataSeries, self.__lowerSPYBBDataSeries = indicator.BBANDS(self.__spyDS, len(self.__spyDS), self.__bbPeriod, 2.0, 2.0)
-		self.__upperQQQBBDataSeries, self.__middleQQQBBDataSeries, self.__lowerQQQBBDataSeries = indicator.BBANDS(self.__qqqDS, len(self.__qqqDS), self.__bbPeriod, 2.0, 2.0)
+		self.__upperBBDataSeries, self.__middleBBDataSeries, self.__lowerBBDataSeries = indicator.BBANDS(self.__closeDS, len(self.__closeDS), self.__bbPeriod, 3.0, 1.5)
+		self.__upperSPYBBDataSeries, self.__middleSPYBBDataSeries, self.__lowerSPYBBDataSeries = indicator.BBANDS(self.__spyDS, len(self.__spyDS), self.__bbPeriod, 3.0, 1.5)
+		self.__upperQQQBBDataSeries, self.__middleQQQBBDataSeries, self.__lowerQQQBBDataSeries = indicator.BBANDS(self.__qqqDS, len(self.__qqqDS), self.__bbPeriod, 3.0, 1.5)
 		self.__rsi = indicator.RSI(self.__closeDS, len(self.__closeDS), consts.RSI_SETTING)
 		#print "RSI: ", self.__rsi
 		self.__lowPriceDS = feedLookbackEndAdj.getLowDataSeries(self.__instrumentAdj)
@@ -397,9 +397,9 @@ class BBSpread(strategy.BacktestingStrategy):
 		self.__emaShort3 = indicator.EMA(self.__closeDS, len(self.__closeDS), consts.EMA_SHORT_3)
 		#print "EMA Short3: ", self.__emaShort3
 		self.__smaSPYShort1 = indicator.SMA(self.__spyDS, len(self.__spyDS), consts.SMA_SHORT_1)
-		#print "SMA SPY Short1: ", self.__smaSPYShort1
+		#print "SMA Market Short1: ", self.__smaSPYShort1
 		self.__smaQQQShort1 = indicator.SMA(self.__qqqDS, len(self.__qqqDS), consts.SMA_SHORT_1)
-		#print "QQQ SPY Short1: ", self.__smaQQQShort1
+		#print "Tech Sector Market Short1: ", self.__smaQQQShort1
 		self.__smaLowerTiny = indicator.SMA(self.__lowerBBDataSeries, len(self.__lowerBBDataSeries), consts.SMA_TINY)
 		#print "SMA Lower Tiny: ", self.__smaLowerTiny
 		self.__smaUpperTiny = indicator.SMA(self.__upperBBDataSeries, len(self.__upperBBDataSeries), consts.SMA_TINY)
@@ -449,13 +449,9 @@ class BBSpread(strategy.BacktestingStrategy):
 			self.__logger.debug("Not enough bar entries for DMI computations.")
 			self.__logger.debug("DMI Period: %d" % consts.DMI_PERIOD)
 			return
-		#self.__adx = indicator.ADX(feedLookbackEndAdj.getBarSeries(self.__instrumentAdj), consts.ADX_COUNT, consts.ADX_PERIOD)
-		#self.__dmiPlus = indicator.PLUS_DI(feedLookbackEndAdj.getBarSeries(self.__instrumentAdj), consts.DMI_COUNT, consts.DMI_PERIOD)
-		#self.__dmiMinus = indicator.MINUS_DI(feedLookbackEndAdj.getBarSeries(self.__instrumentAdj), consts.DMI_COUNT, consts.DMI_PERIOD)
-
-		self.__adx = indicator.ADX(feedLookbackEndAdj.getBarSeries(self.__instrumentAdj), len(feedLookbackEndAdj.getBarSeries(self.__instrumentAdj)), consts.ADX_PERIOD)
-		self.__dmiPlus = indicator.PLUS_DI(feedLookbackEndAdj.getBarSeries(self.__instrumentAdj), len(feedLookbackEndAdj.getBarSeries(self.__instrumentAdj)), consts.DMI_PERIOD)
-		self.__dmiMinus = indicator.MINUS_DI(feedLookbackEndAdj.getBarSeries(self.__instrumentAdj), len(feedLookbackEndAdj.getBarSeries(self.__instrumentAdj)), consts.DMI_PERIOD)
+		self.__adx = indicator.ADX(feedLookbackEndAdj.getBarSeries(self.__instrumentAdj), consts.ADX_COUNT, consts.ADX_PERIOD)
+		self.__dmiPlus = indicator.PLUS_DI(feedLookbackEndAdj.getBarSeries(self.__instrumentAdj), consts.DMI_COUNT, consts.DMI_PERIOD)
+		self.__dmiMinus = indicator.MINUS_DI(feedLookbackEndAdj.getBarSeries(self.__instrumentAdj), consts.DMI_COUNT, consts.DMI_PERIOD)
 
 		self.__ema1 = self.getEMASHORT1()[-1]
 		self.__ema2 = self.getEMASHORT2()[-1]
@@ -549,6 +545,10 @@ class BBSpread(strategy.BacktestingStrategy):
 				self.__logger.debug("%s: Adj Entry Price: %.2f" % (bar.getDateTime(), self.__adjEntryPrice))
 				sharesToBuy = int((self.getBroker().getCash(includeShort=False) * consts.PERCENT_OF_CASH_BALANCE_FOR_ENTRY) / self.__adjEntryPrice)
 				self.__logger.debug("Shares To Buy: %d" % sharesToBuy)
+				if sharesToBuy < 1:
+					self.__logger.debug("Not enough cash to buy shares.")
+					return
+
 				self.__portfolioCashBefore = self.getBroker().getCash(includeShort=False)
 				self.__longPos = self.enterLongStop(self.__instrumentAdj, self.__adjEntryPrice, sharesToBuy, True)
 				t = bar.getDateTime()
@@ -623,6 +623,10 @@ class BBSpread(strategy.BacktestingStrategy):
 				sharesToBuy = int((self.getBroker().getCash(includeShort=False) / 
 								self.__adjEntryPrice) * consts.PERCENT_OF_CASH_BALANCE_FOR_ENTRY)
 				self.__logger.debug( "Shares To Buy: %d" % sharesToBuy)
+				if sharesToBuy < 1:
+					self.__logger.debug("Not enough cash to buy shares.")
+					return
+
 				self.__portfolioCashBefore = self.getBroker().getCash(includeShort=False)
 				self.__shortPos = self.enterShortStop(self.__instrumentAdj, self.__adjEntryPrice, sharesToBuy, True)
 				t = bar.getDateTime()
@@ -1778,14 +1782,14 @@ def run_strategy(bBandsPeriod, instrument, startPortfolio, startPeriod, endPerio
 	# Download the bars
 	feed = xiquantPlatform.redis_build_feed_EOD_RAW(instrument, startPeriod, endPeriod)
 
-	# Add the SPY and QQQ bars, which are used to determine if the market is Bullish or Bearish
+	# Add the Market and Tech Sector bars, which are used to determine if the market is Bullish or Bearish
 	# on a particular day.
-	feed = xiquantPlatform.add_feeds_EODRAW_CSV(feed, 'SPY', startPeriod, endPeriod)
-	feed = xiquantPlatform.add_feeds_EODRAW_CSV(feed, 'QQQ', startPeriod, endPeriod)
+	feed = xiquantPlatform.add_feeds_EODRAW_CSV(feed, consts.MARKET, startPeriod, endPeriod)
+	feed = xiquantPlatform.add_feeds_EODRAW_CSV(feed, consts.TECH_SECTOR, startPeriod, endPeriod)
 	barsDictForCurrAdj = {}
 	barsDictForCurrAdj[instrument] = feed.getBarSeries(instrument)
-	barsDictForCurrAdj['SPY'] = feed.getBarSeries('SPY')
-	barsDictForCurrAdj['QQQ'] = feed.getBarSeries('QQQ')
+	barsDictForCurrAdj[consts.MARKET] = feed.getBarSeries(consts.MARKET)
+	barsDictForCurrAdj[consts.TECH_SECTOR] = feed.getBarSeries(consts.TECH_SECTOR)
 	feedAdjustedToEndDate = xiquantPlatform.adjustBars(barsDictForCurrAdj, startPeriod, endPeriod)
 
 	# Get the earnings calendar for the period

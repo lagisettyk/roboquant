@@ -77,10 +77,11 @@ def yearFromTimeSinceEpoch(secs):
 	return t.days / 365 + 1970
 
 class MyStrategy(strategy.BacktestingStrategy):
-	def __init__(self, feed, cash, ordersFile, useAdjustedClose):
+	def __init__(self, feed, endPeriod, cash, ordersFile, useAdjustedClose):
 		strategy.BacktestingStrategy.__init__(self, feed, cash)
 		self.__feed = feed
-		self.__SPYFeed = feed["SPY"]
+		self.__backtestingEndDate = endPeriod
+		self.__SPYFeed = feed[consts.MARKET]
 		self.__spyDS = self.__SPYFeed.getCloseDataSeries()
 		self.__spyOpenDS = self.__SPYFeed.getOpenDataSeries()
 		self.__smaSPYShort1 = ma.SMA(self.__spyDS, consts.SMA_SHORT_1)
@@ -374,6 +375,24 @@ class MyStrategy(strategy.BacktestingStrategy):
 		barDateTimeinSecs = xiquantFuncs.secondsSinceEpoch(bars.getDateTime())
 		self.info("Bar Time: %.2f" % (barDateTimeinSecs))
 		self.info(self.__ordersFile.getOrdersForTime(barDateTimeinSecs))
+
+
+		# Check if it's the second to last day of the backtesting period. If so,
+		# place market exit orders for all the currently held positions.
+		if self.__backtestingEndDate.date() == (bars.getDateTime() + datetime.timedelta(days=1)).date():
+			self.info("One day away from the backtesting end period.")
+			for instrOrderIDTuple in self.__longPos:
+				for instrument in instrOrderIDTuple:
+					if self.__longPos.get(instrOrderIDTuple, None) and self.__longPos[instrOrderIDTuple] and self.__longPos[instrOrderIDTuple].exitActive():
+						self.__longPos[instrOrderIDTuple].cancelExit()
+						self.__longPos[instrOrderIDTuple].exitMarket()
+			for instrOrderIDTuple in self.__shortPos:
+				for instrument in instrOrderIDTuple:
+					if self.__shortPos.get(instrOrderIDTuple, None) and self.__shortPos[instrOrderIDTuple] and self.__shortPos[instrOrderIDTuple].exitActive():
+						self.__shortPos[instrOrderIDTuple].cancelExit()
+						self.__shortPos[instrOrderIDTuple].exitMarket()
+			return
+
 		# The available cash is split equally among all the orders for the day
 		noOfOrders = len(self.__ordersFile.getOrdersForTime(barDateTimeinSecs))
 		self.info("Total no. of orders: %d" % noOfOrders)
@@ -419,7 +438,7 @@ class MyStrategy(strategy.BacktestingStrategy):
 						# other instruments.
 						noOfOrders -= 1
 						# Write this order to the file for unexecuted orders
-						self.__unexecutedOrdersFile.write("%s, %s, %s\n" % (instrument, 'Buy', str(stopPrice)))
+						self.__unexecutedOrdersFile.write("%s, %s, %s, %s\n" % (str(barDateTimeinSecs), instrument, 'Buy', str(stopPrice)))
 						continue 
 				self.info("%s %d of %s at $%.2f" % (action, sharesToBuy, instrument, stopPrice))
 				self.__longPos[instrOrderIDTuple] = self.enterLongStop(instrument, stopPrice, sharesToBuy, True)
@@ -448,7 +467,7 @@ class MyStrategy(strategy.BacktestingStrategy):
 						# other instruments.
 						noOfOrders -= 1
 						# Write this order to the file for unexecuted orders
-						self.__unexecutedOrdersFile.write("%s, %s, %s\n" % (instrument, 'Sell', str(stopPrice)))
+						self.__unexecutedOrdersFile.write("%s, %s, %s, %s\n" % (str(barDateTimeinSecs), instrument, 'Sell', str(stopPrice)))
 						continue 
 				self.info("%s %d of %s at $%.2f" % (action, sharesToBuy, instrument, stopPrice))
 				self.__shortPos[instrOrderIDTuple] = self.enterShortStop(instrument, stopPrice, sharesToBuy, True)
@@ -512,12 +531,20 @@ class MyStrategy(strategy.BacktestingStrategy):
 					self.__lowDS = self.__feed[instrument].getLowDataSeries()
 					self.__highDS = self.__feed[instrument].getHighDataSeries()
 					self.__openDS = self.__feed[instrument].getOpenDataSeries()
+					self.__closeDS = self.__feed[instrument].getCloseDataSeries()
 					execInfo = self.__longPos[instrOrderIDTuple].getEntryOrder().getExecutionInfo()
 					if execInfo == None:
 						continue
 					# Adjust the profit lock price -- the price is already adjusted by the ratio
 					# so the profit should be as well.
-					lockProfitPrice = execInfo.getPrice() + consts.PROFIT_LOCK * self.__adjRatio[instrOrderIDTuple]
+					profitLock = 0.0
+					if consts.PROFIT_LOCK_PERCENT_OR_ABS.lower() == 'percent':
+						profitLock = self.__closeDS[-1] * consts.PROFIT_LOCK_PERCENT / float(100)
+					else:
+						profitLock = consts.PROFIT_LOCK_ABS
+					# Adjust the profit lock value
+					#profitLock *= self.__adjRatio[instrOrderIDTuple]
+					lockProfitPrice = execInfo.getPrice() + profitLock
 					self.info("lockProfitPrice: %0.2f" % lockProfitPrice)
 					if self.__openDS[-1] <= stopLossPrice:
 						exitPrice = self.__openDS[-1]
@@ -571,12 +598,20 @@ class MyStrategy(strategy.BacktestingStrategy):
 					self.__lowDS = self.__feed[instrument].getLowDataSeries()
 					self.__highDS = self.__feed[instrument].getHighDataSeries()
 					self.__openDS = self.__feed[instrument].getOpenDataSeries()
+					self.__closeDS = self.__feed[instrument].getOpenDataSeries()
 					execInfo = self.__shortPos[instrOrderIDTuple].getEntryOrder().getExecutionInfo()
 					if execInfo == None:
 						continue
 					# Adjust the profit lock price -- the price is already adjusted by the ratio
 					# so the profit should be as well.
-					lockProfitPrice = execInfo.getPrice() - consts.PROFIT_LOCK * self.__adjRatio[instrOrderIDTuple]
+					profitLock = 0.0
+					if consts.PROFIT_LOCK_PERCENT_OR_ABS.lower() == 'percent':
+						profitLock = self.__closeDS[-1] * consts.PROFIT_LOCK_PERCENT / float(100)
+					else:
+						profitLock = consts.PROFIT_LOCK_ABS
+					# Adjust the profit lock value
+					#profitLock *= self.__adjRatio[instrOrderIDTuple]
+					lockProfitPrice = execInfo.getPrice() - profitLock
 					self.info("lockProfitPrice: %0.2f" % lockProfitPrice)
 					if self.__openDS[-1] >= stopLossPrice:
 						exitPrice = self.__openDS[-1]
@@ -643,12 +678,20 @@ class MyStrategy(strategy.BacktestingStrategy):
 					self.__lowDS = self.__feed[instrument].getLowDataSeries()
 					self.__highDS = self.__feed[instrument].getHighDataSeries()
 					self.__openDS = self.__feed[instrument].getOpenDataSeries()
+					self.__closeDS = self.__feed[instrument].getOpenDataSeries()
 					execInfo = self.__longPos[instrOrderIDTuple].getEntryOrder().getExecutionInfo()
 					if execInfo == None:
 						continue
 					# Adjust the profit lock price -- the price is already adjusted by the ratio
 					# so the profit should be as well.
-					lockProfitPrice = execInfo.getPrice() + consts.PROFIT_LOCK * self.__adjRatio[instrOrderIDTuple]
+					profitLock = 0.0
+					if consts.PROFIT_LOCK_PERCENT_OR_ABS.lower() == 'percent':
+						profitLock = self.__closeDS[-1] * consts.PROFIT_LOCK_PERCENT / float(100)
+					else:
+						profitLock = consts.PROFIT_LOCK_ABS
+					# Adjust the profit lock value
+					#profitLock *= self.__adjRatio[instrOrderIDTuple]
+					lockProfitPrice = execInfo.getPrice() + profitLock
 					self.info("lockProfitPrice: %0.2f" % lockProfitPrice)
 					if self.__openDS[-1] <= stopLossPrice:
 						exitPrice = self.__openDS[-1]
@@ -684,12 +727,20 @@ class MyStrategy(strategy.BacktestingStrategy):
 					self.__lowDS = self.__feed[instrument].getLowDataSeries()
 					self.__highDS = self.__feed[instrument].getHighDataSeries()
 					self.__openDS = self.__feed[instrument].getOpenDataSeries()
+					self.__closeDS = self.__feed[instrument].getOpenDataSeries()
 					execInfo = self.__shortPos[instrOrderIDTuple].getEntryOrder().getExecutionInfo()
 					if execInfo == None:
 						continue
 					# Adjust the profit lock price -- the price is already adjusted by the ratio
 					# so the profit should be as well.
-					lockProfitPrice = execInfo.getPrice() - consts.PROFIT_LOCK * self.__adjRatio[instrOrderIDTuple]
+					profitLock = 0.0
+					if consts.PROFIT_LOCK_PERCENT_OR_ABS.lower() == 'percent':
+						profitLock = self.__closeDS[-1] * consts.PROFIT_LOCK_PERCENT / float(100)
+					else:
+						profitLock = consts.PROFIT_LOCK_ABS
+					# Adjust the profit lock value
+					#profitLock *= self.__adjRatio[instrOrderIDTuple]
+					lockProfitPrice = execInfo.getPrice() - profitLock
 					self.info("lockProfitPrice: %0.2f" % lockProfitPrice)
 					if self.__openDS[-1] >= stopLossPrice:
 						exitPrice = self.__openDS[-1]
@@ -750,18 +801,18 @@ def main():
 	# Add the SPY bars to support the simulation of whether we should have
 	# entered certain trades or not -- based on the SPY opening higher/lower
 	# than 20 SMA value for bullish/bearish trades.
-	feed = xiquantPlatform.add_feeds_EODRAW_CSV(feed, 'SPY', startPeriod, endPeriod)
+	feed = xiquantPlatform.add_feeds_EODRAW_CSV(feed, consts.MARKET, startPeriod, endPeriod)
 
 	barsDictForCurrAdj = {}
 	for instrument in ordersFile.getInstruments():
 		barsDictForCurrAdj[instrument] = feed.getBarSeries(instrument)
-	barsDictForCurrAdj['SPY'] = feed.getBarSeries('SPY')
+	barsDictForCurrAdj[consts.MARKET] = feed.getBarSeries(consts.MARKET)
 	feedAdjustedToEndDate = xiquantPlatform.adjustBars(barsDictForCurrAdj, startPeriod, endPeriod, keyFlag=False)
 
 	cash = 100000
 	useAdjustedClose = True
-	#myStrategy = MyStrategy(feedAdjustedToEndDate, cash, ordersFile, useAdjustedClose)
-	myStrategy = MyStrategy(feedAdjustedToEndDate, cash, ordersFile, useAdjustedClose)
+	#myStrategy = MyStrategy(feedAdjustedToEndDate, endPeriod, cash, ordersFile, useAdjustedClose)
+	myStrategy = MyStrategy(feedAdjustedToEndDate, endPeriod, cash, ordersFile, useAdjustedClose)
 	# Attach returns and sharpe ratio analyzers.
 	retAnalyzer = returns.Returns()
 	myStrategy.attachAnalyzer(retAnalyzer)

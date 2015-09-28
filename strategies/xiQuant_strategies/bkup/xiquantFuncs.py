@@ -12,7 +12,6 @@ import datetime
 
 # Returns the last values of a dataseries as a numpy.array, or None if not enough values
 # could be retrieved from the dataseries.
-
 def dsToNumpyArray(ds, count):
 	ret = None
 	try:
@@ -24,6 +23,25 @@ def dsToNumpyArray(ds, count):
 	except TypeError: # In case we try to convert None to float.
 		pass
 	return ret
+
+# Returns a reversed view of the original numpy array.
+def revNumpyArray(arr):
+	return arr[::-1]
+
+# Returns the first crossing between the crossing-over and being-crossed
+# numpy arrays.
+def firstNumpyArrayCrossing(crossingArray, beingCrossedArray):
+	diffArray = crossingArray - beingCrossedArray
+	#print "diffArray: ", diffArray
+	signArray = numpy.sign(diffArray)
+	#print "signArray: ", signArray
+	crossings = numpy.where(numpy.diff(signArray))[0]
+	#print "crossings: ", crossings
+
+	if len(crossings):
+		return crossings[0]
+	else:
+		return 0
 
 def normalize(value, mean, stdDev):
 	return float((value - mean) / stdDev)
@@ -140,11 +158,3 @@ def totalCrossovers(thatCrossesDS, beingCrossedDS, startRange=-2, endRange=None)
 	noOfCrossAbove = cross.cross_above(thatCrossesDS, beingCrossedDS, startRange, endRange)
 	noOfCrossBelow = cross.cross_below(thatCrossesDS, beingCrossedDS, startRange, endRange)
 	return noOfCrossAbove + noOfCrossBelow
-
-def totalCrossAbove(thatCrossesDS, beingCrossedDS, startRange=-2, endRange=None):
-	noOfCrossAbove = cross.cross_above(thatCrossesDS, beingCrossedDS, startRange, endRange)
-	return noOfCrossAbove 
-
-def totalCrossBelow(thatCrossesDS, beingCrossedDS, startRange=-2, endRange=None):
-	noOfCrossBelow = cross.cross_below(thatCrossesDS, beingCrossedDS, startRange, endRange)
-	return noOfCrossBelow
