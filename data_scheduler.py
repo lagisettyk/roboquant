@@ -11,10 +11,10 @@ import dateutil.parser
 ### Need to come up with better solutio########
 
 #tickerList = util.getTickerListWithSPY()
-tickerList = util.getTickerList('SP-500')
+#tickerList = util.getTickerList('SP-500')
 #tickerList = util.getTickerList('FTSE-100')
 #tickerList = util.getTickerList('HKG-100')
-#tickerList = ['HKG_0144']
+tickerList = ['SPY']
 
 def get_redis_conn():
 	return util.get_redis_conn_nopool()
