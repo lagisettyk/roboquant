@@ -11,9 +11,9 @@ import dateutil.parser
 ### Need to come up with better solutio########
 
 #tickerList = util.getTickerListWithSPY()
-#tickerList = util.getTickerList('CBOE-ALL')
+tickerList = util.getTickerList('SP-500')
 #tickerList = util.getTickerList('FTSE-100')
-tickerList = util.getTickerList('HKG-100')
+#tickerList = util.getTickerList('HKG-100')
 #tickerList = ['HKG_0144']
 
 def get_redis_conn():
@@ -57,7 +57,7 @@ def populate_moneyflow():
 	time.sleep(10)
 	print job.result   # => 889
 
-#@sched.scheduled_job('date')
+@sched.scheduled_job('date')
 #@sched.scheduled_job('cron', day_of_week='mon-fri', hour=17)
 def populate_rawEOD():
 	print('This job is run every weekday at 7pm.')

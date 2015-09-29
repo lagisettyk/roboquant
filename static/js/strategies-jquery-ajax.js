@@ -103,7 +103,7 @@ $(document).ready( function() {
   $("#reportrange2").daterangepicker({
                   format: 'MM/DD/YYYY',
                   minDate: '01/01/2005',
-                  maxDate: '12/31/2014',
+                  maxDate: '12/31/2020',
                   dateLimit: { days: 250 },
                 }, function(start, end, label) {
                   //alert("You clicked the button using JQuery!");
