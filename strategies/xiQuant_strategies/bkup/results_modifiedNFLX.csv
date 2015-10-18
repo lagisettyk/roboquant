@@ -1,4 +1,0 @@
-Instrument,Trade-Type,Entry-Date,Entry-Price,Quantity,StopLoss-Exit-Date,StopLoss-Exit-Price,StopLoss-Exit-PorL,Profit-Exit-Date,Profit-Exit-Price,Profit-Exit-PorL,Exit-Date,Exit-Price,PorL,Actual-PorL,Current-Pos
-NFLX,SHORT,2014-09-16,64.06,72,2014-09-16,64.06,-0.00,2014-09-16,63.77,20.57,2014-09-17,65.27,-87.53,20.57,[]
-NFLX,SHORT,2014-11-20,51.78,91,2014-11-20,53.31,-139.03,No-Exit,0.0,0.0,2014-11-21,53.31,-139.03,-139.03,[]
-NFLX,LONG,2015-04-09,63.00,77,No-Exit,0.0,0.0,2015-04-10,63.29,22.00,2015-04-15,68.70,439.23,22.00,[]

@@ -14,7 +14,8 @@ import dateutil.parser
 #tickerList = util.getTickerList('SP-500')
 #tickerList = util.getTickerList('FTSE-100')
 #tickerList = util.getTickerList('HKG-100')
-tickerList = ['SPY']
+#tickerList = util.getTickerList('CBOE-ALL')
+tickerList = ['AGN']
 
 def get_redis_conn():
 	return util.get_redis_conn_nopool()
@@ -46,19 +47,19 @@ def scheduled_job():
 	print job.result   # => 889
 
 
-#@sched.scheduled_job('date')
-@sched.scheduled_job('cron', day_of_week='mon-fri', hour=17)
+@sched.scheduled_job('date')
+#@sched.scheduled_job('cron', day_of_week='mon-fri', hour=17)
 def populate_moneyflow():
 	print('This job is to populate cashflow')
 	redis_conn = util.get_redis_conn()
-	q = Queue(connection=redis_conn)
+	q = Queue(connection=redis_conn, default_timeout=1500)
 	job = q.enqueue(populate_redis_moneyflow_history, tickerList)
 	print job.result   # => None
 	time.sleep(10)
 	print job.result   # => 889
 
 #@sched.scheduled_job('date')
-@sched.scheduled_job('cron', day_of_week='mon-fri', hour=17)
+#@sched.scheduled_job('cron', day_of_week='mon-fri', hour=17)
 def populate_rawEOD():
 	print('This job is run every weekday at 7pm.')
 	redis_conn = util.get_redis_conn()

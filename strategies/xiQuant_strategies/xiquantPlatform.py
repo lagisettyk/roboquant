@@ -73,7 +73,8 @@ class xiQuantAdjustBars():
 
 			for bar in bars_in_dtrange:
 				splitdata = float(bar.getSplit())
-				dividend = float(bar.getDividend())
+				#dividend = float(bar.getDividend())
+				dividend = 0.0
 				if splitdata != 1.0:
 					splitdataList.append(bar.getSplit())
 				if dividend != 0.0:
@@ -187,7 +188,8 @@ def adjustBars(barsDict, startdate, enddate, keyFlag=True):
 		dividendList = []
 		for bar in bars_in_dtrange:
 			splitdata = float(bar.getSplit())
-			dividend = float(bar.getDividend())
+			#dividend = float(bar.getDividend())
+			dividend = 0.0
 			if splitdata != 1.0:
 				splitdataList.append(bar.getSplit())
 			if dividend != 0.0:

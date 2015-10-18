@@ -107,9 +107,9 @@ class EMATrend(strategy.BacktestingStrategy):
 		return
 		
 	def isTechBullish(self):
-		self.__logger.debug("QQQ Close: $%.2f" % self.__qqqDS[-1])
-		self.__logger.debug("QQQ 20 SMA: $%.2f" % self.__smaQQQShort1[-1])
-		self.__logger.debug("QQQ Upper BBand: $%.2f" % self.__upperQQQBBDataSeries[-1])
+		self.__logger.debug("Tech Sector Close: $%.2f" % self.__qqqDS[-1])
+		self.__logger.debug("Tech Sector 20 SMA: $%.2f" % self.__smaQQQShort1[-1])
+		self.__logger.debug("Tech Sector Upper BBand: $%.2f" % self.__upperQQQBBDataSeries[-1])
 		if self.__qqqDS[-1] > self.__smaQQQShort1[-1]:
 			self.__logger.debug("The tech sector is Bullish today.")
 			return True
@@ -118,9 +118,9 @@ class EMATrend(strategy.BacktestingStrategy):
 			return False
 
 	def isTechBearish(self):
-		self.__logger.debug("QQQ Close: $%.2f" % self.__qqqDS[-1])
-		self.__logger.debug("QQQ 20 SMA: $%.2f" % self.__smaQQQShort1[-1])
-		self.__logger.debug("QQQ Lower BBand: $%.2f" % self.__lowerQQQBBDataSeries[-1])
+		self.__logger.debug("Tech Sector Close: $%.2f" % self.__qqqDS[-1])
+		self.__logger.debug("Tech Sector 20 SMA: $%.2f" % self.__smaQQQShort1[-1])
+		self.__logger.debug("Tech Sector Lower BBand: $%.2f" % self.__lowerQQQBBDataSeries[-1])
 		if self.__qqqDS[-1] <= self.__smaQQQShort1[-1]:
 			self.__logger.debug("The tech sector is Bearish today.")
 			return True
@@ -129,9 +129,9 @@ class EMATrend(strategy.BacktestingStrategy):
 			return False
 
 	def isBullish(self):
-		self.__logger.debug("SPY Close: $%.2f" % self.__spyDS[-1])
-		self.__logger.debug("SPY 20 SMA: $%.2f" % self.__smaSPYShort1[-1])
-		self.__logger.debug("SPY Upper BBand: $%.2f" % self.__upperSPYBBDataSeries[-1])
+		self.__logger.debug("Market Close: $%.2f" % self.__spyDS[-1])
+		self.__logger.debug("Market 20 SMA: $%.2f" % self.__smaSPYShort1[-1])
+		self.__logger.debug("Market Upper BBand: $%.2f" % self.__upperSPYBBDataSeries[-1])
 		if self.__spyDS[-1] > self.__smaSPYShort1[-1]:
 			self.__logger.debug("The market is Bullish today.")
 			return True
@@ -140,9 +140,9 @@ class EMATrend(strategy.BacktestingStrategy):
 			return False
 
 	def isBearish(self):
-		self.__logger.debug("SPY Close: $%.2f" % self.__spyDS[-1])
-		self.__logger.debug("SPY 20 SMA: $%.2f" % self.__smaSPYShort1[-1])
-		self.__logger.debug("SPY Lower BBand: $%.2f" % self.__lowerSPYBBDataSeries[-1])
+		self.__logger.debug("Market Close: $%.2f" % self.__spyDS[-1])
+		self.__logger.debug("Market 20 SMA: $%.2f" % self.__smaSPYShort1[-1])
+		self.__logger.debug("Market Lower BBand: $%.2f" % self.__lowerSPYBBDataSeries[-1])
 		if self.__spyDS[-1] <= self.__smaSPYShort1[-1]:
 			self.__logger.debug("The market is Bearish today.")
 			return True
@@ -389,9 +389,9 @@ class EMATrend(strategy.BacktestingStrategy):
 		self.__emaShort3 = indicator.EMA(self.__closeDS, len(self.__closeDS), consts.EMA_SHORT_3)
 		#print "EMA Short3: ", self.__emaShort3
 		self.__smaSPYShort1 = indicator.SMA(self.__spyDS, len(self.__spyDS), consts.SMA_SHORT_1)
-		#print "SMA SPY Short1: ", self.__smaSPYShort1
+		#print "SMA Market Short1: ", self.__smaSPYShort1
 		self.__smaQQQShort1 = indicator.SMA(self.__qqqDS, len(self.__qqqDS), consts.SMA_SHORT_1)
-		#print "QQQ SPY Short1: ", self.__smaQQQShort1
+		#print "Tech Sector Market Short1: ", self.__smaQQQShort1
 		self.__smaLowerTiny = indicator.SMA(self.__lowerBBDataSeries, len(self.__lowerBBDataSeries), consts.SMA_TINY)
 		#print "SMA Lower Tiny: ", self.__smaLowerTiny
 		self.__smaUpperTiny = indicator.SMA(self.__upperBBDataSeries, len(self.__upperBBDataSeries), consts.SMA_TINY)
@@ -1477,23 +1477,28 @@ class EMATrend(strategy.BacktestingStrategy):
 		else:
 			stopPrice = 0.0
 			self.__adjRatio = self.__priceDS[-1] / bar.getAdjClose()
+			self.__logger.debug("Adj Ratio for non-entry-day stop loss setting: %s", str(self.__adjRatio))
 			execInfo = self.__longPos.getEntryOrder().getExecutionInfo()
 			entryPrice = execInfo.getPrice()
+			self.__logger.debug("Entry Price: %s", str(entryPrice))
 			candleLen = bar.getClose() - bar.getOpen()
 			profitCheck = 0.0
 			if consts.EMA_PROFIT_CHECK_PERCENT_OR_ABS.lower() == 'percent':
-				profitCheck = bar.getClose() * consts.EMA_PROFIT_CHECK_PERCENT / float(100)
+				#profitCheck = bar.getClose() * consts.EMA_PROFIT_CHECK_PERCENT / float(100)
+				profitCheck = entryPrice * consts.EMA_PROFIT_CHECK_PERCENT / float(100)
 			else:
 				profitCheck = consts.EMA_PROFIT_CHECK_ABS
 			# Adjust the profit check value
-			profitCheck *= self.__adjRatio
+			#profitCheck *= self.__adjRatio
 			#if bar.getClose() - entryPrice > profitCheck:
-			if self.__emaDS[-1] - self.__emaDS[-2] > profitCheck:
+			#if self.__emaDS[-1] - self.__emaDS[-2] > profitCheck:
+			if (self.__emaDS[-1] - self.__emaDS[-2]) * self.__adjRatio > profitCheck:
 				if consts.EMA_STOP_PRICE_PERCENT_OR_ABS.lower() == 'percent':
 					stopPriceDelta = bar.getClose() * consts.EMA_ENTRY_DAY_STOP_PRICE_PERCENT / float(100)
 				else:
 					stopPriceDelta = consts.EMA_ENTRY_DAY_STOP_PRICE_ABS
 				if consts.EMA_PROGRESS_STOP_LOSS:
+					#stopPrice =  self.__emaDS[-1] + stopPriceDelta
 					stopPrice =  self.__emaDS[-1] - stopPriceDelta
 				else:
 					stopPrice = self.__longPos.getExitOrder().getStopPrice()
@@ -1545,24 +1550,29 @@ class EMATrend(strategy.BacktestingStrategy):
 		else:
 			stopPrice = 0.0
 			self.__adjRatio = self.__priceDS[-1] / bar.getAdjClose()
+			self.__logger.debug("Adj Ratio for non-entry-day stop loss setting: %s", str(self.__adjRatio))
 			execInfo = self.__shortPos.getEntryOrder().getExecutionInfo()
 			entryPrice = execInfo.getPrice()
+			self.__logger.debug("Entry Price: %s", str(entryPrice))
 			candleLen = bar.getClose() - bar.getOpen()
 			profitCheck = 0.0
 			if consts.EMA_PROFIT_CHECK_PERCENT_OR_ABS.lower() == 'percent':
-				profitCheck = bar.getClose() * consts.EMA_PROFIT_CHECK_PERCENT / float(100)
+				#profitCheck = bar.getClose() * consts.EMA_PROFIT_CHECK_PERCENT / float(100)
+				profitCheck = entryPrice * consts.EMA_PROFIT_CHECK_PERCENT / float(100)
 			else:
 				profitCheck = consts.EMA_PROFIT_CHECK_ABS
 			# Adjust the profit check value
-			profitCheck *= self.__adjRatio
+			#profitCheck *= self.__adjRatio
 			#if entryPrice - bar.getClose() > profitCheck:
-			if self.__emaDS[-2] - self.__emaDS[-1] > profitCheck:
+			#if self.__emaDS[-2] - self.__emaDS[-1] > profitCheck:
+			if (self.__emaDS[-2] - self.__emaDS[-1]) * self.__adjRatio > profitCheck:
 				if consts.EMA_STOP_PRICE_PERCENT_OR_ABS.lower() == 'percent':
 					stopPriceDelta = bar.getClose() * consts.EMA_ENTRY_DAY_STOP_PRICE_PERCENT / float(100)
 				else:
 					stopPriceDelta = consts.EMA_ENTRY_DAY_STOP_PRICE_ABS
 				if consts.EMA_PROGRESS_STOP_LOSS:
-					stopPrice =  self.__emaDS[-1] - stopPriceDelta
+					#stopPrice =  self.__emaDS[-1] - stopPriceDelta
+					stopPrice =  self.__emaDS[-1] + stopPriceDelta
 				else:
 					stopPrice = self.__shortPos.getExitOrder().getStopPrice()
 					# The stop price is already adjusted.
@@ -1590,7 +1600,7 @@ def run_strategy(bBandsPeriod, instrument, startPortfolio, startPeriod, endPerio
 	# Download the bars
 	feed = xiquantPlatform.redis_build_feed_EOD_RAW(instrument, startPeriod, endPeriod)
 
-	# Add the SPY and QQQ bars, which are used to determine if the market is Bullish or Bearish
+	# Add the Market and Tech Sector bars, which are used to determine if the market is Bullish or Bearish
 	# on a particular day.
 	feed = xiquantPlatform.add_feeds_EODRAW_CSV(feed, consts.MARKET, startPeriod, endPeriod)
 	feed = xiquantPlatform.add_feeds_EODRAW_CSV(feed, consts.TECH_SECTOR, startPeriod, endPeriod)

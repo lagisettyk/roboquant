@@ -1,4 +1,4 @@
-#import redis
+import redis
 from rq import Worker, Queue, Connection
 from utils import util
 

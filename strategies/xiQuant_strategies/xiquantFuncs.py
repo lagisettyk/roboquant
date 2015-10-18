@@ -133,25 +133,25 @@ def computeStopPrice(candleLen, bullishOrBearish, openPrice, closePrice, stopPri
 	if bullishOrBearish.lower() == "bullish":
 		if compareLen <= consts.BB_SPREAD_TRADE_DAY_STOP_LOSS_DELTA_1:
 			stopPrice = openPrice - stopPriceDelta
-		if compareLen > consts.BB_SPREAD_TRADE_DAY_STOP_LOSS_DELTA_1 and candleLen <= consts.BB_SPREAD_TRADE_DAY_STOP_LOSS_DELTA_2:
+		if compareLen > consts.BB_SPREAD_TRADE_DAY_STOP_LOSS_DELTA_1 and compareLen <= consts.BB_SPREAD_TRADE_DAY_STOP_LOSS_DELTA_2:
 			stopPrice = openPrice + candleLen / 3
-			if not consts.BB_SPREAD_TRADE_DAY_STOP_LOSS_PERCENTAGE and stopPrice < consts.BB_SPREAD_TRADE_DAY_STOP_LOSS_DELTA_1:
-				stopPrice = consts.BB_SPREAD_TRADE_DAY_STOP_LOSS_DELTA_1
+			if not consts.BB_SPREAD_TRADE_DAY_STOP_LOSS_PERCENTAGE and stopPrice < openPrice + consts.BB_SPREAD_TRADE_DAY_STOP_LOSS_DELTA_1:
+				stopPrice = openPrice + consts.BB_SPREAD_TRADE_DAY_STOP_LOSS_DELTA_1
 		if compareLen > consts.BB_SPREAD_TRADE_DAY_STOP_LOSS_DELTA_2:
 			stopPrice = openPrice + candleLen / 2
-			if not consts.BB_SPREAD_TRADE_DAY_STOP_LOSS_PERCENTAGE and stopPrice < consts.BB_SPREAD_TRADE_DAY_STOP_LOSS_DELTA_1:
-				stopPrice = consts.BB_SPREAD_TRADE_DAY_STOP_LOSS_DELTA_1
+			if not consts.BB_SPREAD_TRADE_DAY_STOP_LOSS_PERCENTAGE and stopPrice < openPrice + consts.BB_SPREAD_TRADE_DAY_STOP_LOSS_DELTA_1:
+				stopPrice = openPrice + consts.BB_SPREAD_TRADE_DAY_STOP_LOSS_DELTA_1
 	elif bullishOrBearish.lower() == "bearish":
 		if compareLen <= consts.BB_SPREAD_TRADE_DAY_STOP_LOSS_DELTA_1:
 			stopPrice = openPrice + stopPriceDelta
-		if compareLen > consts.BB_SPREAD_TRADE_DAY_STOP_LOSS_DELTA_1 and candleLen <= consts.BB_SPREAD_TRADE_DAY_STOP_LOSS_DELTA_2:
+		if compareLen > consts.BB_SPREAD_TRADE_DAY_STOP_LOSS_DELTA_1 and compareLen <= consts.BB_SPREAD_TRADE_DAY_STOP_LOSS_DELTA_2:
 			stopPrice = openPrice - candleLen / 3
-			if not consts.BB_SPREAD_TRADE_DAY_STOP_LOSS_PERCENTAGE and stopPrice < consts.BB_SPREAD_TRADE_DAY_STOP_LOSS_DELTA_1:
-				stopPrice = consts.BB_SPREAD_TRADE_DAY_STOP_LOSS_DELTA_1
+			if not consts.BB_SPREAD_TRADE_DAY_STOP_LOSS_PERCENTAGE and stopPrice < openPrice - consts.BB_SPREAD_TRADE_DAY_STOP_LOSS_DELTA_1:
+				stopPrice = openPrice - consts.BB_SPREAD_TRADE_DAY_STOP_LOSS_DELTA_1
 		if compareLen > consts.BB_SPREAD_TRADE_DAY_STOP_LOSS_DELTA_2:
 			stopPrice = openPrice - candleLen / 2
-			if not consts.BB_SPREAD_TRADE_DAY_STOP_LOSS_PERCENTAGE and stopPrice < consts.BB_SPREAD_TRADE_DAY_STOP_LOSS_DELTA_1:
-				stopPrice = consts.BB_SPREAD_TRADE_DAY_STOP_LOSS_DELTA_1
+			if not consts.BB_SPREAD_TRADE_DAY_STOP_LOSS_PERCENTAGE and stopPrice < openPrice - consts.BB_SPREAD_TRADE_DAY_STOP_LOSS_DELTA_1:
+				stopPrice = openPrice - consts.BB_SPREAD_TRADE_DAY_STOP_LOSS_DELTA_1
 	return stopPrice
 
 def totalCrossovers(thatCrossesDS, beingCrossedDS, startRange=-2, endRange=None):

@@ -1,0 +1,4 @@
+RUN PERIOD 2007/01/01 to 2014/12/31,,,,,,,,
+,,,,,,,,
+XiQuant100 -  BBSpread 2.0,Total trades,Winning trades,Winning %,Absolute Portfolio,Strategy Return,Market Return,Sliding window winning %,strategy vs market winning ratio
+RANK-25,146,74,50.684,246609.58,146.09,45.39,88.372,51.162

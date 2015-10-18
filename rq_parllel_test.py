@@ -15,11 +15,13 @@ sys.path.append('/home/parallels/Code/heroku-envbased/roboquant/strategies')
 from xiQuant_strategies import xiQuantStrategyUtil, xiquantStrategyParams
 
 
-listStr = 'HKG-100'
+#listStr = 'CUSTOM'
+listStr = 'xiQuant-100'
+#listStr = 'xiQuant-50'
 
 tickerList = util.getTickerList(listStr)
 
-#tickerList = ['AAPL', 'IWM', 'WHR', 'NFLX']
+#tickerList = ['AAPL', 'NFLX', 'GOOGL']
 
 
 def run_singlestock_analysis():
@@ -30,8 +32,6 @@ def run_singlestock_analysis():
 	import dateutil.parser
 	startdate = dateutil.parser.parse('2005-06-30T08:00:00.000Z')
 	enddate = dateutil.parser.parse('2014-12-31T08:00:00.000Z')
-
-	
 
 	for ticker in tickerList:
 		orders = []
@@ -86,7 +86,7 @@ def test_parallel_strategy():
 
 	for ticker in tickerList:
 		jobList.append(q.enqueue(xiQuantStrategyUtil.run_strategy_redis,20, ticker, 100000, startdate, enddate, indicators=False))
-		
+
 	#### Wait in loop until all of them are successfull
 	master_orders = [] #### populate master list of  orders dictionary...
 	jobID = 1
@@ -109,20 +109,20 @@ def test_parallel_strategy():
 
 	print "successfully processed tickers"
 
-
 	########### Iterate master orders file.... #############
 	dataRows = []
 	for k in range(len(master_orders)):
-		for key, value in master_orders[k].iteritems():
-			row = []
-			row.append(key)
-			row.append(value[0][0])
-			row.append(value[0][1])
-			row.append(value[0][2])
-			row.append(value[0][3]) ### this is for Order Id
-			row.append(value[0][4]) ##### this is for adj factor....
-			row.append(value[0][5]) #### added for rank
-			dataRows.append(row)
+		for timeStamp, orderList in master_orders[k].iteritems():
+			for order in orderList:
+				row = []
+				row.append(timeStamp)
+				row.append(order[0])
+				row.append(order[1])
+				row.append(order[2])
+				row.append(order[3])
+				row.append(order[4])
+				row.append(order[5])
+				dataRows.append(row)
 
 	######### before passing let's sort orders based on moneyness rank
 	#####################################################################
@@ -406,10 +406,10 @@ def process_Options_History():
 	print  "Successfully processed...."
 
 	
-#test_parallel_strategy()
+test_parallel_strategy()
 #run_parallel_BBSMAXOverMTM()
 #run_parallel_EMABreachMTM()
-run_parallel_EMATrend()
+#run_parallel_EMATrend()
 #run_singlestock_analysis()
 #process_Options_History()
 

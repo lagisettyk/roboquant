@@ -22,6 +22,7 @@ import collections
 from pyalgotrade.bar import BasicBar, Frequency
 import xiquantStrategyParams as consts
 import math
+import operator
 
 
 
@@ -520,22 +521,29 @@ def redis_build_sma_3days(ticker, stdate, enddate):
 
 def topNMomentumTickerList(stdate, enddate, cutoff, sortOrder='Reverse'):
 
-    masterList = []
+    #masterList = []
+    masterDict = {}
     analysisDate = stdate
     while analysisDate < enddate:
         print "processing analysis date: ", analysisDate
         tickerDict = tickersRankByCashFlow(analysisDate, sortOrder)
         topN = dict((list(tickerDict.items())[:cutoff]))
-        masterList = list(set(masterList + topN.values()))
-        analysisDate = analysisDate + datetime.timedelta(days=15)
+        #masterList = list(set(masterList + topN.values()))
+        for key in topN.values():
+            if masterDict.get(key) == None:
+                masterDict[key] = 1
+            else:
+                masterDict[key] = masterDict[key] + 1
+        analysisDate = analysisDate + datetime.timedelta(days=1)
 
-    return masterList
+    return masterDict
 
 def tickersRankByCashFlow(date, sortOrder='Reverse'):
     import collections
 
     momentum_rank = {}
     tickerList = util.getMasterTickerList()
+    #tickerList = util.getTickerList('SP-500')
     for x in range(len(tickerList)):
         moneyflow = cashflow_timeseries_TN(tickerList[x], (date - datetime.timedelta(days=10)), date)
         if len(moneyflow) > 1:
@@ -656,6 +664,18 @@ def getEarningsCal(instrument):
 ########======================================================================================================###############
 
 ####################### Populate momentum rank field ########################################################################
+
+def getMarketReturn(startdate, enddate):
+
+    feed = redis_build_feed_EOD_RAW(consts.MARKET, startdate, enddate)
+    barsDictForCurrAdj = {}
+    barsDictForCurrAdj[consts.MARKET] = feed.getBarSeries(consts.MARKET)
+    feedLookbackEndAdj = xiquantPlatform.xiQuantAdjustBars(barsDictForCurrAdj, startdate, enddate)
+    feedLookbackEndAdj.adjustBars()
+    marketDS = feedLookbackEndAdj.getCloseDataSeries(consts.MARKET + '_adjusted')
+
+    return (marketDS[-1] - marketDS[0]) / marketDS[0] * 100
+
 
 ##### topNMomentum stocks ..............
 def updateOrdersRankbyMoneyFlowPercentChange(orders, instrument):
@@ -820,9 +840,39 @@ def numpy_to_highchartds(datetimes, data, startdate, enddate):
 
     return list(reversed(dataseries))
 
+def orders_to_highchartsds(orders):
+   
+    dataRows = []
+    for timeStamp, orderList in orders.iteritems():
+        for order in orderList:
+            dt = datetime.datetime.utcfromtimestamp(timeStamp)
+            dt = dt.replace(hour=0, minute=0, second=0, microsecond=0) ### Removed additional seconds...
+            sec = calendar.timegm(dt.timetuple())
+            dtInMilliSeconds = int(sec * 1000)
+            row = []
+            row.append(dtInMilliSeconds)
+            row.append(order[0])
+            row.append(order[1])
+            row.append(order[2])
+            row.append(order[3])
+            row.append(order[4])
+            row.append(order[5])
+            dataRows.append(row)
+
+    # This is for ordering orders by timestamp and rank....
+    dataRows.sort(key = operator.itemgetter(0))
+
+    orderDS = []
+    for row in dataRows:
+        val = [row[0], row[3]] ##### timestamp and stoploss...
+        orderDS.append(val)
+
+    return orderDS
+
 
 def compute_BBands(instrument, startdate, enddate ):
     from pyalgotrade.talibext import indicator
+
 
     bBandsPeriod = 20 #### No of periods.....
     feed = redis_build_feed_EOD_RAW(instrument, startdate, enddate)
@@ -832,11 +882,14 @@ def compute_BBands(instrument, startdate, enddate ):
     feedLookbackEndAdj.adjustBars()
     closeDS = feedLookbackEndAdj.getCloseDataSeries(instrument + "_adjusted")
     upper, middle, lower = indicator.BBANDS(closeDS, len(closeDS), bBandsPeriod, 2.0, 2.0)
+    noOfPeriods = 10 #### No of periods.....
+    ema_10 = indicator.EMA(closeDS, len(closeDS), noOfPeriods)
 
     dateTimes = feedLookbackEndAdj.getDateTimes(instrument + "_adjusted")
     upperDS = numpy_to_highchartds(dateTimes, upper, startdate, enddate)
     middleDS = numpy_to_highchartds(dateTimes, middle, startdate, enddate)
     lowerDS = numpy_to_highchartds(dateTimes, lower, startdate, enddate)
+    emaDS = numpy_to_highchartds(dateTimes, ema_10, startdate, enddate)
 
     ##########Display price seriesin the center of Bolinger bands......##################
     barDS = feedLookbackEndAdj.getBarSeries(instrument + "_adjusted")
@@ -849,8 +902,14 @@ def compute_BBands(instrument, startdate, enddate ):
                         bar.getLow(), bar.getClose()]
         adj_Close_Series.append(adjPrice_val)
 
+    ###############Display Stop Orders marker on the chart........#############
+    startdate = startdate - datetime.timedelta(days=consts.RESISTANCE_LOOKBACK_WINDOW)
+    print "inside compute BBANDS"
+    print startdate, enddate
+    orders = run_strategy_redis(20, instrument, 100000, startdate, enddate, indicators=False)
+    orderDS = orders_to_highchartsds(orders)
 
-    return upperDS, middleDS, lowerDS, adj_Close_Series
+    return upperDS, middleDS, lowerDS, adj_Close_Series, emaDS, orderDS
 
 def compute_SMA(instrument, startdate, enddate ):
     from pyalgotrade.talibext import indicator
@@ -878,8 +937,13 @@ def compute_SMA(instrument, startdate, enddate ):
                         bar.getLow(), bar.getClose()]
         adj_Close_Series.append(adjPrice_val)
 
+    startdate = startdate - datetime.timedelta(days=consts.RESISTANCE_LOOKBACK_WINDOW)
+    print "inside compute BBANDS"
+    print startdate, enddate
+    orders = run_strategy_BBSMAXOverMTM(20, instrument, 100000, startdate, enddate, indicators=False)
+    orderDS = orders_to_highchartsds(orders)
 
-    return smaDS, adj_Close_Series
+    return smaDS, adj_Close_Series, orderDS
 
 def compute_EMA(instrument, startdate, enddate ):
     from pyalgotrade.talibext import indicator
@@ -891,7 +955,7 @@ def compute_EMA(instrument, startdate, enddate ):
     feedLookbackEndAdj = xiquantPlatform.xiQuantAdjustBars(barsDictForCurrAdj, startdate, enddate)
     feedLookbackEndAdj.adjustBars()
     closeDS = feedLookbackEndAdj.getCloseDataSeries(instrument + "_adjusted")
-    ema_10 = indicator.SMA(closeDS, len(closeDS), noOfPeriods)
+    ema_10 = indicator.EMA(closeDS, len(closeDS), noOfPeriods)
 
     dateTimes = feedLookbackEndAdj.getDateTimes(instrument + "_adjusted")
     emaDS = numpy_to_highchartds(dateTimes, ema_10, startdate, enddate)
@@ -911,16 +975,72 @@ def compute_EMA(instrument, startdate, enddate ):
 
 
 def computeIndicators(instrument, indicator, startdate, enddate ):
+    startdate = startdate - datetime.timedelta(days=20) #### We need 20 days to compute first data point for SMA20 or Bollinger Bands
     if indicator == 'BBands':
         return compute_BBands(instrument, startdate, enddate)
     if indicator == 'SMA-20':
         return compute_SMA(instrument,  startdate, enddate)
     if indicator == 'EMA-10':
         return compute_EMA(instrument,  startdate, enddate)
-    
 
 def run_strategy_redis(bBandsPeriod, instrument, startPortfolio, startdate, enddate, filterCriteria=20, indicators=True):
- 
+    
+    feed = redis_build_feed_EOD_RAW(instrument, startdate, enddate)
+    # Add the SPY bars, which are used to determine if the market is Bullish or Bearish
+    # on a particular day.
+    feed = add_feeds_EOD_redis_RAW(feed, consts.MARKET, startdate, enddate)
+    feed = add_feeds_EOD_redis_RAW(feed, consts.TECH_SECTOR, startdate, enddate)
+    
+
+    ###Get earnings calendar
+    calList = getEarningsCal(instrument)
+
+    barsDictForCurrAdj = {}
+    barsDictForCurrAdj[instrument] = feed.getBarSeries(instrument)
+    barsDictForCurrAdj[consts.MARKET] = feed.getBarSeries(consts.MARKET)
+    barsDictForCurrAdj[consts.TECH_SECTOR] = feed.getBarSeries(consts.TECH_SECTOR)
+    feedAdjustedToEndDate = xiquantPlatform.adjustBars(barsDictForCurrAdj, startdate, enddate)
+
+    strat = BB_spread.BBSpread(feedAdjustedToEndDate, feed, instrument, bBandsPeriod, calList, startPortfolio)
+
+    instList = [instrument+"_adjusted", consts.MARKET+"_adjusted", consts.TECH_SECTOR+"_adjusted"]
+
+    if indicators:
+        # Attach a returns analyzers to the strategy.
+        returnsAnalyzer = Returns()
+        results = StrategyResults(strat, instList, returnsAnalyzer, plotSignals=True)
+
+        strat.run()
+        resultDict = {}
+        resultDict['PortfolioResult'] = results.getPortfolioResult()
+        resultDict['flagData'] = results.getTradeDetails()
+        resultDict['price'] = results.getAdjCloseSeries(instrument+"_adjusted")
+        resultDict['volume'] = results.getAdjVolSeries(instrument+"_adjusted")
+        resultDict['adx'] = results.getADX()
+        resultDict['dmiplus'] = results.getDMIPlus()
+        resultDict['dmiminus'] = results.getDMIMinus()
+        resultDict['Orders'] = strat.getOrders()
+        resultDict['upper'] = strat.getUpperBollingerBands()
+        resultDict['middle'] = strat.getMiddleBollingerBands()
+        resultDict['lower'] = strat.getLowerBollingerBands()
+        resultDict['rsi'] = strat.getRSI()
+        resultDict['emafast'] = strat.getEMAFast()
+        resultDict['emaslow'] = strat.getEMASlow()
+        resultDict['emasignal'] = strat.getEMASignal()
+
+        return resultDict
+    else:
+        # This is to ensue we consume less memory on the portfolio simulation case ... main thread.......
+        returnsAnalyzer = Returns()
+        results = StrategyResults(strat, instList, returnsAnalyzer, plotSignals=False)
+        strat.run()
+        updatedOrders = updateOrdersRank(strat.getOrders(), instrument)
+
+        return updatedOrders
+    
+
+def run_strategy_redis_old(bBandsPeriod, instrument, startPortfolio, startdate, enddate, filterCriteria=20, indicators=True):
+
     feed = redis_build_feed_EOD_RAW(instrument, startdate, enddate)
     # Add the SPY bars, which are used to determine if the market is Bullish or Bearish
     # on a particular day.

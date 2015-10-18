@@ -176,7 +176,6 @@ class EMATrend(strategy.BacktestingStrategy):
 		jsonExitPrice.close()
 
 
-
 	def onFinish(self, bars):
 		self.stopLogging()
 
@@ -1478,23 +1477,28 @@ class EMATrend(strategy.BacktestingStrategy):
 		else:
 			stopPrice = 0.0
 			self.__adjRatio = self.__priceDS[-1] / bar.getAdjClose()
+			self.__logger.debug("Adj Ratio for non-entry-day stop loss setting: %s", str(self.__adjRatio))
 			execInfo = self.__longPos.getEntryOrder().getExecutionInfo()
 			entryPrice = execInfo.getPrice()
+			self.__logger.debug("Entry Price: %s", str(entryPrice))
 			candleLen = bar.getClose() - bar.getOpen()
 			profitCheck = 0.0
 			if consts.EMA_PROFIT_CHECK_PERCENT_OR_ABS.lower() == 'percent':
-				profitCheck = bar.getClose() * consts.EMA_PROFIT_CHECK_PERCENT / float(100)
+				#profitCheck = bar.getClose() * consts.EMA_PROFIT_CHECK_PERCENT / float(100)
+				profitCheck = entryPrice * consts.EMA_PROFIT_CHECK_PERCENT / float(100)
 			else:
 				profitCheck = consts.EMA_PROFIT_CHECK_ABS
 			# Adjust the profit check value
-			profitCheck *= self.__adjRatio
+			#profitCheck *= self.__adjRatio
 			#if bar.getClose() - entryPrice > profitCheck:
-			if self.__emaDS[-1] - self.__emaDS[-2] > profitCheck:
+			#if self.__emaDS[-1] - self.__emaDS[-2] > profitCheck:
+			if (self.__emaDS[-1] - self.__emaDS[-2]) * self.__adjRatio > profitCheck:
 				if consts.EMA_STOP_PRICE_PERCENT_OR_ABS.lower() == 'percent':
 					stopPriceDelta = bar.getClose() * consts.EMA_ENTRY_DAY_STOP_PRICE_PERCENT / float(100)
 				else:
 					stopPriceDelta = consts.EMA_ENTRY_DAY_STOP_PRICE_ABS
 				if consts.EMA_PROGRESS_STOP_LOSS:
+					#stopPrice =  self.__emaDS[-1] + stopPriceDelta
 					stopPrice =  self.__emaDS[-1] - stopPriceDelta
 				else:
 					stopPrice = self.__longPos.getExitOrder().getStopPrice()
@@ -1546,24 +1550,29 @@ class EMATrend(strategy.BacktestingStrategy):
 		else:
 			stopPrice = 0.0
 			self.__adjRatio = self.__priceDS[-1] / bar.getAdjClose()
+			self.__logger.debug("Adj Ratio for non-entry-day stop loss setting: %s", str(self.__adjRatio))
 			execInfo = self.__shortPos.getEntryOrder().getExecutionInfo()
 			entryPrice = execInfo.getPrice()
+			self.__logger.debug("Entry Price: %s", str(entryPrice))
 			candleLen = bar.getClose() - bar.getOpen()
 			profitCheck = 0.0
 			if consts.EMA_PROFIT_CHECK_PERCENT_OR_ABS.lower() == 'percent':
-				profitCheck = bar.getClose() * consts.EMA_PROFIT_CHECK_PERCENT / float(100)
+				#profitCheck = bar.getClose() * consts.EMA_PROFIT_CHECK_PERCENT / float(100)
+				profitCheck = entryPrice * consts.EMA_PROFIT_CHECK_PERCENT / float(100)
 			else:
 				profitCheck = consts.EMA_PROFIT_CHECK_ABS
 			# Adjust the profit check value
-			profitCheck *= self.__adjRatio
+			#profitCheck *= self.__adjRatio
 			#if entryPrice - bar.getClose() > profitCheck:
-			if self.__emaDS[-2] - self.__emaDS[-1] > profitCheck:
+			#if self.__emaDS[-2] - self.__emaDS[-1] > profitCheck:
+			if (self.__emaDS[-2] - self.__emaDS[-1]) * self.__adjRatio > profitCheck:
 				if consts.EMA_STOP_PRICE_PERCENT_OR_ABS.lower() == 'percent':
 					stopPriceDelta = bar.getClose() * consts.EMA_ENTRY_DAY_STOP_PRICE_PERCENT / float(100)
 				else:
 					stopPriceDelta = consts.EMA_ENTRY_DAY_STOP_PRICE_ABS
 				if consts.EMA_PROGRESS_STOP_LOSS:
-					stopPrice =  self.__emaDS[-1] - stopPriceDelta
+					#stopPrice =  self.__emaDS[-1] - stopPriceDelta
+					stopPrice =  self.__emaDS[-1] + stopPriceDelta
 				else:
 					stopPrice = self.__shortPos.getExitOrder().getStopPrice()
 					# The stop price is already adjusted.

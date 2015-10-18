@@ -94,6 +94,7 @@ def computeIndicators(request):
 	import dateutil.parser
 	from xiQuant_strategies import xiQuantStrategyUtil
 	import json
+	import datetime
 
 	if request.method == 'GET':
 		ticker = request.GET['Ticker']
@@ -102,21 +103,27 @@ def computeIndicators(request):
 		indicator = request.GET['indicator']
 
 	start_date = dateutil.parser.parse(stdate)
+	start_date = start_date - datetime.timedelta(days=40) #### We need 20 days to compute first data point for SMA20 or Bollinger Bands
 	end_date = dateutil.parser.parse(enddate)
+
 	if indicator == 'BBands':
-		upper, middle, lower, adjOHLCSeries, ema10 = xiQuantStrategyUtil.compute_BBands(ticker, start_date, end_date)
+		upper, middle, lower, adjOHLCSeries, ema10, orders = xiQuantStrategyUtil.compute_BBands(ticker, start_date, end_date)
+		#print orders
 		results = {
 			"upper": upper,
 			"middle": middle,
 			"lower": lower,
 			"price": adjOHLCSeries,
-			"ema_10": ema10
+			"ema_10": ema10,
+			"orders": orders
 			}
 	elif indicator == 'SMA-20':
-		sma_20, adjOHLCSeries = xiQuantStrategyUtil.compute_SMA(ticker, start_date, end_date)
+		sma_20, adjOHLCSeries, orders = xiQuantStrategyUtil.compute_SMA(ticker, start_date, end_date)
+		print orders
 		results = {
 			"sma_20": sma_20,
-			"price": adjOHLCSeries
+			"price": adjOHLCSeries,
+			"orders": orders
 			}
 	elif indicator == 'EMA-10':
 		ema_10, adjOHLCSeries = xiQuantStrategyUtil.compute_EMA(ticker, start_date, end_date)
@@ -160,6 +167,7 @@ def backtest(request):
 	end_date = dateutil.parser.parse(enddate)
 
 	q = Queue(connection=redisConn)  # no args implies the default queue
+	#q = Queue(connection=redisConn, default_timeout=1500)  # no args implies the default queue
 	if strategy == 'BB_Spread_strategy':
 		job = q.enqueue(xiQuantStrategyUtil.run_strategy_redis, 20, ticker, int(amount), start_date, end_date)
 	else:
@@ -171,15 +179,26 @@ def backtest(request):
 		if job.get_status() == 'failed' or job.get_status()=='finished':
 			sleep = False
 
-	'''
 	results = {
-		"seriesData":job.result.getPortfolioResult(),
-		"flagData": job.result.getTradeDetails(),
-		"upper": job.result.getSeries("upper"),
-		"middle": job.result.getSeries("middle"),
-		"lower": job.result.getSeries("lower"),
-		"price": job.result.getAdjCloseSeries(ticker+"_adjusted")
+		"seriesData":job.result['PortfolioResult'],
+		"flagData": job.result['flagData'],
+		#"upper": job.result['upper'], 
+		#"middle": job.result['middle'],
+		#"lower": job.result['lower'],
+		"price": job.result['price'],
+		"volume": job.result['volume'],
+		#"macd": job.result.getMACD(),
+		#"adx": job.result['adx'],
+		#"dmiplus": job.result['dmiplus'],
+		#"dmiminus": job.result['dmiminus'],
+		#"rsi": job.result['rsi'],
+		#"emafast": job.result['emafast'],
+		#"emaslow": job.result['emaslow'],
+		#"emasignal": job.result['emasignal'],
+		#"cashflow_3days": xiQuantStrategyUtil.cashflow_timeseries_TN(ticker, start_date, end_date),
+		#"volsma5days": xiQuantStrategyUtil.redis_build_volume_sma_ndays(ticker, 5, start_date, end_date) ### 5days...
 		}
+
 	'''
 	results = {
 		"seriesData":job.result.getPortfolioResult(),
@@ -200,6 +219,7 @@ def backtest(request):
 		"cashflow_3days": xiQuantStrategyUtil.cashflow_timeseries_TN(ticker, start_date, end_date),
 		"volsma5days": xiQuantStrategyUtil.redis_build_volume_sma_ndays(ticker, 5, start_date, end_date) ### 5days...
 		}
+	'''
 	
     ### This is important to note json.dumps() convert python data structure to JSON form
 	return HttpResponse(json.dumps(results), content_type='application/json')

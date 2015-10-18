@@ -1,5 +1,0 @@
-Instrument,Trade-Type,Entry-Date,Entry-Price,Quantity,StopLoss-Exit-Date,StopLoss-Exit-Price,StopLoss-Exit-PorL,Profit-Exit-Date,Profit-Exit-Price,Profit-Exit-PorL,Exit-Date,Exit-Price,PorL,Actual-PorL,Current-Pos
-WHR,SHORT,2008-01-03,66.13,574,No-Exit,0.0,0.0,2008-01-04,64.46,956.61,2008-01-10,61.85,2457.02,956.61,[]
-WHR,SHORT,2008-03-03,70.30,553,2008-03-03,72.70,-1324.29,No-Exit,0.0,0.0,2008-03-04,73.81,-1940.13,-1324.29,[]
-WHR,SHORT,2008-03-06,70.13,544,No-Exit,0.0,0.0,No-Exit,0.0,0.0,2008-03-07,71.43,-706.03,-706.03,[]
-WHR,SHORT,2009-01-16,32.80,1156,2009-01-16,34.33,-1770.38,No-Exit,0.0,0.0,2009-01-28,34.33,-1770.38,-1770.38,[]

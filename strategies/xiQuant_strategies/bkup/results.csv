@@ -1,4 +1,0 @@
-Instrument,Trade-Type,Entry-Date,Entry-Price,Quantity,StopLoss-Exit-Date,StopLoss-Exit-Price,StopLoss-Exit-PorL,Profit-Exit-Date,Profit-Exit-Price,Profit-Exit-PorL,Exit-Date,Exit-Price,PorL,Actual-PorL,Strategy,Current-Pos
-HK_2333,LONG,2014-02-13,115.50,83,2014-02-13,111.50,-332.00,No-Exit,0.0,0.0,2014-02-14,111.25,-352.75,-332.00,BB Spread,[]
-HK_0941,SHORT,2014-03-11,70.70,119,No-Exit,0.0,0.0,2014-03-12,70.00,83.89,2014-03-19,70.00,83.30,83.89,BB Spread,[]
-HK_2333,LONG,2014-07-25,98.75,95,No-Exit,0.0,0.0,No-Exit,0.0,0.0,2014-07-29,95.85,-275.50,-275.50,BB Spread,[]

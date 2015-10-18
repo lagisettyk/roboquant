@@ -109,9 +109,9 @@ class EMACrossover(strategy.BacktestingStrategy):
 		return
 		
 	def isTechBullish(self):
-		self.__logger.debug("QQQ Close: $%.2f" % self.__qqqDS[-1])
-		self.__logger.debug("QQQ 20 SMA: $%.2f" % self.__smaQQQShort1[-1])
-		self.__logger.debug("QQQ Upper BBand: $%.2f" % self.__upperQQQBBDataSeries[-1])
+		self.__logger.debug("Tech Sector Close: $%.2f" % self.__qqqDS[-1])
+		self.__logger.debug("Tech Sector 20 SMA: $%.2f" % self.__smaQQQShort1[-1])
+		self.__logger.debug("Tech Sector Upper BBand: $%.2f" % self.__upperQQQBBDataSeries[-1])
 		if self.__qqqDS[-1] > self.__smaQQQShort1[-1]:
 			self.__logger.debug("The tech sector is Bullish today.")
 			return True
@@ -120,9 +120,9 @@ class EMACrossover(strategy.BacktestingStrategy):
 			return False
 
 	def isTechBearish(self):
-		self.__logger.debug("QQQ Close: $%.2f" % self.__qqqDS[-1])
-		self.__logger.debug("QQQ 20 SMA: $%.2f" % self.__smaQQQShort1[-1])
-		self.__logger.debug("QQQ Lower BBand: $%.2f" % self.__lowerQQQBBDataSeries[-1])
+		self.__logger.debug("Tech Sector Close: $%.2f" % self.__qqqDS[-1])
+		self.__logger.debug("Tech Sector 20 SMA: $%.2f" % self.__smaQQQShort1[-1])
+		self.__logger.debug("Tech Sector Lower BBand: $%.2f" % self.__lowerQQQBBDataSeries[-1])
 		if self.__qqqDS[-1] <= self.__smaQQQShort1[-1]:
 			self.__logger.debug("The tech sector is Bearish today.")
 			return True
@@ -131,9 +131,9 @@ class EMACrossover(strategy.BacktestingStrategy):
 			return False
 
 	def isBullish(self):
-		self.__logger.debug("SPY Close: $%.2f" % self.__spyDS[-1])
-		self.__logger.debug("SPY 20 SMA: $%.2f" % self.__smaSPYShort1[-1])
-		self.__logger.debug("SPY Upper BBand: $%.2f" % self.__upperSPYBBDataSeries[-1])
+		self.__logger.debug("Market Close: $%.2f" % self.__spyDS[-1])
+		self.__logger.debug("Market 20 SMA: $%.2f" % self.__smaSPYShort1[-1])
+		self.__logger.debug("Market Upper BBand: $%.2f" % self.__upperSPYBBDataSeries[-1])
 		if self.__spyDS[-1] > self.__smaSPYShort1[-1]:
 			self.__logger.debug("The market is Bullish today.")
 			return True
@@ -142,9 +142,9 @@ class EMACrossover(strategy.BacktestingStrategy):
 			return False
 
 	def isBearish(self):
-		self.__logger.debug("SPY Close: $%.2f" % self.__spyDS[-1])
-		self.__logger.debug("SPY 20 SMA: $%.2f" % self.__smaSPYShort1[-1])
-		self.__logger.debug("SPY Lower BBand: $%.2f" % self.__lowerSPYBBDataSeries[-1])
+		self.__logger.debug("Market Close: $%.2f" % self.__spyDS[-1])
+		self.__logger.debug("Market 20 SMA: $%.2f" % self.__smaSPYShort1[-1])
+		self.__logger.debug("Market Lower BBand: $%.2f" % self.__lowerSPYBBDataSeries[-1])
 		if self.__spyDS[-1] <= self.__smaSPYShort1[-1]:
 			self.__logger.debug("The market is Bearish today.")
 			return True
@@ -389,9 +389,9 @@ class EMACrossover(strategy.BacktestingStrategy):
 		self.__emaShort3 = indicator.EMA(self.__closeDS, len(self.__closeDS), consts.EMA_SHORT_3)
 		#print "EMA Short3: ", self.__emaShort3
 		self.__smaSPYShort1 = indicator.SMA(self.__spyDS, len(self.__spyDS), consts.SMA_SHORT_1)
-		#print "SMA SPY Short1: ", self.__smaSPYShort1
+		#print "SMA Market Short1: ", self.__smaSPYShort1
 		self.__smaQQQShort1 = indicator.SMA(self.__qqqDS, len(self.__qqqDS), consts.SMA_SHORT_1)
-		#print "QQQ SPY Short1: ", self.__smaQQQShort1
+		#print "Tech Sector Market Short1: ", self.__smaQQQShort1
 		self.__smaLowerTiny = indicator.SMA(self.__lowerBBDataSeries, len(self.__lowerBBDataSeries), consts.SMA_TINY)
 		#print "SMA Lower Tiny: ", self.__smaLowerTiny
 		self.__smaUpperTiny = indicator.SMA(self.__upperBBDataSeries, len(self.__upperBBDataSeries), consts.SMA_TINY)
@@ -404,6 +404,8 @@ class EMACrossover(strategy.BacktestingStrategy):
 		#print "Std Dev Lower: ", self.__stdDevLower
 		self.__stdDevUpper = indicator.STDDEV(self.__upperBBDataSeries, len(self.__upperBBDataSeries), consts.SMA_TINY)
 		#print "Std Dev Upper: ", self.__stdDevUpper
+
+		self.__emaTiny1 = indicator.EMA(self.__closeDS, len(self.__closeDS), consts.EMA_TINY_1)
 
 		# Set the EMA dataseries based on the type specified.
 		if consts.EMA_TYPE == consts.EMA_SHORT_1:
@@ -482,7 +484,10 @@ class EMACrossover(strategy.BacktestingStrategy):
 		self.__logger.info("Portfolio Cash: $%.2f" % self.getBroker().getCash(includeShort=False))
 		# The following explicit exit on market order occurs ONLY on the earnings day otherwise
 		# we always let the market kick us out of a position with the stop loss orders.
-		if self.exitLongSignal(bar):
+		enterLong = self.enterLongSignal(bar)
+		enterShort = self.enterShortSignal(bar)
+		if (consts.EMA_EXIT_IF_CONVERSE_ENTRY and enterShort and self.__longPos) or self.exitLongSignal(bar):
+		#if self.exitLongSignal(bar):
 			self.__portfolioCashBefore = self.getBroker().getCash(includeShort=False)
 			self.__longPos.cancelExit()
 			self.__longPos.exitMarket()
@@ -493,7 +498,8 @@ class EMACrossover(strategy.BacktestingStrategy):
 			self.__orders[tInSecs] = existingOrdersForTime
 			self.__logger.info("Exiting a LONG position")
 			self.__logger.info("Portfolio Cash: $%.2f" % self.getBroker().getCash(includeShort=False))
-		elif self.exitShortSignal(bar):
+		elif (consts.EMA_EXIT_IF_CONVERSE_ENTRY and enterLong and self.__shortPos) or self.exitShortSignal(bar):
+		#elif self.exitShortSignal(bar):
 			self.__portfolioCashBefore = self.getBroker().getCash(includeShort=False)
 			self.__shortPos.cancelExit()
 			self.__shortPos.exitMarket()
@@ -505,7 +511,8 @@ class EMACrossover(strategy.BacktestingStrategy):
 			self.__logger.debug("Exiting a SHORT position")
 			self.__logger.debug("Portfolio Cash: $%.2f" % self.getBroker().getCash(includeShort=False))
 		else:
-			if self.enterLongSignal(bar):
+			#if self.enterLongSignal(bar):
+			if enterLong:
 				# Bullish; enter a long position.
 				self.__logger.info("Bullish; Trying to enter a LONG position")
 				self.__logger.debug("%s: Portfolio Cash: $%.2f" % (bar.getDateTime(), self.getBroker().getCash(includeShort=False)))
@@ -544,8 +551,15 @@ class EMACrossover(strategy.BacktestingStrategy):
 				sharesToBuy = int((self.getBroker().getCash(includeShort=False) * consts.PERCENT_OF_CASH_BALANCE_FOR_ENTRY) / self.__adjEntryPrice)
 				self.__logger.debug("Shares To Buy: %d" % sharesToBuy)
 				if sharesToBuy < 1:
-					self.__logger.debug("Not enough cash to buy shares.")
-					return
+					if consts.ADD_MONEY_TO_CAPUTRE_ORDER:
+						# The following cash adjustment is done so that we capture
+						# the trade in module#1 and deal with the cash allocation
+						# issue in module#2.
+						self.__logger.debug("Not enough cash to buy shares hence resetting the cash to buy at least 1 share.")
+						self.getBroker().setCash(self.__adjEntryPrice)
+						sharesToBuy = 1
+					else:
+						return
 
 				self.__portfolioCashBefore = self.getBroker().getCash(includeShort=False)
 				self.__longPos = self.enterLongStop(self.__instrumentAdj, self.__adjEntryPrice, sharesToBuy, True)
@@ -580,7 +594,8 @@ class EMACrossover(strategy.BacktestingStrategy):
 					self.__entryDayStopPrice = stopPrice * self.__adjRatio
 					self.__entryDayAdjStopPrice = stopPrice * self.__adjRatio
 					self.__logger.debug("%s: Entry Day Stop Price: %.2f" % (bar.getDateTime(), self.__entryDayStopPrice))
-			elif self.enterShortSignal(bar):
+			#elif self.enterShortSignal(bar):
+			elif enterShort:
 				# Bearish; enter a short position.
 				self.__logger.info("Bearish; Trying to enter a SHORT position")
 				self.__logger.debug("%s: Portfolio Cash: $%.2f" % (bar.getDateTime(), self.getBroker().getCash(includeShort=False)))
@@ -619,8 +634,15 @@ class EMACrossover(strategy.BacktestingStrategy):
 								self.__adjEntryPrice) * consts.PERCENT_OF_CASH_BALANCE_FOR_ENTRY)
 				self.__logger.debug( "Shares To Buy: %d" % sharesToBuy)
 				if sharesToBuy < 1:
-					self.__logger.debug("Not enough cash to buy shares.")
-					return
+					if consts.ADD_MONEY_TO_CAPUTRE_ORDER:
+						# The following cash adjustment is done so that we capture
+						# the trade in module#1 and deal with the cash allocation
+						# issue in module#2.
+						self.__logger.debug("Not enough cash to buy shares hence resetting the cash to buy at least 1 share.")
+						self.getBroker().setCash(self.__adjEntryPrice)
+						sharesToBuy = 1
+					else:
+						return
 
 				self.__portfolioCashBefore = self.getBroker().getCash(includeShort=False)
 				self.__shortPos = self.enterShortStop(self.__instrumentAdj, self.__adjEntryPrice, sharesToBuy, True)
@@ -761,7 +783,7 @@ class EMACrossover(strategy.BacktestingStrategy):
 				self.__logger.debug("Previous to previous Close Price: %.2f" % self.__closeDS[-3])
 				self.__logger.debug("EMA 10 previous: %.2f" % self.__emaDS[-2])
 				return False
-
+			
 		# Check the no. of crossovers in the lookback window
 		if "Crossover_Check" in self.__inpStrategy["EMA_Breach_Mtm_Call"] and "Total" in self.__inpStrategy["EMA_Breach_Mtm_Call"]["Crossover_Check"]:
 			totalEMACrossovers = xiquantFuncs.totalCrossovers(self.__closeDS, self.__emaDS, (-1 * consts.EMA_CROSSOVERS_LOOKBACK), -2)
@@ -1134,6 +1156,7 @@ class EMACrossover(strategy.BacktestingStrategy):
 				self.__logger.debug("Candle Length: %.2f" % candleLen)
 				return False
 
+
 		# Check if two consecutive days of close prices are on the opposite 
 		# sides of the EMA 10 and moving down.
 		if self.__inpStrategy["EMA_Breach_Mtm_Put"]["EMA"]["AND"][0] == "Crossover":
@@ -1488,24 +1511,29 @@ class EMACrossover(strategy.BacktestingStrategy):
 		else:
 			stopPrice = 0.0
 			self.__adjRatio = self.__priceDS[-1] / bar.getAdjClose()
+			self.__logger.debug("Adj Ratio for non-entry-day stop loss setting: %s", str(self.__adjRatio))
 			execInfo = self.__longPos.getEntryOrder().getExecutionInfo()
 			entryPrice = execInfo.getPrice()
+			self.__logger.debug("Entry Price: %s", str(entryPrice))
 			candleLen = bar.getClose() - bar.getOpen()
 			profitCheck = 0.0
 			if consts.EMA_PROFIT_CHECK_PERCENT_OR_ABS.lower() == 'percent':
-				profitCheck = bar.getClose() * consts.EMA_PROFIT_CHECK_PERCENT / float(100)
+				#profitCheck = bar.getClose() * consts.EMA_PROFIT_CHECK_PERCENT / float(100)
+				profitCheck = entryPrice * consts.EMA_PROFIT_CHECK_PERCENT / float(100)
 			else:
 				profitCheck = consts.EMA_PROFIT_CHECK_ABS
 			# Adjust the profit check value
-			profitCheck *= self.__adjRatio
+			#profitCheck *= self.__adjRatio
 			#if bar.getClose() - entryPrice > profitCheck:
-			if self.__emaDS[-1] - self.__emaDS[-2] > profitCheck:
+			#if self.__emaDS[-1] - self.__emaDS[-2] > profitCheck:
+			if (self.__emaDS[-1] - self.__emaDS[-2]) * self.__adjRatio > profitCheck:
 				if consts.EMA_STOP_PRICE_PERCENT_OR_ABS.lower() == 'percent':
 					stopPriceDelta = bar.getClose() * consts.EMA_ENTRY_DAY_STOP_PRICE_PERCENT / float(100)
 				else:
 					stopPriceDelta = consts.EMA_ENTRY_DAY_STOP_PRICE_ABS
 				if consts.EMA_PROGRESS_STOP_LOSS:
 					stopPrice =  self.__emaDS[-1] - stopPriceDelta
+					#stopPrice =  self.__emaDS[-1] + stopPriceDelta
 				else:
 					stopPrice = self.__longPos.getExitOrder().getStopPrice()
 					# The stop price is already adjusted.
@@ -1514,7 +1542,7 @@ class EMACrossover(strategy.BacktestingStrategy):
 				stopPrice = self.__longPos.getExitOrder().getStopPrice()
 				# The stop price is already adjusted.
 				stopPrice = float(stopPrice / self.__adjRatio)
-
+				
 			self.__adjStopPrice = stopPrice * self.__adjRatio
 			self.__longPos.cancelExit()
 			self.__longPos.exitStop(self.__adjStopPrice, True)
@@ -1556,24 +1584,29 @@ class EMACrossover(strategy.BacktestingStrategy):
 		else:
 			stopPrice = 0.0
 			self.__adjRatio = self.__priceDS[-1] / bar.getAdjClose()
+			self.__logger.debug("Adj Ratio for non-entry-day stop loss setting: %s", str(self.__adjRatio))
 			execInfo = self.__shortPos.getEntryOrder().getExecutionInfo()
 			entryPrice = execInfo.getPrice()
+			self.__logger.debug("Entry Price: %s", str(entryPrice))
 			candleLen = bar.getClose() - bar.getOpen()
 			profitCheck = 0.0
 			if consts.EMA_PROFIT_CHECK_PERCENT_OR_ABS.lower() == 'percent':
-				profitCheck = bar.getClose() * consts.EMA_PROFIT_CHECK_PERCENT / float(100)
+				#profitCheck = bar.getClose() * consts.EMA_PROFIT_CHECK_PERCENT / float(100)
+				profitCheck = entryPrice * consts.EMA_PROFIT_CHECK_PERCENT / float(100)
 			else:
 				profitCheck = consts.EMA_PROFIT_CHECK_ABS
 			# Adjust the profit check value
-			profitCheck *= self.__adjRatio
+			#profitCheck *= self.__adjRatio
 			#if entryPrice - bar.getClose() > profitCheck:
-			if self.__emaDS[-2] - self.__emaDS[-1] > profitCheck:
+			#if self.__emaDS[-2] - self.__emaDS[-1] > profitCheck:
+			if (self.__emaDS[-2] - self.__emaDS[-1]) * self.__adjRatio > profitCheck:
 				if consts.EMA_STOP_PRICE_PERCENT_OR_ABS.lower() == 'percent':
 					stopPriceDelta = bar.getClose() * consts.EMA_ENTRY_DAY_STOP_PRICE_PERCENT / float(100)
 				else:
 					stopPriceDelta = consts.EMA_ENTRY_DAY_STOP_PRICE_ABS
 				if consts.EMA_PROGRESS_STOP_LOSS:
-					stopPrice =  self.__emaDS[-1] - stopPriceDelta
+					stopPrice =  self.__emaDS[-1] + stopPriceDelta
+					#stopPrice =  self.__emaDS[-1] - stopPriceDelta
 				else:
 					stopPrice = self.__shortPos.getExitOrder().getStopPrice()
 					# The stop price is already adjusted.
@@ -1582,7 +1615,7 @@ class EMACrossover(strategy.BacktestingStrategy):
 				stopPrice = self.__shortPos.getExitOrder().getStopPrice()
 				# The stop price is already adjusted.
 				stopPrice = float(stopPrice / self.__adjRatio)
-
+				
 			self.__adjStopPrice = stopPrice * self.__adjRatio
 			self.__shortPos.cancelExit()
 			self.__shortPos.exitStop(self.__adjStopPrice, True)
@@ -1601,7 +1634,7 @@ def run_strategy(bBandsPeriod, instrument, startPortfolio, startPeriod, endPerio
 	# Download the bars
 	feed = xiquantPlatform.redis_build_feed_EOD_RAW(instrument, startPeriod, endPeriod)
 
-	# Add the SPY and QQQ bars, which are used to determine if the market is Bullish or Bearish
+	# Add the Market and Tech Sector bars, which are used to determine if the market is Bullish or Bearish
 	# on a particular day.
 	feed = xiquantPlatform.add_feeds_EODRAW_CSV(feed, consts.MARKET, startPeriod, endPeriod)
 	feed = xiquantPlatform.add_feeds_EODRAW_CSV(feed, consts.TECH_SECTOR, startPeriod, endPeriod)
@@ -1626,7 +1659,7 @@ def main(plot):
 	startDate = dateutil.parser.parse('2005-06-30T08:00:00.000Z')
 	endDate = dateutil.parser.parse('2014-12-31T08:00:00.000Z')
 
-	instruments = ["NFLX"]
+	instruments = ["HK_0700"]
 	bBandsPeriod = 20
 	startPortfolio = 1000000
 	for inst in instruments:
