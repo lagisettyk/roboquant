@@ -415,8 +415,7 @@ $(document).ready( function() {
                   bbseries[3] = {name: "lower", data: data.lower};
                   bbseries[4] = {name: "ema_10", data: data.ema_10};
                   bbseries[5] = {name: "stop-loss", data: data.orders};
-                  //bbseries[5] = {name: "middle_1_9", data: data.middle_1_9};
-                  //bbseries[6] = {name: "lower_1_9", data: data.lower_1_9};
+                  bbseries[6] = {name: "entry-exit", data: data.resultdata};
                   displayIndicatorData(bbseries,stkticker);
                 }
                 if (indicator == "SMA-20")
@@ -424,7 +423,8 @@ $(document).ready( function() {
                   smaseries = []
                   smaseries[0] = {name: "price", data: data.price};
                   smaseries[1] = {name: "sma-20", data: data.sma_20};
-                  smaseries[2] = {name: "orders", data: data.orders};
+                  smaseries[2] = {name: "stop-loss", data: data.orders};
+                  smaseries[3] = {name: "entry-exit", data: data.resultdata};
                   displaySMAData(smaseries,stkticker);
                 }
                 if (indicator == "EMA-10")
@@ -515,6 +515,20 @@ function displaySMAData (dataList, ticker) {
                     valueDecimals: 2
                 },
                 id : 'dataseries3'
+               },{
+                color: '#00cc00',
+                name : dataList[3].name,
+                data : dataList[3].data,
+                lineWidth : 0,
+                marker : {
+                    enabled : true,
+                    radius : 5
+                },
+                turboThreshold: 0, ///Speed up and make sure it supports more points
+                tooltip: {
+                    valueDecimals: 2
+                },
+                id : 'dataseries4'
                }]
             });
     }
@@ -727,6 +741,20 @@ function displayIndicatorData (dataList, ticker) {
                     valueDecimals: 2
                 },
                 id : 'dataseries6'
+               },{
+                color: '#00cc00',
+                name : dataList[6].name,
+                data : dataList[6].data,
+                lineWidth : 0,
+                marker : {
+                    enabled : true,
+                    radius : 5
+                },
+                turboThreshold: 0, ///Speed up and make sure it supports more points
+                tooltip: {
+                    valueDecimals: 2
+                },
+                id : 'dataseries7'
                }]
             });
     }

@@ -840,12 +840,35 @@ def numpy_to_highchartds(datetimes, data, startdate, enddate):
 
     return list(reversed(dataseries))
 
-def orders_to_highchartsds(orders):
-   
+def results_to_highchartsds(results):
+    resultDS = []
+    for result in results.values():
+        result_list = result.split(",") ### Split the string based on , separator...
+        entryDate = dateutil.parser.parse(result_list[2])
+        entryDateSeconds = calendar.timegm(entryDate.timetuple())
+        entryDate_dtInMilliSeconds = int(entryDateSeconds * 1000)
+
+        exitDate = dateutil.parser.parse(result_list[8])
+        exitDateSeconds = calendar.timegm(exitDate.timetuple())
+        exitDate_dtInMilliSeconds = int(exitDateSeconds * 1000)
+
+        entry_val = [entryDate_dtInMilliSeconds, float(result_list[3])]
+        resultDS.append(entry_val)
+
+        exit_val = [exitDate_dtInMilliSeconds, float(result_list[9])]
+        resultDS.append(exit_val)
+
+    resultDS.sort(key = operator.itemgetter(0)) ######### Sort result data series in chronological order...
+
+    return resultDS
+
+
+def orders_to_highchartsds(orders, adj_Close_Series):
+
     dataRows = []
     for timeStamp, orderList in orders.iteritems():
         for order in orderList:
-            if order[1] == 'Buy' or order[0][1] == 'Sell':
+            if order[1] == 'Buy' or order[1] == 'Sell':
                 pass ### Skip the order
             else:
                 dt = datetime.datetime.utcfromtimestamp(timeStamp)
@@ -871,10 +894,38 @@ def orders_to_highchartsds(orders):
 
     orderDS = []
     for row in dataRows:
-        val = [row[0], row[3]] ##### timestamp and stoploss...
+        if row[3] != -1:
+            val = [row[0], row[3]] ##### timestamp and stoploss...
+        else: ### replace -1 stop loss with bar.getOpen()..... which is representation for 'Buy-Market' & 'Sell-Market'
+            data = [element for element in adj_Close_Series if element[0] == row[0]]
+            #print data
+            val = [row[0], data[0][1]] #### data[0][1] represents the bar.getOpen() value...
+
         orderDS.append(val)
 
     return orderDS
+
+def orders_to_fakeCSV(orders):
+    # Write the in-memory orders to a file.
+        dataRows = []
+        for timeStamp, orderList in orders.iteritems():
+            for order in orderList:
+                row = []
+                row.append(timeStamp)
+                row.append(order[0])
+                row.append(order[1])
+                row.append(order[2])
+                row.append(order[3])
+                row.append(order[4])
+                if order[5] == None:
+                    row.append(-1)
+                else:
+                    row.append(order[5])
+                dataRows.append(row)
+
+        # This is for ordering orders by timestamp and rank....
+        dataRows.sort(key = operator.itemgetter(0, 5))
+        return xiquantFuncs.make_fake_csv(dataRows)
 
 
 def compute_BBands(instrument, startdate, enddate ):
@@ -910,13 +961,19 @@ def compute_BBands(instrument, startdate, enddate ):
         adj_Close_Series.append(adjPrice_val)
 
     ###############Display Stop Orders marker on the chart........#############
-    startdate = startdate - datetime.timedelta(days=consts.RESISTANCE_LOOKBACK_WINDOW)
-    print "inside compute BBANDS"
-    print startdate, enddate
-    orders = run_strategy_redis(20, instrument, 100000, startdate, enddate, indicators=False)
-    orderDS = orders_to_highchartsds(orders)
+    startdate_extended = startdate - datetime.timedelta(days=consts.RESISTANCE_LOOKBACK_WINDOW)
+    orders = run_strategy_redis(20, instrument, 100000, startdate_extended, enddate, indicators=False)
+    orderDS = []
+    resultDS = []
+    if len(orders) > 0:
+        orderDS = orders_to_highchartsds(orders, adj_Close_Series) #### adj_Close_Series this is for replacing -1 with bar.getOpen()
 
-    return upperDS, middleDS, lowerDS, adj_Close_Series, emaDS, orderDS
+        ######### Display entry & exit prices by calling module Order_exec.py########
+        fakecsv = orders_to_fakeCSV(orders)
+        results = run_master_strategy(100000, fakecsv, startdate, enddate, filterAction='both', rank=10000, fakeCSV=True)
+        resultDS = results_to_highchartsds(results)
+
+    return upperDS, middleDS, lowerDS, adj_Close_Series, emaDS, orderDS, resultDS
 
 def compute_SMA(instrument, startdate, enddate ):
     from pyalgotrade.talibext import indicator
@@ -948,9 +1005,17 @@ def compute_SMA(instrument, startdate, enddate ):
     print "inside compute BBANDS"
     print startdate, enddate
     orders = run_strategy_BBSMAXOverMTM(20, instrument, 100000, startdate, enddate, indicators=False)
-    orderDS = orders_to_highchartsds(orders)
+    orderDS = []
+    resultDS = []
+    if len(orders) > 0:
+        orderDS = orders_to_highchartsds(orders, adj_Close_Series) #### adj_Close_Series this is for replacing -1 with bar.getOpen()
 
-    return smaDS, adj_Close_Series, orderDS
+        ######### Display entry & exit prices by calling module Order_exec.py########
+        fakecsv = orders_to_fakeCSV(orders)
+        results = run_master_strategy(100000, fakecsv, startdate, enddate, filterAction='both', rank=10000, fakeCSV=True)
+        resultDS = results_to_highchartsds(results)
+
+    return smaDS, adj_Close_Series, orderDS, resultDS
 
 def compute_EMA(instrument, startdate, enddate ):
     from pyalgotrade.talibext import indicator
@@ -1107,12 +1172,13 @@ def run_strategy_redis_old(bBandsPeriod, instrument, startPortfolio, startdate, 
 
 
 
-def run_master_strategy(initialcash, masterFile, startdate, enddate, filterAction='Both', rank=10000):
+def run_master_strategy(initialcash, masterFile, startdate, enddate, filterAction='Both', rank=10000, fakeCSV=False):
 
-    #ordersFile = Orders_exec.OrdersFile(masterFile, fakecsv=True)
-
-    filePath = os.path.join(os.path.dirname(__file__), masterFile)
-    ordersFile = Orders_exec.OrdersFile(filePath, filterAction, rank)
+    if fakeCSV:
+        ordersFile = Orders_exec.OrdersFile(masterFile, fakecsv=True)
+    else:
+        filePath = os.path.join(os.path.dirname(__file__), masterFile)
+        ordersFile = Orders_exec.OrdersFile(filePath, filterAction, rank)
     #startdate = datetime.datetime.fromtimestamp(ordersFile.getFirstDate()) - datetime.timedelta(days=1)
     #enddate = datetime.datetime.fromtimestamp(ordersFile.getLastDate()) +  datetime.timedelta(days=1)
     #enddate = dateutil.parser.parse('2014-12-31T08:00:00.000Z')
@@ -1149,7 +1215,9 @@ def run_master_strategy(initialcash, masterFile, startdate, enddate, filterActio
 
     myStrategy.run()
 
-    return results
+    return myStrategy.getResults()
+
+    #return results
 
 
 

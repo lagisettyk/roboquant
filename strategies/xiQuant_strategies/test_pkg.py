@@ -149,15 +149,15 @@ def periodAnalysis(runName, fileName, stdate, enddate, slidingRange, cutOff):
 
 import dateutil.parser
 #stdate = dateutil.parser.parse('2005-06-30')
-stdate = dateutil.parser.parse('2007-01-01')
-#stdate = dateutil.parser.parse('2009-01-01')
-#enddate = dateutil.parser.parse('2010-01-05')
+#stdate = dateutil.parser.parse('2007-01-01')
+stdate = dateutil.parser.parse('2012-04-01')
+enddate = dateutil.parser.parse('2012-04-30')
 #enddate = dateutil.parser.parse('2007-12-31')
 #stdate = dateutil.parser.parse('2013-04-29')
 #enddate = dateutil.parser.parse('2014-04-24')
 #stdate = dateutil.parser.parse('2012-01-01')
 #stdate = dateutil.parser.parse('2009-04-01')
-enddate = dateutil.parser.parse('2014-12-31')
+#enddate = dateutil.parser.parse('2014-12-31')
 #enddate = dateutil.parser.parse('2009-12-31')
 #enddate = dateutil.parser.parse('2012-12-31')
 #enddate = dateutil.parser.parse('2007-12-31')
@@ -560,14 +560,14 @@ print port_results.getPortfolioResult()
 
 #port_results = xiQuantStrategyUtil.run_master_strategy(100000, 'MasterOrders_BBSMAXOverMTM_Both_Abhi-26-ABS.csv', stdate, enddate, filterAction='both', rank=50)
 #port_results = xiQuantStrategyUtil.run_master_strategy(100000, 'MasterOrders_Both_Abhi-26-BB1-5-15.csv', stdate, enddate, filterAction='both', rank=10)
-#port_results = xiQuantStrategyUtil.run_master_strategy(100000, 'MasterOrders_Both_Abhi-26-BB2-0.csv', stdate, enddate, filterAction='both', rank=20)
+#port_results = xiQuantStrategyUtil.run_master_strategy(100000, 'MasterOrders_Both_Abhi-26-BB2-0.csv', stdate, enddate, filterAction='both', rank=5)
 #port_results = xiQuantStrategyUtil.run_master_strategy(100000, 'MasterOrders_Both_SP-500-BB2-0-OCT1.csv', stdate, enddate, filterAction='both', rank=100)
 #port_results = xiQuantStrategyUtil.run_master_strategy(100000, 'MasterOrders_BBSMAXOverMTM_Both_NFLX.csv', stdate, enddate, filterAction='both', rank=20)
 
 
 #port_results = xiQuantStrategyUtil.run_master_strategy(100000, 'MasterOrders_Both_xiQuant-100-PROFITLOCK-1percent.csv', stdate, enddate, filterAction='both', rank=25)
 #port_results = xiQuantStrategyUtil.run_master_strategy(100000, 'MasterOrders_Both_xiQuant-100-PROFITLOCK-2PERCENT.csv', stdate, enddate, filterAction='both', rank=25)
-port_results = xiQuantStrategyUtil.run_master_strategy(100000, 'MasterOrders_Both_xiQuant-100-BASELINE.csv', stdate, enddate, filterAction='both', rank=25)
+#port_results = xiQuantStrategyUtil.run_master_strategy(100000, 'MasterOrders_Both_xiQuant-100-BASELINE.csv', stdate, enddate, filterAction='both', rank=25)
 #port_results = xiQuantStrategyUtil.run_master_strategy(100000, 'MasterOrders_Both_xiQuant-100-BASELINE-1.csv', stdate, enddate, filterAction='both', rank=1)
 #port_results = xiQuantStrategyUtil.run_master_strategy(100000, 'MasterOrders_Both_CUSTOM.csv', stdate, enddate, filterAction='both', rank=20)
 #port_results = xiQuantStrategyUtil.run_master_strategy(100000, 'MasterOrders_Both_xiQuant-100-PRICEJUMP.csv', stdate, enddate, filterAction='both', rank=25)
@@ -577,8 +577,9 @@ port_results = xiQuantStrategyUtil.run_master_strategy(100000, 'MasterOrders_Bot
 #port_results = xiQuantStrategyUtil.run_master_strategy(100000, 'MasterOrders_BBSMAXOverMTM_Both_xiQuant-100-PSTL-Candle-Indicators.csv', stdate, enddate, filterAction='both', rank=25)
 #port_results = xiQuantStrategyUtil.run_master_strategy(100000, 'MasterOrders_BBSMAXOverMTM_Both_xiQuant-100.csv', stdate, enddate, filterAction='both', rank=20)
 
-#upper, middle, lower, adjOHLCSeries, emaDS, orderDS = xiQuantStrategyUtil.computeIndicators('AAPL', 'BBands', stdate, enddate)
+upper, middle, lower, adjOHLCSeries, emaDS, orderDS, resultDS = xiQuantStrategyUtil.compute_BBands('AAPL', stdate, enddate)
 #print orderDS
+print orderDS, resultDS
 
 #sma, adjOHLCSeries, orders = xiQuantStrategyUtil.computeIndicators('AAPL', 'SMA-20', stdate, enddate)
 #print orders
@@ -589,7 +590,7 @@ port_results = xiQuantStrategyUtil.run_master_strategy(100000, 'MasterOrders_Bot
 '''
 #tickerList = util.getTickerList('Abhi-26')
 #tickerList = ['HK_0257']
-tickerList = ['AGN']
+tickerList = ['AAPL']
 #tickerList = ['LON_ARM']
 for ticker in tickerList:
     try:
