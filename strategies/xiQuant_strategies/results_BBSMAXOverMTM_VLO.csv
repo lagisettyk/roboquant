@@ -1,0 +1,4 @@
+Instrument,Trade-Type,Entry-Date,Entry-Price,Quantity,StopLoss-Exit-Date,StopLoss-Exit-Price,StopLoss-Exit-PorL,Exit-Date,Exit-Price,PorL,Actual-PorL,Strategy,Current-Pos
+VLO,LONG,2007-10-09,71.48,1329,No-Exit,0.0,0.0,2007-10-17,72.02,714.20,714.20,BB 20 SMA Xover Mtm,[]
+VLO,SHORT,2008-06-09,45.87,2086,No-Exit,0.0,0.0,2008-06-12,45.30,1190.48,1190.48,BB 20 SMA Xover Mtm,[]
+VLO,SHORT,2013-06-05,38.57,2509,No-Exit,0.0,0.0,2013-06-26,35.31,8180.34,8180.34,BB 20 SMA Xover Mtm,[]

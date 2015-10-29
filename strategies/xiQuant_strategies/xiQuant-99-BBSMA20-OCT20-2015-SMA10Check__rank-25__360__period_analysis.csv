@@ -1,0 +1,13 @@
+SMA10 CHECK,"Additional check comparing crossover days SMA with it's half life i.e., 10 days",,,,,,,
+SMA_STOP_PRICE_PERCENT_OR_ABS,Percent(2.0),,,,,,,
+SMA_ENTRY_DAY_STOP_PRICE_PERCENT,1.00%,,,,,,,
+SMA_STOP_PRICE_ADJ_NOT_BASED_ON_PROFIT_LOCK,FALSE,,,,,,,
+INDICATORS,NONE,,,,,,,
+,,,,,,,,
+,,,,,,,,
+,,,,,,,,
+,,,,,,,,
+RUN PERIOD 2007/01/01 to 2014/12/31,,,,,,,,
+,,,,,,,,
+XiQuant100 -  SMA-20,Total trades,Winning trades,Winning %,Absolute Portfolio,Strategy Return,Market Return,Sliding window winning %,strategy vs market winning ratio
+RANK-25,181,94,51.9337016575,365340.87,265.34,45.39,47.67,37.209

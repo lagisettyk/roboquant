@@ -1,3 +1,2 @@
 Instrument,Trade-Type,Entry-Date,Entry-Price,Quantity,StopLoss-Exit-Date,StopLoss-Exit-Price,StopLoss-Exit-PorL,Exit-Date,Exit-Price,PorL,Actual-PorL,Strategy,Current-Pos
-AAPL,SHORT,2012-04-17,578.05,164,2012-04-17,595.10,-2795.38,2012-04-18,613.72,-5849.88,-2795.38,BB Spread,[]
-AAPL,SHORT,2012-04-20,582.68,153,No-Exit,0.0,0.0,2012-04-24,562.61,3070.59,3070.59,BB Spread,[]
+JPM,SHORT,2009-09-02,41.25,2302,No-Exit,0.0,0.0,2009-09-15,43.89,-6080.27,-6080.27,BB 20 SMA Xover Mtm,[]

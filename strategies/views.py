@@ -120,11 +120,16 @@ def computeIndicators(request):
 			"resultdata": resultdata
 			}
 	elif indicator == 'SMA-20':
-		sma_20, adjOHLCSeries, orders, resultdata = xiQuantStrategyUtil.compute_SMA(ticker, start_date, end_date)
+		sma_20, adjOHLCSeries, orders, resultdata, upper, middle, lower, sma_50, sma_200 = xiQuantStrategyUtil.compute_SMA(ticker, start_date, end_date)
 		#print orders
 		#print resultdata
 		results = {
 			"sma_20": sma_20,
+			"sma_50": sma_50,
+			"sma_200": sma_200,
+			"upper": upper,
+			"middle": middle,
+			"lower": lower,
 			"price": adjOHLCSeries,
 			"orders": orders,
 			"resultdata": resultdata

@@ -423,8 +423,13 @@ $(document).ready( function() {
                   smaseries = []
                   smaseries[0] = {name: "price", data: data.price};
                   smaseries[1] = {name: "sma-20", data: data.sma_20};
-                  smaseries[2] = {name: "stop-loss", data: data.orders};
-                  smaseries[3] = {name: "entry-exit", data: data.resultdata};
+                  smaseries[2] = {name: "sma-50", data: data.sma_50};
+                  smaseries[3] = {name: "sma-200", data: data.sma_200};
+                  smaseries[4] = {name: "upper", data: data.upper};
+                  smaseries[5] = {name: "middle", data: data.middle};
+                  smaseries[6] = {name: "lower", data: data.lower};
+                  smaseries[7] = {name: "stop-loss", data: data.orders};
+                  smaseries[8] = {name: "entry-exit", data: data.resultdata};
                   displaySMAData(smaseries,stkticker);
                 }
                 if (indicator == "EMA-10")
@@ -505,11 +510,6 @@ function displaySMAData (dataList, ticker) {
                 color: '#c62104',
                 name : dataList[2].name,
                 data : dataList[2].data,
-                lineWidth : 0,
-                marker : {
-                    enabled : true,
-                    radius : 5
-                },
                 turboThreshold: 0, ///Speed up and make sure it supports more points
                 tooltip: {
                     valueDecimals: 2
@@ -519,6 +519,42 @@ function displaySMAData (dataList, ticker) {
                 color: '#00cc00',
                 name : dataList[3].name,
                 data : dataList[3].data,
+                turboThreshold: 0, ///Speed up and make sure it supports more points
+                tooltip: {
+                    valueDecimals: 2
+                },
+                id : 'dataseries4'
+               },{
+                color: '#CC00CC',
+                name : dataList[4].name,
+                data : dataList[4].data,
+                turboThreshold: 0, ///Speed up and make sure it supports more points
+                tooltip: {
+                    valueDecimals: 2
+                },
+                id : 'dataseries5'
+               },{
+                color: '#CC00CC',
+                name : dataList[5].name,
+                data : dataList[5].data,
+                turboThreshold: 0, ///Speed up and make sure it supports more points
+                tooltip: {
+                    valueDecimals: 2
+                },
+                id : 'dataseries6'
+               },{
+                color: '#CC00CC',
+                name : dataList[6].name,
+                data : dataList[6].data,
+                turboThreshold: 0, ///Speed up and make sure it supports more points
+                tooltip: {
+                    valueDecimals: 2
+                },
+                id : 'dataseries7'
+               },{
+                color: '#c62104',
+                name : dataList[7].name,
+                data : dataList[7].data,
                 lineWidth : 0,
                 marker : {
                     enabled : true,
@@ -528,7 +564,21 @@ function displaySMAData (dataList, ticker) {
                 tooltip: {
                     valueDecimals: 2
                 },
-                id : 'dataseries4'
+                id : 'dataseries8'
+               },{
+                color: '#00cc00',
+                name : dataList[8].name,
+                data : dataList[8].data,
+                lineWidth : 0,
+                marker : {
+                    enabled : true,
+                    radius : 5
+                },
+                turboThreshold: 0, ///Speed up and make sure it supports more points
+                tooltip: {
+                    valueDecimals: 2
+                },
+                id : 'dataseries9'
                }]
             });
     }

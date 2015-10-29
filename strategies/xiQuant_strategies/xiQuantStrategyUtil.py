@@ -677,52 +677,58 @@ def getMarketReturn(startdate, enddate):
     return (marketDS[-1] - marketDS[0]) / marketDS[0] * 100
 
 
-##### topNMomentum stocks ..............
-def updateOrdersRankbyMoneyFlowPercentChange(orders, instrument):
-    from pyalgotrade.talibext import indicator
-
+##### Orders rank by rate of change
+def updateOrdersRankByRateOfChange(orders, instrument):
     updatedOrders = {}
     for key, value in orders.iteritems():
 
         if value[0][1] == 'Buy' or value[0][1] == 'Sell':
            
-            dt = datetime.datetime.fromtimestamp(key) + datetime.timedelta(days=1)
-            dt0 = dt - datetime.timedelta(days=30)
+            dt = datetime.datetime.fromtimestamp(key)
+            seconds = calendar.timegm(dt.timetuple()) #### please note you need to get money flow of the one day before......
+            keyString = int(seconds)*1000
+            rediskey = "cashflow:"+str(keyString)
 
             '''
-            cfData = cashflow_timeseries_TN(instrument, dt0, dt)
-            cfPercentChange = float((cfData[-1][1] - cfData[-2][1])/(cfData[-2][1])) 
-            rank = cfPercentChange * 100.0
+            redisConn = util.get_redis_conn()
+            cashflow = redisConn.zscore(rediskey, instrument)
+            print ":::::::::::::::::::::::::::::::::: ", dt,  dt.date().weekday(), cashflow
             '''
 
-            feed = redis_build_feed_EOD_RAW(instrument, dt0, dt)
-            barsDictForCurrAdj = {}
-            barsDictForCurrAdj[instrument] = feed.getBarSeries(instrument)
-            feedLookbackEndAdj = xiquantPlatform.xiQuantAdjustBars(barsDictForCurrAdj, dt0, dt)
-            feedLookbackEndAdj.adjustBars()
-            barDS = feedLookbackEndAdj.getBarSeries(instrument + "_adjusted")
-            #mfi = indicator.MFI(barDS, len(barDS), 3)
-            print "*******************++++++++++++++++++++================:", barDS[-1].getDateTime(), barDS[-1].getClose(), barDS[-1].getVolume()
-            #mfiDSPercentChange = float((mfi[-1] - mfi[-2]) / (mfi[-2]))
-            analysisDayMoneyFlow = barDS[-1].getClose() *  barDS[-1].getVolume()
-            previousDayMoneyFlow = barDS[-2].getClose() *  barDS[-2].getVolume()
-            cfPercentChange =  ((analysisDayMoneyFlow - previousDayMoneyFlow)/(previousDayMoneyFlow)) * 100.0
-
-            if value[0][1] == 'Buy':
-                if cfPercentChange >= 20.0:
-                    rank = 10
-                else:
-                    rank = 10000
+            if dt.date().weekday() !=6:
+                dt_prevDay = dt - datetime.timedelta(days=1) ####
             else:
-                if cfPercentChange <= -20.0:
-                    rank = 10
+                dt_prevDay = dt - datetime.timedelta(days=3) #### If it is Sunday move back to Thursday
+
+            seconds_prevDay = calendar.timegm(dt_prevDay.timetuple()) #### please note you need to get money flow of the one day before......
+            keyString_prevDay = int(seconds_prevDay)*1000
+            rediskey_prevDay = "cashflow:"+str(keyString_prevDay)
+            redisConn = util.get_redis_conn()
+
+            #if value[0][1] == 'Buy' or value[0][1] == 'Sell':
+            cashflow = redisConn.zscore(rediskey, instrument)
+            cashflow_prevDay = redisConn.zscore(rediskey_prevDay, instrument)
+            print "::::::::::::::::::::::::::::::: ", dt.date().weekday(), dt_prevDay.date().weekday(), cashflow, cashflow_prevDay
+
+            if cashflow > 0 and cashflow_prevDay > 0:
+                roc_cashflow = ((cashflow - cashflow_prevDay) / cashflow_prevDay) * 100.0
+                if roc_cashflow > 80.0:
+                    rank = 20
                 else:
-                    rank = 10000
-    
+                    rank = 9999
+            elif cashflow < 0 and cashflow_prevDay < 0:
+                roc_cashflow = ((abs(cashflow_prevDay) - abs(cashflow)) / abs(cashflow_prevDay)) * 100.0
+                if roc_cashflow > 80.0:
+                    rank = 20
+                else:
+                    rank = 9999
+            else:
+                rank = 99999 #### We do not want stocks with change of direction..
+
             ### update rank based on cashflow for BUY and SELL orders...
             newval = []
-            #newval.append((value[0][0], value[0][1], value[0][2], rank))
-            newval.append((value[0][0], value[0][1], value[0][2], value[0][3], rank))
+            #newval.append((value[0][0], value[0][1], value[0][2], value[0][3], rank))
+            newval.append((value[0][0], value[0][1], value[0][2], value[0][3], value[0][4], rank))
             ########## Please note we are just appending relevant cashflow ranks and relevant filter rules will be applied 
             ########## during portfolio simulation rules...
             updatedOrders[key] = newval
@@ -978,17 +984,27 @@ def compute_BBands(instrument, startdate, enddate ):
 def compute_SMA(instrument, startdate, enddate ):
     from pyalgotrade.talibext import indicator
 
+    startdate = startdate - datetime.timedelta(days=consts.RESISTANCE_LOOKBACK_WINDOW)
     noOfPeriods = 20 #### No of periods.....
+    bBandsPeriod = 20 #### No of periods.....
     feed = redis_build_feed_EOD_RAW(instrument, startdate, enddate)
     barsDictForCurrAdj = {}
     barsDictForCurrAdj[instrument] = feed.getBarSeries(instrument)
     feedLookbackEndAdj = xiquantPlatform.xiQuantAdjustBars(barsDictForCurrAdj, startdate, enddate)
     feedLookbackEndAdj.adjustBars()
     closeDS = feedLookbackEndAdj.getCloseDataSeries(instrument + "_adjusted")
+    upper, middle, lower = indicator.BBANDS(closeDS, len(closeDS), bBandsPeriod, 2.0, 2.0)
     sma_20 = indicator.SMA(closeDS, len(closeDS), noOfPeriods)
+    sma_50 = indicator.SMA(closeDS, len(closeDS), 50)
+    sma_200 = indicator.SMA(closeDS, len(closeDS), 200)
 
     dateTimes = feedLookbackEndAdj.getDateTimes(instrument + "_adjusted")
     smaDS = numpy_to_highchartds(dateTimes, sma_20, startdate, enddate)
+    sma50DS = numpy_to_highchartds(dateTimes, sma_50, startdate, enddate)
+    sma200DS = numpy_to_highchartds(dateTimes, sma_200, startdate, enddate)
+    upperDS = numpy_to_highchartds(dateTimes, upper, startdate, enddate)
+    middleDS = numpy_to_highchartds(dateTimes, middle, startdate, enddate)
+    lowerDS = numpy_to_highchartds(dateTimes, lower, startdate, enddate)
     
     ##########Display price seriesin the center of Bolinger bands......##################
     barDS = feedLookbackEndAdj.getBarSeries(instrument + "_adjusted")
@@ -1001,8 +1017,8 @@ def compute_SMA(instrument, startdate, enddate ):
                         bar.getLow(), bar.getClose()]
         adj_Close_Series.append(adjPrice_val)
 
-    startdate = startdate - datetime.timedelta(days=consts.RESISTANCE_LOOKBACK_WINDOW)
-    print "inside compute BBANDS"
+    #startdate = startdate - datetime.timedelta(days=consts.RESISTANCE_LOOKBACK_WINDOW)
+    print "inside SMA"
     print startdate, enddate
     orders = run_strategy_BBSMAXOverMTM(20, instrument, 100000, startdate, enddate, indicators=False)
     orderDS = []
@@ -1015,7 +1031,7 @@ def compute_SMA(instrument, startdate, enddate ):
         results = run_master_strategy(100000, fakecsv, startdate, enddate, filterAction='both', rank=10000, fakeCSV=True)
         resultDS = results_to_highchartsds(results)
 
-    return smaDS, adj_Close_Series, orderDS, resultDS
+    return smaDS, adj_Close_Series, orderDS, resultDS, upperDS, middleDS, lowerDS, sma50DS, sma200DS
 
 def compute_EMA(instrument, startdate, enddate ):
     from pyalgotrade.talibext import indicator
@@ -1218,9 +1234,6 @@ def run_master_strategy(initialcash, masterFile, startdate, enddate, filterActio
     return myStrategy.getResults()
 
     #return results
-
-
-
 
 def run_strategy_BBSMAXOverMTM(bBandsPeriod, instrument, startPortfolio, startdate, enddate, filterCriteria=20, indicators=True):
 

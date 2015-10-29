@@ -17,7 +17,10 @@ from xiQuant_strategies import xiQuantStrategyUtil, xiquantStrategyParams
 
 #listStr = 'CUSTOM'
 #listStr = 'xiQuant-100'
-listStr = 'Abhi-26'
+#listStr = 'Abhi-26'
+#listStr = 'SMA20-CUSTOMUNIV'
+#listStr = 'xiQuant-99'
+listStr = 'SP-500'
 
 tickerList = util.getTickerList(listStr)
 
@@ -198,7 +201,7 @@ def run_parallel_BBSMAXOverMTM():
 	######### before passing let's sort orders based on moneyness rank
 	#####################################################################
 	#sorted_datarows = sorted(dataRows, key = lambda x: (int(x[1]), int(x[3])))
-	dataRows.sort(key = operator.itemgetter(0, 5))
+	dataRows.sort(key = operator.itemgetter(0, 6))
 
 
 	fake_csv = util.make_fake_csv(dataRows)
@@ -406,8 +409,8 @@ def process_Options_History():
 	print  "Successfully processed...."
 
 	
-test_parallel_strategy()
-#run_parallel_BBSMAXOverMTM()
+#test_parallel_strategy()
+run_parallel_BBSMAXOverMTM()
 #run_parallel_EMABreachMTM()
 #run_parallel_EMATrend()
 #run_singlestock_analysis()

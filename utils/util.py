@@ -73,6 +73,10 @@ def getTickerList(strategy):
 			file_tickerlist = getRelativePath('HKG-100.csv')
 		if strategy == 'xiQuant-100':
 			file_tickerlist = getRelativePath('xiQuant100.csv')
+		if strategy == 'xiQuant-99':
+			file_tickerlist = getRelativePath('xiQuant99.csv')
+		if strategy == 'SMA20-CUSTOMUNIV':
+			file_tickerlist = getRelativePath('SMA20-CUSTOMUNIV.csv')
 		if strategy == 'xiQuant-50':
 			file_tickerlist = getRelativePath('xiQuant50.csv')
 		with open(file_tickerlist, 'rU') as csvfile:
