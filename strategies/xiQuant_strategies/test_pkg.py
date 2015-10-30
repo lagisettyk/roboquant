@@ -5,6 +5,7 @@ sys.path.append('/home/parallels/Code/heroku-envbased/roboquant')
 import datetime
 #from time import calendar.timegm
 import xiQuantStrategyUtil
+import xiquantFuncs
 from pyalgotrade.technical import ma
 from utils import util
 import csv
@@ -62,6 +63,35 @@ def redis_build_CSV_EOD(ticker, stdate, enddate):
             writer.writerows(bd)
 
 
+def filterOrdersbySlidingWindow(fileName, analysisStartDate, analysisEndDate):
+    import operator
+
+    startDateInSecs = xiquantFuncs.secondsSinceEpoch(analysisStartDate)
+    endDateInSecs = xiquantFuncs.secondsSinceEpoch(analysisEndDate)
+    orders = []
+    orderID_List = []
+    reader = csv.DictReader(open(fileName, "r"), fieldnames=["timeSinceEpoch", "symbol", "action", "stopPrice", "orderID", "adjRatio", "rank"])
+    for row in reader:
+        dataRow = []
+        timeSinceEpoch = int(row["timeSinceEpoch"])
+        orderID = row["orderID"]
+        if (timeSinceEpoch >= startDateInSecs and timeSinceEpoch <= endDateInSecs) or orderID in orderID_List:
+            #print "===========: ", orderID
+            dataRow.append(timeSinceEpoch)
+            dataRow.append(row["symbol"])
+            dataRow.append(row["action"])
+            dataRow.append(row["stopPrice"])
+            dataRow.append(orderID)
+            if orderID not in orderID_List:
+                orderID_List.append(orderID)
+            dataRow.append(row["adjRatio"])
+            dataRow.append(row["rank"])
+            orders.append(dataRow)
+            
+    #print "======================: ", orders
+    orders.sort(key = operator.itemgetter(0, 6))
+    return util.make_fake_csv(orders)
+
 def periodAnalysis(runName, fileName, stdate, enddate, slidingRange, cutOff):
 
     analysisResults = []
@@ -82,27 +112,33 @@ def periodAnalysis(runName, fileName, stdate, enddate, slidingRange, cutOff):
         if analysisEndDate > enddate:
             analysisEndDate = enddate
 
+        dt1 = analysisStartDate.strftime('%m-%d-%Y')
+        dt2 = analysisEndDate.strftime('%m-%d-%Y')
+
         if (analysisEndDate - analysisStartDate).days  >= (slidingRange - 1):
-            #print "++++++++++++++======= date range: ", analysisStartDate, analysisEndDate
-            port_results = xiQuantStrategyUtil.run_master_strategy(100000, fileName, analysisStartDate, analysisEndDate, filterAction='both', rank=cutOff)
+            filteredFile = filterOrdersbySlidingWindow(fileName, analysisStartDate, analysisEndDate)
+            #port_results = xiQuantStrategyUtil.run_master_strategy(100000, fileName, analysisStartDate, analysisEndDate, filterAction='both', rank=cutOff)
+            port_results = xiQuantStrategyUtil.run_master_strategy(100000, filteredFile, analysisStartDate, enddate, filterAction='both', rank=cutOff, fakeCSV=True)
             src = os.path.join(os.path.dirname(__file__), 'results.csv')
-            with open(src, 'rU') as csvfile:
+            dest = os.path.join(os.path.dirname(__file__), 'results_'+str(dt1)+'--'+str(dt2)+'.csv')
+            print "========: ", dest
+            os.rename(src, dest)
+            print "Successfully copied the source to destination"
+            #with open(src, 'rU') as csvfile:
+            with open(dest, 'rU') as csvfile:
                 reader = csv.DictReader(csvfile)
                 for row in reader:
-                    #simulated_PorL = simulated_PorL + float(row['Actual-PorL'])
                     PorL = PorL + float(row['PorL'])
                     if float(row['Actual-PorL']) > float(row['PorL']):
                         Best_of_PorL = Best_of_PorL + float(row['Actual-PorL'])
                     else:
                         Best_of_PorL = Best_of_PorL + float(row['PorL'])
-                    if row['Trade-Type'] == 'LONG':
+                    if row['Trade-Type'] == 'LONG' or row['Trade-Type'] == 'LONG-SPY-NULL':
                         long_trades += 1.0
-                        #if float(row['Actual-PorL']) > 0.0:
                         if float(row['PorL']) > 0.0:
                             long_winning +=1.0
-                    elif row['Trade-Type'] == 'SHORT':
+                    elif row['Trade-Type'] == 'SHORT' or row['Trade-Type'] == 'SHORT-SPY-NULL':
                         short_trades += 1.0
-                        #if float(row['Actual-PorL']) > 0.0:
                         if float(row['PorL']) > 0.0:
                             short_winning +=1
 
@@ -110,8 +146,8 @@ def periodAnalysis(runName, fileName, stdate, enddate, slidingRange, cutOff):
                 total_trades = long_trades + short_trades
                 total_winning = long_winning + short_winning
                 #print "####$$$$$$$$$$$$$$$$$$$$$$++++++==========: ", total_trades, total_winning, long_trades, short_trades
-                dt1 = analysisStartDate.strftime('%m/%d/%Y')
-                dt2 = analysisEndDate.strftime('%m/%d/%Y')
+                #dt1 = analysisStartDate.strftime('%m/%d/%Y')
+                #dt2 = analysisEndDate.strftime('%m/%d/%Y')
                 analysisRow.append(str(dt1)+'--'+str(dt2))
                 analysisRow.append(periodNumber)
                 analysisRow.append(total_trades)
@@ -124,7 +160,6 @@ def periodAnalysis(runName, fileName, stdate, enddate, slidingRange, cutOff):
                 analysisRow.append(PorLPercent)
                 marketPercent = xiQuantStrategyUtil.getMarketReturn(analysisStartDate, analysisEndDate)
                 analysisRow.append(marketPercent)
-                #analysisRow.append(Best_of_PorL)
                 analysisRow.append(long_trades)
                 analysisRow.append(long_winning)
                 if long_trades != 0.0:
@@ -150,14 +185,14 @@ def periodAnalysis(runName, fileName, stdate, enddate, slidingRange, cutOff):
 import dateutil.parser
 #stdate = dateutil.parser.parse('2005-06-30')
 stdate = dateutil.parser.parse('2007-01-01')
-#stdate = dateutil.parser.parse('2012-04-01')
-#enddate = dateutil.parser.parse('2012-04-30')
-enddate = dateutil.parser.parse('2007-01-31')
+#stdate = dateutil.parser.parse('2009-05-20')
+#enddate = dateutil.parser.parse('2010-05-15')
+#enddate = dateutil.parser.parse('2007-01-31')
 #stdate = dateutil.parser.parse('2013-04-29')
 #enddate = dateutil.parser.parse('2014-04-24')
 #stdate = dateutil.parser.parse('2012-01-01')
 #enddate = dateutil.parser.parse('2009-01-30')
-#enddate = dateutil.parser.parse('2014-12-31')
+enddate = dateutil.parser.parse('2014-12-31')
 #enddate = dateutil.parser.parse('2009-12-31')
 #enddate = dateutil.parser.parse('2012-12-31')
 #enddate = dateutil.parser.parse('2007-01-31')
@@ -212,11 +247,16 @@ specdate2 = dateutil.parser.parse(' 2014-04-04')
 #periodAnalysis('xiQuant-100-BBSpread2-0-OCT14-2015-BASELINE','MasterOrders_Both_xiQuant-100-BASELINE-1.csv', stdate, enddate, 360, 25)
 #periodAnalysis('xiQuant-100-BBSpread2-0-OCT14-2015-PRICEJUMP','MasterOrders_Both_xiQuant-100-PRICEJUMP.csv', stdate, enddate, 360, 25)
 
-#periodAnalysis('xiQuant-99-BBSMA20-OCT20-2015-SMA10Check','MasterOrders_BBSMAXOverMTM_Both_SMA20-CUSTOMUNIV.csv', stdate, enddate, 360, 25)
-#periodAnalysis('SMA20-CUSTOMUNIV-BBSMA20-OCT27-2015','MasterOrders_BBSMAXOverMTM_Both_SMA20-CUSTOMUNIV.csv', stdate, enddate, 360, 25)
 #periodAnalysis('xiQuant-99-BBSpread1-5-OCT20-2015','MasterOrders_Both_xiQuant-99-BB1-5.csv', stdate, enddate, 360, 25)
 #periodAnalysis('xiQuant-99-BBSMA20-CUSTOM-OCT24-2015','MasterOrders_BBSMAXOverMTM_Both_xiQuant-99-40-10-Check.csv', stdate, enddate, 360, 200)
 #periodAnalysis('xiQuant-99-BBSMA20-SP-500-OCT25-2015','MasterOrders_BBSMAXOverMTM_Both_SP-500-SMA20-OCT25-5-10-40-V.csv', stdate, enddate, 720, 25)
+
+
+
+#periodAnalysis('SMA20-SP-500-OCT27MORNINGVER-2015','MasterOrders_BBSMAXOverMTM_Both_SP-500-SMA20-OCT27-MORNINGVER.csv', stdate, enddate, 360, 25)
+#periodAnalysis('SMA20-SP-500-OCT27AFTERNOONVER-2015','MasterOrders_BBSMAXOverMTM_Both_SP-500-SMA20-OCT27-AFTERNOONVER.csv', stdate, enddate, 360, 25)
+#periodAnalysis('SMA20-xiQuant-99-OCT27MORNINGVER-2015','MasterOrders_BBSMAXOverMTM_Both_SMA20-CUSTOMUNIV-OCT27-MORNINGVER.csv', stdate, enddate, 360, 25)
+periodAnalysis('SMA20-xiQuant-99-OCT27AFTERNOONVER-2015','MasterOrders_BBSMAXOverMTM_Both_SMA20-CUSTOMUNIV-OCT27-AFTERNOONVER.csv', stdate, enddate, 360, 25)
 
 
 
@@ -578,16 +618,19 @@ print port_results.getPortfolioResult()
 #port_results = xiQuantStrategyUtil.run_master_strategy(100000, 'MasterOrders_BBSMAXOverMTM_Both_SP-500-SMA20-OCT24-40-10.csv', stdate, enddate, filterAction='both', rank=40)
 #port_results = xiQuantStrategyUtil.run_master_strategy(100000, 'MasterOrders_BBSMAXOverMTM_Both_xiQuant-99-SMA-CUSTOM.csv', stdate, enddate, filterAction='both', rank=25)
 #port_results = xiQuantStrategyUtil.run_master_strategy(100000, 'MasterOrders_BBSMAXOverMTM_Both_SMA20-CUSTOMUNIV.csv', stdate, enddate, filterAction='both', rank=25)
-#port_results = xiQuantStrategyUtil.run_master_strategy(100000, 'MasterOrders_Both_xiQuant-99-BB1-5.csv', stdate, enddate, filterAction='both', rank=25)
+#port_results = xiQuantStrategyUtil.run_master_strategy(100000, 'MasterOrders_BBSMAXOverMTM_Both_SMA20-CUSTOMUNIV-SMAEXP.csv', stdate, enddate, filterAction='both', rank=25)
 #port_results = xiQuantStrategyUtil.run_master_strategy(100000, 'MasterOrders_BBSMAXOverMTM_Both_xiQuant-99-SMA10-10Check.csv', stdate, enddate, filterAction='both', rank=25)
-#port_results = xiQuantStrategyUtil.run_master_strategy(100000, 'MasterOrders_BBSMAXOverMTM_Both_SP-500-SMA20-OCT27-2015.csv', stdate, enddate, filterAction='both', rank=5)
+#port_results = xiQuantStrategyUtil.run_master_strategy(100000, 'MasterOrders_BBSMAXOverMTM_Both_SP-500-SMA20-OCT27-MORNINGVER.csv', stdate, enddate, filterAction='both', rank=25)
+#port_results = xiQuantStrategyUtil.run_master_strategy(100000, 'MasterOrders_BBSMAXOverMTM_Both_SP-500-SMA20-OCT27-AFTERNOONVER.csv', stdate, enddate, filterAction='both', rank=25)
+#port_results = xiQuantStrategyUtil.run_master_strategy(100000, 'MasterOrders_BBSMAXOverMTM_Both_SMA20-CUSTOMUNIV-OCT27-MORNINGVER.csv', stdate, enddate, filterAction='both', rank=25)
+#port_results = xiQuantStrategyUtil.run_master_strategy(100000, 'MasterOrders_BBSMAXOverMTM_Both_SMA20-CUSTOMUNIV-OCT27-AFTERNOONVER.csv', stdate, enddate, filterAction='both', rank=25)
 
 #upper, middle, lower, adjOHLCSeries, emaDS, orderDS, resultDS = xiQuantStrategyUtil.compute_BBands('AAPL', stdate, enddate)
 #print orderDS
 #print orderDS, resultDS
 
-smaDS, adj_Close_Series, orderDS, resultDS, upperDS, middleDS, lowerDS, sma50DS, sma200DS = xiQuantStrategyUtil.computeIndicators('AAPL', 'SMA-20', stdate, enddate)
-print sma200DS
+#smaDS, adj_Close_Series, orderDS, resultDS, upperDS, middleDS, lowerDS, sma50DS, sma200DS = xiQuantStrategyUtil.computeIndicators('AAPL', 'SMA-20', stdate, enddate)
+#print sma200DS
 
 #ema, adjOHLCSeries = xiQuantStrategyUtil.computeIndicators('AAPL', 'EMA-10', stdate, enddate)
 #print ema, adjOHLCSeries
@@ -613,7 +656,7 @@ for ticker in tickerList:
 #tickerList = util.getTickerList('Abhi-26')
 #tickerList = ['AAPL', 'GOOGL', 'MA', 'FDX', 'NFLX', 'AMZN']
 #tickerList = ['HK_2338']
-tickerList = ['AAPL']
+tickerList = ['NFLX']
 for ticker in tickerList:
     try:
         results = xiQuantStrategyUtil.run_strategy_BBSMAXOverMTM(20, ticker, 100000, stdate, enddate)
@@ -625,8 +668,6 @@ for ticker in tickerList:
         print str(e)
         pass
 '''
-
-
 
 
 ''''

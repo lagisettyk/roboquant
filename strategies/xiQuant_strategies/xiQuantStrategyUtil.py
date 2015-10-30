@@ -1191,7 +1191,8 @@ def run_strategy_redis_old(bBandsPeriod, instrument, startPortfolio, startdate, 
 def run_master_strategy(initialcash, masterFile, startdate, enddate, filterAction='Both', rank=10000, fakeCSV=False):
 
     if fakeCSV:
-        ordersFile = Orders_exec.OrdersFile(masterFile, fakecsv=True)
+        #ordersFile = Orders_exec.OrdersFile(masterFile, fakecsv=True)
+        ordersFile = Orders_exec.OrdersFile(masterFile, filterAction, rank, fakecsv=True)
     else:
         filePath = os.path.join(os.path.dirname(__file__), masterFile)
         ordersFile = Orders_exec.OrdersFile(filePath, filterAction, rank)
