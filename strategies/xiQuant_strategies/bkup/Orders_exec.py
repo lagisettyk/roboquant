@@ -81,7 +81,7 @@ class MyStrategy(strategy.BacktestingStrategy):
 		strategy.BacktestingStrategy.__init__(self, feed, cash)
 		self.__feed = feed
 		self.__backtestingEndDate = endPeriod
-		self.__SPYFeed = feed[consts.MARKET]
+		self.__SPYFeed = feed["SPY"]
 		self.__spyDS = self.__SPYFeed.getCloseDataSeries()
 		self.__spyOpenDS = self.__SPYFeed.getOpenDataSeries()
 		self.__smaSPYShort1 = ma.SMA(self.__spyDS, consts.SMA_SHORT_1)
@@ -89,6 +89,7 @@ class MyStrategy(strategy.BacktestingStrategy):
 		self.__longPos = {}
 		self.__shortPos = {}
 		self.__results = {}
+		self.__resultsOut = {}
 		self.__strategiesOutput = None
 		self.__intraDayExits = {}
 		self.__spyNullified = {}
@@ -110,9 +111,15 @@ class MyStrategy(strategy.BacktestingStrategy):
 	def getStrategiesOutput(self):
 		return self.__strategiesOutput
 
+	def getResults(self):
+		return self.__resultsOut
+
 	def onStart(self):
 		self.__resultsFile = open(consts.RESULTS_FILE, 'w')
-		outStr = "Instrument,Trade-Type,Entry-Date,Entry-Price,Quantity,StopLoss-Exit-Date,StopLoss-Exit-Price,StopLoss-Exit-PorL,Profit-Exit-Date,Profit-Exit-Price,Profit-Exit-PorL,Exit-Date,Exit-Price,PorL,Actual-PorL,Strategy,Current-Pos\n"
+		if consts.SIMULATE_PROFIT_EXIT:
+			outStr = "Instrument,Trade-Type,Entry-Date,Entry-Price,Quantity,StopLoss-Exit-Date,StopLoss-Exit-Price,StopLoss-Exit-PorL,Profit-Exit-Date,Profit-Exit-Price,Profit-Exit-PorL,Exit-Date,Exit-Price,PorL,Actual-PorL,Strategy,Current-Pos\n"
+		else:
+			outStr = "Instrument,Trade-Type,Entry-Date,Entry-Price,Quantity,StopLoss-Exit-Date,StopLoss-Exit-Price,StopLoss-Exit-PorL,Exit-Date,Exit-Price,PorL,Actual-PorL,Strategy,Current-Pos\n"
 		self.__resultsFile.write(outStr)
 		self.__strategiesOutput = outStr
 		self.__unexecutedOrdersFile = open(consts.UNEXECUTED_ORDERS_FILE, 'w')
@@ -189,6 +196,7 @@ class MyStrategy(strategy.BacktestingStrategy):
 						self.__spyNullified[entryInstrOrderIDTuple] = True
 
 		self.__results[entryInstrOrderIDTuple] = instrument + ',' + action + ',' + str(execTime.date()) + ',' + buyPrice + ',' + quantity + ','
+		self.__resultsOut[entryInstrOrderIDTuple] = self.__results[entryInstrOrderIDTuple]
 		self.info("Entered %s for %s, %s shares at %s" % (action, instrument, quantity, buyPrice))
 		self.__intraDayExits[entryInstrOrderIDTuple] = False
 		self.__profitExitPOrL[entryInstrOrderIDTuple] = 0.0
@@ -275,8 +283,9 @@ class MyStrategy(strategy.BacktestingStrategy):
 		currPos = self.getBroker().getPositions()
 		listOfCurrInstrs = list(currPos.keys())
 		realPorL = profitOrLoss
-		if float(profitPOrL) != 0:
-			realPorL = profitPOrL
+		if consts.SIMULATE_PROFIT_EXIT:
+			if float(profitPOrL) != 0:
+				realPorL = profitPOrL
 		if float(stopLossPOrL) != 0:
 			realPorL = stopLossPOrL
 
@@ -302,10 +311,14 @@ class MyStrategy(strategy.BacktestingStrategy):
 		elif stratID == consts.EMA_50_CROSSOVER_MTM_ID:
 			strat = consts.EMA_50_CROSSOVER_MTM_STR
 
-		exitStr = stopLossExitDate + ',' + stopLossExitPrice + ',' + stopLossPOrL + ',' + profitExitDate + ',' + profitExitPrice + ',' + profitPOrL + ',' + exitDate + ',' + sellPrice + ',' + profitOrLoss + ',' + realPorL + ',' + strat + ',' + str(listOfCurrInstrs) + '\n'
+		if consts.SIMULATE_PROFIT_EXIT:
+			exitStr = stopLossExitDate + ',' + stopLossExitPrice + ',' + stopLossPOrL + ',' + profitExitDate + ',' + profitExitPrice + ',' + profitPOrL + ',' + exitDate + ',' + sellPrice + ',' + profitOrLoss + ',' + realPorL + ',' + strat + ',' + str(listOfCurrInstrs) + '\n'
+		else:
+			exitStr = stopLossExitDate + ',' + stopLossExitPrice + ',' + stopLossPOrL + ',' + exitDate + ',' + sellPrice + ',' + profitOrLoss + ',' + realPorL + ',' + strat + ',' + str(listOfCurrInstrs) + '\n'
 		self.info("Exited %s for %s, %s shares at %s" % (action, instrument, quantity, sellPrice))
 		if self.__results[entryInstrOrderIDTuple] is not None:
 			self.__results[entryInstrOrderIDTuple] += exitStr
+			self.__resultsOut[entryInstrOrderIDTuple] += exitStr[:-1]
 			self.__resultsFile.write(self.__results[entryInstrOrderIDTuple])
 			self.__strategiesOutput += self.__results[entryInstrOrderIDTuple]
 		else:
@@ -535,8 +548,6 @@ class MyStrategy(strategy.BacktestingStrategy):
 					execInfo = self.__longPos[instrOrderIDTuple].getEntryOrder().getExecutionInfo()
 					if execInfo == None:
 						continue
-					# Adjust the profit lock price -- the price is already adjusted by the ratio
-					# so the profit should be as well.
 					profitLock = 0.0
 					if consts.PROFIT_LOCK_PERCENT_OR_ABS.lower() == 'percent':
 						profitLock = self.__closeDS[-1] * consts.PROFIT_LOCK_PERCENT / float(100)
@@ -564,6 +575,13 @@ class MyStrategy(strategy.BacktestingStrategy):
 					if self.__highDS[-1] >= lockProfitPrice:
 						exitPrice = lockProfitPrice
 						self.info("exitPrice is lockProfitPrice")
+						if consts.SIMULATE_PROFIT_EXIT:
+							# Force exit with a market order, so that the money
+							# invested in this position could be utilized for the
+							# next trades.
+							self.info("Exit at market.")
+							self.__longPos[instrOrderIDTuple].cancelExit()
+							self.__longPos[instrOrderIDTuple].exitMarket()
 					if exitPrice != 0:
 						self.info("exitPrice: %0.2f" % exitPrice)
 						actualPorL =  (exitPrice - execInfo.getPrice()) * execInfo.getQuantity()
@@ -602,8 +620,6 @@ class MyStrategy(strategy.BacktestingStrategy):
 					execInfo = self.__shortPos[instrOrderIDTuple].getEntryOrder().getExecutionInfo()
 					if execInfo == None:
 						continue
-					# Adjust the profit lock price -- the price is already adjusted by the ratio
-					# so the profit should be as well.
 					profitLock = 0.0
 					if consts.PROFIT_LOCK_PERCENT_OR_ABS.lower() == 'percent':
 						profitLock = self.__closeDS[-1] * consts.PROFIT_LOCK_PERCENT / float(100)
@@ -631,6 +647,13 @@ class MyStrategy(strategy.BacktestingStrategy):
 					if self.__lowDS[-1] <= lockProfitPrice:
 						exitPrice = lockProfitPrice
 						self.info("exitPrice is lockProfitPrice")
+						if consts.SIMULATE_PROFIT_EXIT:
+							# Force exit with a market order, so that the money
+							# invested in this position could be utilized for the
+							# next trades.
+							self.info("Exit at market.")
+							self.__shortPos[instrOrderIDTuple].cancelExit()
+							self.__shortPos[instrOrderIDTuple].exitMarket()
 					if exitPrice != 0:
 						self.info("exitPrice: %0.2f" % exitPrice)
 						actualPorL =  (exitPrice - execInfo.getPrice()) * -1 * execInfo.getQuantity()
@@ -711,6 +734,13 @@ class MyStrategy(strategy.BacktestingStrategy):
 					if self.__highDS[-1] >= lockProfitPrice:
 						exitPrice = lockProfitPrice
 						self.info("exitPrice is lockProfitPrice")
+						if consts.SIMULATE_PROFIT_EXIT:
+							# Force exit with a market order, so that the money
+							# invested in this position could be utilized for the
+							# next trades.
+							self.info("Exit at market.")
+							self.__longPos[instrOrderIDTuple].cancelExit()
+							self.__longPos[instrOrderIDTuple].exitMarket()
 					if exitPrice != 0:
 						self.info("exitPrice: %0.2f" % exitPrice)
 						actualPorL =  (exitPrice - execInfo.getPrice()) * execInfo.getQuantity()
@@ -760,6 +790,13 @@ class MyStrategy(strategy.BacktestingStrategy):
 					if self.__lowDS[-1] <= lockProfitPrice:
 						exitPrice = lockProfitPrice
 						self.info("exitPrice is lockProfitPrice")
+						if consts.SIMULATE_PROFIT_EXIT:
+							# Force exit with a market order, so that the money
+							# invested in this position could be utilized for the
+							# next trades.
+							self.info("Exit at market.")
+							self.__shortPos[instrOrderIDTuple].cancelExit()
+							self.__shortPos[instrOrderIDTuple].exitMarket()
 					if exitPrice != 0:
 						self.info("exitPrice: %0.2f" % exitPrice)
 						actualPorL =  (exitPrice - execInfo.getPrice()) * -1 * execInfo.getQuantity()
@@ -801,12 +838,12 @@ def main():
 	# Add the SPY bars to support the simulation of whether we should have
 	# entered certain trades or not -- based on the SPY opening higher/lower
 	# than 20 SMA value for bullish/bearish trades.
-	feed = xiquantPlatform.add_feeds_EODRAW_CSV(feed, consts.MARKET, startPeriod, endPeriod)
+	feed = xiquantPlatform.add_feeds_EODRAW_CSV(feed, 'SPY', startPeriod, endPeriod)
 
 	barsDictForCurrAdj = {}
 	for instrument in ordersFile.getInstruments():
 		barsDictForCurrAdj[instrument] = feed.getBarSeries(instrument)
-	barsDictForCurrAdj[consts.MARKET] = feed.getBarSeries(consts.MARKET)
+	barsDictForCurrAdj['SPY'] = feed.getBarSeries('SPY')
 	feedAdjustedToEndDate = xiquantPlatform.adjustBars(barsDictForCurrAdj, startPeriod, endPeriod, keyFlag=False)
 
 	cash = 100000
@@ -832,5 +869,6 @@ def main():
 	print "Sharpe Ratio: %.2f" % (sharpeRatioAnalyzer.getSharpeRatio(0))
 	print "Strategy Results:\n" 
 	print myStrategy.getStrategiesOutput()
+	print myStrategy.getResults()
 
 #main()

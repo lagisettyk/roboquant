@@ -83,7 +83,7 @@
 												]
 										},
 					"xWick_Rel_To_Candle": "Cutoff_Check",
-					"xCandle_Len_Check": "Against_Average_Length",
+					"XCandle_Len_Check": "Against_Average_Length",
 					"xCrossover_Check": "Total",
 					"xPrice_Jump": "Price_Jump_Check",
 					"xVolume": "Volume_Check",
@@ -118,7 +118,7 @@
 												]
 										},
 					"xWick_Rel_To_Candle": "Cutoff_Check",
-					"xCandle_Len_Check": "Against_Average_Length",
+					"XCandle_Len_Check": "Against_Average_Length",
 					"xCrossover_Check": "Total",
 					"xPrice_Jump": "Price_Jump_Check",
 					"xVolume": "Volume_Check",

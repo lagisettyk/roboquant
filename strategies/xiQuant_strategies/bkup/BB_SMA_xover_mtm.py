@@ -422,6 +422,7 @@ class BBSMACrossover(strategy.BacktestingStrategy):
 		jsonExitPrice.close()
 
 
+
 	def onFinish(self, bars):
 		self.__logger.info("Final portfolio value: $%.2f" % self.getBroker().getEquity())
 		self.stopLogging()
@@ -839,13 +840,16 @@ class BBSMACrossover(strategy.BacktestingStrategy):
 					stopPrice = xiquantFuncs.computeStopPrice(bullishCandle, "bullish", openPrice, closePrice, stopPriceDelta)
 					# Adjust the stop price based on the last day of the backtesting period
 					if consts.SMA_STOP_PRICE_PERCENT_OR_ABS.lower() == 'percent':
-						stopPriceDelta = self.__closeDS[-2] * consts.SMA_ENTRY_DAY_STOP_PRICE_PERCENT / float(100)
+						if consts.SMA_ENTRY_STOP_LOSS_OVER_UNDER_PREV_CANDLE:
+							stopPriceDelta = self.__closeDS[-2] * consts.SMA_ENTRY_DAY_STOP_PRICE_PERCENT / float(100)
+						else:
+							stopPriceDelta = self.__closeDS[-1] * consts.SMA_ENTRY_DAY_STOP_PRICE_PERCENT / float(100)
 					else:
 						stopPriceDelta = consts.SMA_ENTRY_DAY_STOP_PRICE_ABS
 					if consts.SMA_STOP_LOSS_UNDER_CANDLE_OR_SMA.lower() == 'sma':
 						stopPrice = self.__smaDS[-1] - stopPriceDelta
 					else:
-						if consts.SMA_STOP_LOSS_OVER_UNDER_PREV_CANDLE:
+						if consts.SMA_ENTRY_STOP_LOSS_OVER_UNDER_PREV_CANDLE:
 							if self.__closeDS[-2] >= self.__openDS[-2]:
 								self.__logger.debug("Stop Loss Price Delta: %.2f", stopPriceDelta)
 								self.__logger.debug("Prev. Day Open: %.2f", self.__openDS[-2])
@@ -864,6 +868,7 @@ class BBSMACrossover(strategy.BacktestingStrategy):
 					self.__entryDayStopPrice = stopPrice * self.__adjRatio
 					self.__entryDayAdjStopPrice = stopPrice * self.__adjRatio
 					self.__logger.debug("%s: Entry Day Stop Price: %.2f" % (bar.getDateTime(), self.__entryDayStopPrice))
+
 			#elif self.enterShortSignal(bar):
 			elif enterShort:
 				# Bearish; enter a short position.
@@ -942,13 +947,16 @@ class BBSMACrossover(strategy.BacktestingStrategy):
 					stopPrice = xiquantFuncs.computeStopPrice(bearishCandle, "bearish", openPrice, closePrice, stopPriceDelta)
 					# Adjust the stop price based on the last day of the backtesting period
 					if consts.SMA_STOP_PRICE_PERCENT_OR_ABS.lower() == 'percent':
-						stopPriceDelta = self.__closeDS[-2] * consts.SMA_ENTRY_DAY_STOP_PRICE_PERCENT / float(100)
+						if consts.SMA_ENTRY_STOP_LOSS_OVER_UNDER_PREV_CANDLE:
+							stopPriceDelta = self.__closeDS[-2] * consts.SMA_ENTRY_DAY_STOP_PRICE_PERCENT / float(100)
+						else:
+							stopPriceDelta = self.__closeDS[-1] * consts.SMA_ENTRY_DAY_STOP_PRICE_PERCENT / float(100)
 					else:
 						stopPriceDelta = consts.SMA_ENTRY_DAY_STOP_PRICE_ABS
 					if consts.SMA_STOP_LOSS_UNDER_CANDLE_OR_SMA.lower() == 'sma':
 						stopPrice =  self.__smaDS[-1] + stopPriceDelta
 					else:
-						if consts.SMA_STOP_LOSS_OVER_UNDER_PREV_CANDLE:
+						if consts.SMA_ENTRY_STOP_LOSS_OVER_UNDER_PREV_CANDLE:
 							if self.__closeDS[-2] >= self.__openDS[-2]:
 								self.__logger.debug("Stop Loss Price Delta: %.2f", stopPriceDelta)
 								self.__logger.debug("Prev. Day Close: %.2f", self.__closeDS[-2])
@@ -967,7 +975,6 @@ class BBSMACrossover(strategy.BacktestingStrategy):
 					self.__entryDayStopPrice = stopPrice * self.__adjRatio
 					self.__entryDayAdjStopPrice = stopPrice * self.__adjRatio
 					self.__logger.debug("%s: Entry Day Stop Price: %.2f" % (bar.getDateTime(), self.__entryDayStopPrice))
-
 
 	def enterLongSignal(self, bar):
 		# Check if we will play long for this strategy or not.
@@ -1071,6 +1078,10 @@ class BBSMACrossover(strategy.BacktestingStrategy):
 				self.__logger.debug("Previous Close Price: %.2f" % self.__closeDS[-2])
 				self.__logger.debug("Previous to previous Close Price: %.2f" % self.__closeDS[-3])
 				self.__logger.debug("BB SMA Band previous: %.2f" % self.__smaDS[-2])
+				return False
+
+			# Validate the SMA trend supporting the crossover.
+			if  self.__smaDS[-1 * consts.SMA_TREND_CHECK] < self.__smaDS[-1]: 
 				return False
 
 		# Check the no. of crossovers in the lookback window
@@ -1472,6 +1483,11 @@ class BBSMACrossover(strategy.BacktestingStrategy):
 				self.__logger.debug("BB SMA Band previous: %.2f" % self.__smaDS[-2])
 				return False
 
+			# Validate the SMA trend supporting the crossover.
+			if  self.__smaDS[-1 * consts.SMA_TREND_CHECK] > self.__smaDS[-1]: 
+				return False
+
+
 		# Check the no. of crossovers in the lookback window
 		if "Crossover_Check" in self.__inpStrategy["BB_SMA_Crossover_Mtm_Put"] and "Total" in self.__inpStrategy["BB_SMA_Crossover_Mtm_Put"]["Crossover_Check"]:
 			totalSMACrossovers = xiquantFuncs.totalCrossovers(self.__closeDS, self.__smaDS, (-1 * consts.SMA_CROSSOVERS_LOOKBACK), -2)
@@ -1802,9 +1818,10 @@ class BBSMACrossover(strategy.BacktestingStrategy):
 			entryPrice = execInfo.getPrice()
 			self.__logger.debug("Entry Price: %s", str(entryPrice))
 			candleLen = bar.getClose() - bar.getOpen()
+			
+
 			profitCheck = 0.0
 			if consts.SMA_PROFIT_CHECK_PERCENT_OR_ABS.lower() == 'percent':
-				#profitCheck = bar.getClose() * consts.SMA_PROFIT_CHECK_PERCENT / float(100)
 				profitCheck = entryPrice * consts.SMA_PROFIT_CHECK_PERCENT / float(100)
 			else:
 				profitCheck = consts.SMA_PROFIT_CHECK_ABS
@@ -1813,12 +1830,18 @@ class BBSMACrossover(strategy.BacktestingStrategy):
 			# Adjust the profit check value
 			#profitCheck *= self.__adjRatio
 			self.__logger.debug("Adjusted Profit Check: %s", str(profitCheck))
-			if consts.SMA_STOP_PRICE_ADJ_NOT_BASED_ON_PROFIT_LOCK or ((bar.getClose() * self.__adjRatio) - entryPrice > profitCheck):
+			if consts.SMA_STOP_PRICE_ADJ_NOT_BASED_ON_PROFIT_LOCK or ((bar.getClose() * self.__adjRatio) - entryPrice >= profitCheck):
 				if consts.SMA_STOP_PRICE_PERCENT_OR_ABS.lower() == 'percent':
-					stopPriceDelta = self.__closeDS[-2] * consts.SMA_ENTRY_DAY_STOP_PRICE_PERCENT / float(100)
+					if consts.SMA_STOP_LOSS_OVER_UNDER_PREV_CANDLE:
+						stopPriceDelta = self.__closeDS[-2] * consts.SMA_ENTRY_DAY_STOP_PRICE_PERCENT / float(100)
+					else:
+						stopPriceDelta = self.__closeDS[-1] * consts.SMA_ENTRY_DAY_STOP_PRICE_PERCENT / float(100)
 				else:
 					stopPriceDelta = consts.SMA_ENTRY_DAY_STOP_PRICE_ABS
 				if consts.SMA_PROGRESS_STOP_LOSS:
+					existingStopPrice = self.__longPos.getExitOrder().getStopPrice()
+					# The stop price is already adjusted.
+					existingStopPrice = float(existingStopPrice / self.__adjRatio)
 					if consts.SMA_STOP_LOSS_UNDER_CANDLE_OR_SMA.lower() == 'sma':
 						stopPrice =  self.__smaDS[-1] - stopPriceDelta
 					else:
@@ -1838,6 +1861,10 @@ class BBSMACrossover(strategy.BacktestingStrategy):
 								stopPrice =  self.__openDS[-1] - stopPriceDelta
 							else:
 								stopPrice =  self.__closeDS[-1] - stopPriceDelta
+					# After the profit lock price has been breached, move the
+					# stop loss ONLY if the stop loss is above the previous one.
+					if stopPrice < existingStopPrice:
+						stopPrice = existingStopPrice
 				else:
 					stopPrice = self.__longPos.getExitOrder().getStopPrice()
 					# The stop price is already adjusted.
@@ -1846,6 +1873,20 @@ class BBSMACrossover(strategy.BacktestingStrategy):
 				stopPrice = self.__longPos.getExitOrder().getStopPrice()
 				# The stop price is already adjusted.
 				stopPrice = float(stopPrice / self.__adjRatio)
+
+				############Now Checking loss condition#####################
+				lossCheck = 0.0
+				if consts.SMA_LOSS_CHECK_PERCENT_OR_ABS.lower() == 'percent':
+					lossCheck = entryPrice * consts.SMA_LOSS_CHECK_PERCENT / float(100)
+				else:
+					lossCheck = consts.SMA_LOSS_CHECK_ABS
+				self.__logger.debug("Close Price: %s", str(self.__closeDS[-1]))
+				self.__logger.debug("Loss Check: %s", str(lossCheck))
+				self.__logger.debug("Adjusted Loss Check: %s", str(lossCheck))
+				self.__logger.debug("entryPrice: %s", str(entryPrice))
+				if consts.SMA_STOP_PRICE_ADJ_BASED_ON_LOSS_LIMIT and (entryPrice - (bar.getClose() * self.__adjRatio) >= lossCheck):
+					stopPrice =  entryPrice - lossCheck
+					stopPrice = stopPrice / self.__adjRatio
 
 			self.__adjStopPrice = stopPrice * self.__adjRatio
 			self.__longPos.cancelExit()
@@ -1893,9 +1934,9 @@ class BBSMACrossover(strategy.BacktestingStrategy):
 			entryPrice = execInfo.getPrice()
 			self.__logger.debug("Entry Price: %s", str(entryPrice))
 			candleLen = bar.getClose() - bar.getOpen()
+			
 			profitCheck = 0.0
 			if consts.SMA_PROFIT_CHECK_PERCENT_OR_ABS.lower() == 'percent':
-				#profitCheck = bar.getClose() * consts.SMA_PROFIT_CHECK_PERCENT / float(100)
 				profitCheck = entryPrice * consts.SMA_PROFIT_CHECK_PERCENT / float(100)
 			else:
 				profitCheck = consts.SMA_PROFIT_CHECK_ABS
@@ -1906,10 +1947,16 @@ class BBSMACrossover(strategy.BacktestingStrategy):
 			self.__logger.debug("Adjusted Profit Check: %s", str(profitCheck))
 			if consts.SMA_STOP_PRICE_ADJ_NOT_BASED_ON_PROFIT_LOCK or (entryPrice - (bar.getClose() * self.__adjRatio) > profitCheck):
 				if consts.SMA_STOP_PRICE_PERCENT_OR_ABS.lower() == 'percent':
-					stopPriceDelta = self.__closeDS[-2] * consts.SMA_ENTRY_DAY_STOP_PRICE_PERCENT / float(100)
+					if consts.SMA_STOP_LOSS_OVER_UNDER_PREV_CANDLE:
+						stopPriceDelta = self.__closeDS[-2] * consts.SMA_ENTRY_DAY_STOP_PRICE_PERCENT / float(100)
+					else:
+						stopPriceDelta = self.__closeDS[-1] * consts.SMA_ENTRY_DAY_STOP_PRICE_PERCENT / float(100)
 				else:
 					stopPriceDelta = consts.SMA_ENTRY_DAY_STOP_PRICE_ABS
 				if consts.SMA_PROGRESS_STOP_LOSS:
+					existingStopPrice = self.__shortPos.getExitOrder().getStopPrice()
+					# The stop price is already adjusted.
+					existingStopPrice = float(existingStopPrice / self.__adjRatio)
 					if consts.SMA_STOP_LOSS_UNDER_CANDLE_OR_SMA.lower() == 'sma':
 						stopPrice =  self.__smaDS[-1] + stopPriceDelta
 					else:
@@ -1929,6 +1976,10 @@ class BBSMACrossover(strategy.BacktestingStrategy):
 								stopPrice =  self.__closeDS[-1] + stopPriceDelta
 							else:
 								stopPrice =  self.__openDS[-1] + stopPriceDelta
+					# After the profit lock price has been breached, move the
+					# stop loss ONLY if the stop loss is below the previous one.
+					if stopPrice > existingStopPrice:
+						stopPrice = existingStopPrice
 				else:
 					stopPrice = self.__shortPos.getExitOrder().getStopPrice()
 					# The stop price is already adjusted.
@@ -1937,6 +1988,19 @@ class BBSMACrossover(strategy.BacktestingStrategy):
 				stopPrice = self.__shortPos.getExitOrder().getStopPrice()
 				# The stop price is already adjusted.
 				stopPrice = float(stopPrice / self.__adjRatio)
+
+				######## Check loss condition...
+				lossCheck = 0.0
+				if consts.SMA_LOSS_CHECK_PERCENT_OR_ABS.lower() == 'percent':
+					lossCheck = entryPrice * consts.SMA_LOSS_CHECK_PERCENT / float(100)
+				else:
+					lossCheck = consts.SMA_LOSS_CHECK_ABS
+				self.__logger.debug("Close Price: %s", str(self.__closeDS[-1]))
+				self.__logger.debug("Loss Check: %s", str(lossCheck))
+				self.__logger.debug("Adjusted Loss Check: %s", str(lossCheck))
+				if consts.SMA_STOP_PRICE_ADJ_BASED_ON_LOSS_LIMIT and ((bar.getClose() * self.__adjRatio) - entryPrice >= lossCheck):
+					stopPrice =  entryPrice + lossCheck
+					stopPrice = stopPrice / self.__adjRatio
 
 			self.__adjStopPrice = stopPrice * self.__adjRatio
 			self.__shortPos.cancelExit()
@@ -1979,9 +2043,10 @@ def run_strategy(bBandsPeriod, instrument, startPortfolio, startPeriod, endPerio
 def main(plot):
 	import dateutil.parser
 	startDate = dateutil.parser.parse('2005-06-30T08:00:00.000Z')
+	#endDate = dateutil.parser.parse('2008-04-30T08:00:00.000Z')
 	endDate = dateutil.parser.parse('2014-12-31T08:00:00.000Z')
 
-	instruments = ["NFLX"]
+	instruments = ["AAPL"]
 	bBandsPeriod = 20
 	startPortfolio = 1000000
 	for inst in instruments:

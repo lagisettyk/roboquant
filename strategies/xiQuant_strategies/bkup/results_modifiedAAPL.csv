@@ -1,3 +1,0 @@
-Instrument,Trade-Type,Entry-Date,Entry-Price,Quantity,StopLoss-Exit-Date,StopLoss-Exit-Price,StopLoss-Exit-PorL,Profit-Exit-Date,Profit-Exit-Price,Profit-Exit-PorL,Exit-Date,Exit-Price,PorL,Actual-PorL,Strategy,Current-Pos
-AAPL,SHORT,2007-11-12,163.93,579,2007-11-12,165.28,-784.25,2007-11-12,162.27,956.97,2007-11-13,160.85,1780.72,-784.25,BB Spread,[]
-AAPL,LONG,2007-12-07,190.78,506,No-Exit,0.0,0.0,2007-12-07,192.72,983.16,2007-12-11,193.09,1168.82,983.16,BB Spread,[]

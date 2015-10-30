@@ -111,45 +111,289 @@ class BBSMACrossover(strategy.BacktestingStrategy):
 		self.__logger.debug("Tech Sector Close: $%.2f" % self.__qqqDS[-1])
 		self.__logger.debug("Tech Sector 20 SMA: $%.2f" % self.__smaQQQShort1[-1])
 		self.__logger.debug("Tech Sector Upper BBand: $%.2f" % self.__upperQQQBBDataSeries[-1])
-		if self.__qqqDS[-1] > self.__smaQQQShort1[-1]:
-			self.__logger.debug("The tech sector is Bullish today.")
-			return True
-		else:
+		if self.__qqqDS[-1] < self.__smaQQQShort1[-1]:
+			self.__logger.debug("Tech Sector BBands check failed.")
 			self.__logger.debug("The tech sector is NOT Bullish today.")
 			return False
+
+		# Check Tech Sector volume
+		if consts.QQQ_VOLUME_CHECK:
+			if (len(self.__qqqVolumeDS) < consts.VOLUME_LOOKBACK_WINDOW) or (len(self.__qqqVolumeDS) < consts.VOLUME_AVG_WINDOW):
+				self.__logger.debug("Not enough Tech Sector entries for volume lookback or for computing average volume")
+				self.__logger.debug("Volume lookback: %d" % consts.VOLUME_LOOKBACK_WINDOW)
+				self.__logger.debug("Avg volume lookback: %d" % consts.VOLUME_AVG_WINDOW)
+				self.__logger.debug("Number of Tech Sector volume entries: %d" % len(self.__qqqVolumeDS))
+				return False
+			volumeArrayInLookback = xiquantFuncs.dsToNumpyArray(self.__qqqVolumeDS, consts.VOLUME_LOOKBACK_WINDOW)
+			volumeArrayInAvgLookback = xiquantFuncs.dsToNumpyArray(self.__qqqVolumeDS, consts.VOLUME_AVG_WINDOW)
+			if volumeArrayInLookback[-1] != volumeArrayInLookback.max():
+				self.__logger.debug("Tech Sector Volume: %.2f" % volumeArrayInLookback[-1])
+				self.__logger.debug("Max Tech Sector volume in lookback: %.2f" % volumeArrayInLookback.max())
+				self.__logger.debug("Tech Sector Volume NOT greater in lookback.")
+				if volumeArrayInLookback[-2] - volumeArrayInLookback[-3] >= 0 or volumeArrayInLookback[-1]  - volumeArrayInLookback[-2] <= 0:
+					avgVolume = volumeArrayInAvgLookback.sum() / consts.VOLUME_AVG_WINDOW
+					if volumeArrayInLookback[-1] < avgVolume and float((avgVolume - volumeArrayInLookback[-1]) / avgVolume * 100) > consts.VOLUME_DELTA:
+						return False
+			self.__logger.debug("Tech Sector volume check passed.")
+
+		# Check Tech Sector cashflow
+		if consts.QQQ_CASHFLOW_CHECK:
+			if len(self.__qqqDS) < consts.CASH_FLOW_LOOKBACK_WINDOW:
+				self.__logger.debug("Not enough Tech Sector entries for cashflow lookback")
+				self.__logger.debug("Cashflow lookback: %d" % consts.CASH_FLOW_LOOKBACK_WINDOW)
+				self.__logger.debug("Number of Tech Sector entries: %d" % len(self.__qqqDS))
+				return False
+			priceArrayInLookback = xiquantFuncs.dsToNumpyArray(self.__qqqDS, consts.CASH_FLOW_LOOKBACK_WINDOW)
+			analysisPriceArray = priceArrayInLookback[(consts.CASH_FLOW_LOOKBACK_WINDOW - 1) * -1:]
+			prevPriceArray = priceArrayInLookback[consts.CASH_FLOW_LOOKBACK_WINDOW * -1:-1]
+			priceDiffArrayInLookback = analysisPriceArray - prevPriceArray
+			volumeArrayInLookback = xiquantFuncs.dsToNumpyArray(self.__qqqVolumeDS, consts.CASH_FLOW_LOOKBACK_WINDOW - 1)
+			cashFlowArrayInLookback = priceDiffArrayInLookback * volumeArrayInLookback
+			if float(cashFlowArrayInLookback[(consts.CASH_FLOW_LOOKBACK_WINDOW - 1) * -1:].sum() / (consts.CASH_FLOW_LOOKBACK_WINDOW -1)) <= float(cashFlowArrayInLookback[consts.CASH_FLOW_LOOKBACK_WINDOW * -1:-1].sum() / (consts.CASH_FLOW_LOOKBACK_WINDOW -1)):
+				self.__logger.debug("Avg Tech Sector Cashflow: %.2f" % float(cashFlowArrayInLookback[(consts.CASH_FLOW_LOOKBACK_WINDOW - 1) * -1:].sum() / (consts.CASH_FLOW_LOOKBACK_WINDOW -1)))
+				self.__logger.debug("Avg Tech Sector Cashflow in lookback: %.2f" % float(cashFlowArrayInLookback[consts.CASH_FLOW_LOOKBACK_WINDOW * -1:-1].sum() / (consts.CASH_FLOW_LOOKBACK_WINDOW -1)))
+				self.__logger.debug("Tech Sector Cashflow check failed.")
+				return False
+			self.__logger.debug("Tech Sector Avg Cashflow: %.2f" % cashFlowArrayInLookback[-1])
+			self.__logger.debug("Tech Sector Avg Cashflow in lookback: %.2f" % float(cashFlowArrayInLookback[:-1].sum() / (consts.CASH_FLOW_LOOKBACK_WINDOW -1)))
+			self.__logger.debug("Tech Sector Cashflow check passed.")
+
+		# Check Tech Sector RSI
+		if consts.QQQ_RSI_CHECK:
+			if len(self.__qqqRSI) < consts.RSI_SETTING:
+				self.__logger.debug("Not enough Tech Sector entries for RSI computation")
+				return False
+			if (len(self.__qqqRSI) < consts.RSI_LOOKBACK_WINDOW):
+				self.__logger.debug("Not enough Tech Sector entries for RSI lookback")
+				self.__logger.debug("RSI lookback: %d" % consts.RSI_LOOKBACK_WINDOW)
+				self.__logger.debug("Number of Tech Sector RSI entries: %d" % len(self.__qqqRSI))
+				return False
+			rsiArrayInLookback = xiquantFuncs.dsToNumpyArray(self.__qqqRSI, consts.RSI_LOOKBACK_WINDOW)
+			if rsiArrayInLookback[-1] != rsiArrayInLookback.max():
+				self.__logger.debug("Tech Sector RSI lookback check failed.")
+				return False
+			#if (self.__qqqRSI[-1] >= consts.RSI_LOWER_LIMIT):
+				#   self.__logger.debug("Tech Sector RSI still not less/equal to Oversold.")
+				#   return False
+			self.__logger.debug("Tech Sector RSI check passed.")
+		self.__logger.debug("The Tech sector is Bullish today.")
+		return True
 
 	def isTechBearish(self):
 		self.__logger.debug("Tech Sector Close: $%.2f" % self.__qqqDS[-1])
 		self.__logger.debug("Tech Sector 20 SMA: $%.2f" % self.__smaQQQShort1[-1])
 		self.__logger.debug("Tech Sector Lower BBand: $%.2f" % self.__lowerQQQBBDataSeries[-1])
-		if self.__qqqDS[-1] <= self.__smaQQQShort1[-1]:
-			self.__logger.debug("The tech sector is Bearish today.")
-			return True
-		else:
+		if self.__qqqDS[-1] > self.__smaQQQShort1[-1]:
+			self.__logger.debug("Tech Sector BBands check failed.")
 			self.__logger.debug("The tech sector is NOT Bearish today.")
 			return False
 
-	def isBullish(self):
+		# Check Tech Sector volume
+		if consts.QQQ_VOLUME_CHECK:
+			if (len(self.__qqqVolumeDS) < consts.VOLUME_LOOKBACK_WINDOW) or (len(self.__qqqVolumeDS) < consts.VOLUME_AVG_WINDOW):
+				self.__logger.debug("Not enough Tech Sector entries for volume lookback or for computing average volume")
+				self.__logger.debug("Volume lookback: %d" % consts.VOLUME_LOOKBACK_WINDOW)
+				self.__logger.debug("Avg volume lookback: %d" % consts.VOLUME_AVG_WINDOW)
+				self.__logger.debug("Number of Tech Sector volume entries: %d" % len(self.__qqqVolumeDS))
+				return False
+			volumeArrayInLookback = xiquantFuncs.dsToNumpyArray(self.__qqqVolumeDS, consts.VOLUME_LOOKBACK_WINDOW)
+			volumeArrayInAvgLookback = xiquantFuncs.dsToNumpyArray(self.__qqqVolumeDS, consts.VOLUME_AVG_WINDOW)
+			if volumeArrayInLookback[-1] != volumeArrayInLookback.max():
+				self.__logger.debug("Tech Sector Volume: %.2f" % volumeArrayInLookback[-1])
+				self.__logger.debug("Max Tech Sector volume in lookback: %.2f" % volumeArrayInLookback.max())
+				self.__logger.debug("Tech Sector Volume NOT greater in lookback.")
+				if volumeArrayInLookback[-2] - volumeArrayInLookback[-3] <= 0 or volumeArrayInLookback[-1]  - volumeArrayInLookback[-2] >= 0:
+					avgVolume = volumeArrayInAvgLookback.sum() / consts.VOLUME_AVG_WINDOW
+					if volumeArrayInLookback[-1] < avgVolume and float((avgVolume - volumeArrayInLookback[-1]) / avgVolume * 100) > consts.VOLUME_DELTA:
+						return False
+			self.__logger.debug("Tech Sector volume check passed.")
+
+		# Check Tech Sector cashflow
+		if consts.QQQ_CASHFLOW_CHECK:
+			if len(self.__qqqDS) < consts.CASH_FLOW_LOOKBACK_WINDOW:
+				self.__logger.debug("Not enough Tech Sector entries for cashflow lookback")
+				self.__logger.debug("Cashflow lookback: %d" % consts.CASH_FLOW_LOOKBACK_WINDOW)
+				self.__logger.debug("Number of Tech Sector entries: %d" % len(self.__qqqDS))
+				return False
+			priceArrayInLookback = xiquantFuncs.dsToNumpyArray(self.__qqqDS, consts.CASH_FLOW_LOOKBACK_WINDOW)
+			analysisPriceArray = priceArrayInLookback[(consts.CASH_FLOW_LOOKBACK_WINDOW - 1) * -1:]
+			prevPriceArray = priceArrayInLookback[consts.CASH_FLOW_LOOKBACK_WINDOW * -1:-1]
+			priceDiffArrayInLookback = analysisPriceArray - prevPriceArray
+			volumeArrayInLookback = xiquantFuncs.dsToNumpyArray(self.__qqqVolumeDS, consts.CASH_FLOW_LOOKBACK_WINDOW - 1)
+			cashFlowArrayInLookback = priceDiffArrayInLookback * volumeArrayInLookback
+			if float(cashFlowArrayInLookback[(consts.CASH_FLOW_LOOKBACK_WINDOW - 1) * -1:].sum() / (consts.CASH_FLOW_LOOKBACK_WINDOW -1)) >= float(cashFlowArrayInLookback[consts.CASH_FLOW_LOOKBACK_WINDOW * -1:-1].sum() / (consts.CASH_FLOW_LOOKBACK_WINDOW -1)):
+				self.__logger.debug("Avg Tech Sector Cashflow: %.2f" % float(cashFlowArrayInLookback[(consts.CASH_FLOW_LOOKBACK_WINDOW - 1) * -1:].sum() / (consts.CASH_FLOW_LOOKBACK_WINDOW -1)))
+				self.__logger.debug("Avg Tech Sector Cashflow in lookback: %.2f" % float(cashFlowArrayInLookback[consts.CASH_FLOW_LOOKBACK_WINDOW * -1:-1].sum() / (consts.CASH_FLOW_LOOKBACK_WINDOW -1)))
+				self.__logger.debug("Tech Sector Cashflow check failed.")
+				return False
+			self.__logger.debug("Tech Sector Avg Cashflow: %.2f" % cashFlowArrayInLookback[-1])
+			self.__logger.debug("Tech Sector Avg Cashflow in lookback: %.2f" % float(cashFlowArrayInLookback[:-1].sum() / (consts.CASH_FLOW_LOOKBACK_WINDOW -1)))
+			self.__logger.debug("Tech Sector Cashflow check passed.")
+
+		# Check Tech Sector RSI
+		if consts.QQQ_RSI_CHECK:
+			if len(self.__qqqRSI) < consts.RSI_SETTING:
+				self.__logger.debug("Not enough Tech Sector entries for RSI computation")
+				return False
+			if (len(self.__qqqRSI) < consts.RSI_LOOKBACK_WINDOW):
+				self.__logger.debug("Not enough Tech Sector entries for RSI lookback")
+				self.__logger.debug("RSI lookback: %d" % consts.RSI_LOOKBACK_WINDOW)
+				self.__logger.debug("Number of Tech Sector RSI entries: %d" % len(self.__qqqRSI))
+				return False
+			rsiArrayInLookback = xiquantFuncs.dsToNumpyArray(self.__qqqRSI, consts.RSI_LOOKBACK_WINDOW)
+			if rsiArrayInLookback[-1] != rsiArrayInLookback.min():
+				self.__logger.debug("Tech Sector RSI lookback check failed.")
+				return False
+			#if (self.__qqqRSI[-1] <= consts.RSI_UPPER_LIMIT):
+				#   self.__logger.debug("Tech Sector RSI still not greater/equal to Overbought.")
+				#   return False
+			self.__logger.debug("Tech Sector RSI check passed.")
+		self.__logger.debug("The Tech sector is Bearish today.")
+		return True
+
+	def isMarketBullish(self):
 		self.__logger.debug("Market Close: $%.2f" % self.__spyDS[-1])
 		self.__logger.debug("Market 20 SMA: $%.2f" % self.__smaSPYShort1[-1])
 		self.__logger.debug("Market Upper BBand: $%.2f" % self.__upperSPYBBDataSeries[-1])
-		if self.__spyDS[-1] > self.__smaSPYShort1[-1]:
-			self.__logger.debug("The market is Bullish today.")
-			return True
-		else:
+		if self.__spyDS[-1] < self.__smaSPYShort1[-1]:
+			self.__logger.debug("Market BBand check failed.")
 			self.__logger.debug("The market is NOT Bullish today.")
 			return False
 
-	def isBearish(self):
+		# Check Market volume
+		if consts.SPY_VOLUME_CHECK:
+			if (len(self.__spyVolumeDS) < consts.VOLUME_LOOKBACK_WINDOW) or (len(self.__spyVolumeDS) < consts.VOLUME_AVG_WINDOW):
+				self.__logger.debug("Not enough Market entries for volume lookback or for computing average volume")
+				self.__logger.debug("Volume lookback: %d" % consts.VOLUME_LOOKBACK_WINDOW)
+				self.__logger.debug("Avg volume lookback: %d" % consts.VOLUME_AVG_WINDOW)
+				self.__logger.debug("Number of Market volume entries: %d" % len(self.__spyVolumeDS))
+				return False
+			volumeArrayInLookback = xiquantFuncs.dsToNumpyArray(self.__spyVolumeDS, consts.VOLUME_LOOKBACK_WINDOW)
+			volumeArrayInAvgLookback = xiquantFuncs.dsToNumpyArray(self.__spyVolumeDS, consts.VOLUME_AVG_WINDOW)
+			if volumeArrayInLookback[-1] != volumeArrayInLookback.max():
+				self.__logger.debug("Market Volume: %.2f" % volumeArrayInLookback[-1])
+				self.__logger.debug("Max Market volume in lookback: %.2f" % volumeArrayInLookback.max())
+				self.__logger.debug("Market Volume NOT greater in lookback.")
+				if volumeArrayInLookback[-2] - volumeArrayInLookback[-3] >= 0 or volumeArrayInLookback[-1]  - volumeArrayInLookback[-2] <= 0:
+					avgVolume = volumeArrayInAvgLookback.sum() / consts.VOLUME_AVG_WINDOW
+					if volumeArrayInLookback[-1] < avgVolume and float((avgVolume - volumeArrayInLookback[-1]) / avgVolume * 100) > consts.VOLUME_DELTA:
+						return False
+			self.__logger.debug("Market volume check passed.")
+
+		# Check market cashflow
+		if consts.SPY_CASHFLOW_CHECK:
+			if len(self.__spyDS) < consts.CASH_FLOW_LOOKBACK_WINDOW:
+				self.__logger.debug("Not enough Market entries for cashflow lookback")
+				self.__logger.debug("Cashflow lookback: %d" % consts.CASH_FLOW_LOOKBACK_WINDOW)
+				self.__logger.debug("Number of Market entries: %d" % len(self.__spyDS))
+				return False
+			priceArrayInLookback = xiquantFuncs.dsToNumpyArray(self.__spyDS, consts.CASH_FLOW_LOOKBACK_WINDOW)
+			analysisPriceArray = priceArrayInLookback[(consts.CASH_FLOW_LOOKBACK_WINDOW - 1) * -1:]
+			prevPriceArray = priceArrayInLookback[consts.CASH_FLOW_LOOKBACK_WINDOW * -1:-1]
+			priceDiffArrayInLookback = analysisPriceArray - prevPriceArray
+			volumeArrayInLookback = xiquantFuncs.dsToNumpyArray(self.__spyVolumeDS, consts.CASH_FLOW_LOOKBACK_WINDOW - 1)
+			cashFlowArrayInLookback = priceDiffArrayInLookback * volumeArrayInLookback
+			if float(cashFlowArrayInLookback[(consts.CASH_FLOW_LOOKBACK_WINDOW - 1) * -1:].sum() / (consts.CASH_FLOW_LOOKBACK_WINDOW -1)) <= float(cashFlowArrayInLookback[consts.CASH_FLOW_LOOKBACK_WINDOW * -1:-1].sum() / (consts.CASH_FLOW_LOOKBACK_WINDOW -1)):
+				self.__logger.debug("Avg Market Cashflow: %.2f" % float(cashFlowArrayInLookback[(consts.CASH_FLOW_LOOKBACK_WINDOW - 1) * -1:].sum() / (consts.CASH_FLOW_LOOKBACK_WINDOW -1)))
+				self.__logger.debug("Avg Market Cashflow in lookback: %.2f" % float(cashFlowArrayInLookback[consts.CASH_FLOW_LOOKBACK_WINDOW * -1:-1].sum() / (consts.CASH_FLOW_LOOKBACK_WINDOW -1)))
+				self.__logger.debug("Market Cashflow check failed.")
+				return False
+			self.__logger.debug("Market Avg Cashflow: %.2f" % cashFlowArrayInLookback[-1])
+			self.__logger.debug("Market Avg Cashflow in lookback: %.2f" % float(cashFlowArrayInLookback[:-1].sum() / (consts.CASH_FLOW_LOOKBACK_WINDOW -1)))
+			self.__logger.debug("Market Cashflow check passed.")
+
+		# Check Market RSI
+		if consts.SPY_RSI_CHECK:
+			if len(self.__spyRSI) < consts.RSI_SETTING:
+				self.__logger.debug("Not enough Market entries for RSI computation")
+				return False
+			if (len(self.__spyRSI) < consts.RSI_LOOKBACK_WINDOW):
+				self.__logger.debug("Not enough Market entries for RSI lookback")
+				self.__logger.debug("RSI lookback: %d" % consts.RSI_LOOKBACK_WINDOW)
+				self.__logger.debug("Number of Market RSI entries: %d" % len(self.__spyRSI))
+				return False
+			rsiArrayInLookback = xiquantFuncs.dsToNumpyArray(self.__spyRSI, consts.RSI_LOOKBACK_WINDOW)
+			if rsiArrayInLookback[-1] != rsiArrayInLookback.max():
+				self.__logger.debug("Market RSI lookback check failed.")
+				return False
+			#if (self.__spyRSI[-1] >= consts.RSI_LOWER_LIMIT):
+				#   self.__logger.debug("Market RSI still not less/equal to Oversold.")
+				#   return False
+			self.__logger.debug("Market RSI check passed.")
+		self.__logger.debug("The market is Bullish today.")
+		return True
+
+	def isMarketBearish(self):
 		self.__logger.debug("Market Close: $%.2f" % self.__spyDS[-1])
 		self.__logger.debug("Market 20 SMA: $%.2f" % self.__smaSPYShort1[-1])
 		self.__logger.debug("Market Lower BBand: $%.2f" % self.__lowerSPYBBDataSeries[-1])
-		if self.__spyDS[-1] <= self.__smaSPYShort1[-1]:
-			self.__logger.debug("The market is Bearish today.")
-			return True
-		else:
+		if self.__spyDS[-1] > self.__smaSPYShort1[-1]:
+			self.__logger.debug("Market BBands check failed.")
 			self.__logger.debug("The market is NOT Bearish today.")
 			return False
+
+		# Check Market volume
+		if consts.SPY_VOLUME_CHECK:
+			if (len(self.__spyVolumeDS) < consts.VOLUME_LOOKBACK_WINDOW) or (len(self.__spyVolumeDS) < consts.VOLUME_AVG_WINDOW):
+				self.__logger.debug("Not enough Market entries for volume lookback or for computing average volume")
+				self.__logger.debug("Volume lookback: %d" % consts.VOLUME_LOOKBACK_WINDOW)
+				self.__logger.debug("Avg volume lookback: %d" % consts.VOLUME_AVG_WINDOW)
+				self.__logger.debug("Number of Market volume entries: %d" % len(self.__spyVolumeDS))
+				return False
+			volumeArrayInLookback = xiquantFuncs.dsToNumpyArray(self.__spyVolumeDS, consts.VOLUME_LOOKBACK_WINDOW)
+			volumeArrayInAvgLookback = xiquantFuncs.dsToNumpyArray(self.__spyVolumeDS, consts.VOLUME_AVG_WINDOW)
+			if volumeArrayInLookback[-1] != volumeArrayInLookback.max():
+				self.__logger.debug("Market Volume: %.2f" % volumeArrayInLookback[-1])
+				self.__logger.debug("Max Market volume in lookback: %.2f" % volumeArrayInLookback.max())
+				self.__logger.debug("Market Volume NOT greater in lookback.")
+				if volumeArrayInLookback[-2] - volumeArrayInLookback[-3] <= 0 or volumeArrayInLookback[-1]  - volumeArrayInLookback[-2] >= 0:
+					avgVolume = volumeArrayInAvgLookback.sum() / consts.VOLUME_AVG_WINDOW
+					if volumeArrayInLookback[-1] < avgVolume and float((avgVolume - volumeArrayInLookback[-1]) / avgVolume * 100) > consts.VOLUME_DELTA:
+						return False
+			self.__logger.debug("Market volume check passed.")
+
+		# Check market cashflow
+		if consts.SPY_CASHFLOW_CHECK:
+			if len(self.__spyDS) < consts.CASH_FLOW_LOOKBACK_WINDOW:
+				self.__logger.debug("Not enough Market entries for cashflow lookback")
+				self.__logger.debug("Cashflow lookback: %d" % consts.CASH_FLOW_LOOKBACK_WINDOW)
+				self.__logger.debug("Number of Market entries: %d" % len(self.__spyDS))
+				return False
+			priceArrayInLookback = xiquantFuncs.dsToNumpyArray(self.__spyDS, consts.CASH_FLOW_LOOKBACK_WINDOW)
+			analysisPriceArray = priceArrayInLookback[(consts.CASH_FLOW_LOOKBACK_WINDOW - 1) * -1:]
+			prevPriceArray = priceArrayInLookback[consts.CASH_FLOW_LOOKBACK_WINDOW * -1:-1]
+			priceDiffArrayInLookback = analysisPriceArray - prevPriceArray
+			volumeArrayInLookback = xiquantFuncs.dsToNumpyArray(self.__spyVolumeDS, consts.CASH_FLOW_LOOKBACK_WINDOW - 1)
+			cashFlowArrayInLookback = priceDiffArrayInLookback * volumeArrayInLookback
+			if float(cashFlowArrayInLookback[(consts.CASH_FLOW_LOOKBACK_WINDOW - 1) * -1:].sum() / (consts.CASH_FLOW_LOOKBACK_WINDOW -1)) >= float(cashFlowArrayInLookback[consts.CASH_FLOW_LOOKBACK_WINDOW * -1:-1].sum() / (consts.CASH_FLOW_LOOKBACK_WINDOW -1)):
+				self.__logger.debug("Avg Market Cashflow: %.2f" % float(cashFlowArrayInLookback[(consts.CASH_FLOW_LOOKBACK_WINDOW - 1) * -1:].sum() / (consts.CASH_FLOW_LOOKBACK_WINDOW -1)))
+				self.__logger.debug("Avg Market Cashflow in lookback: %.2f" % float(cashFlowArrayInLookback[consts.CASH_FLOW_LOOKBACK_WINDOW * -1:-1].sum() / (consts.CASH_FLOW_LOOKBACK_WINDOW -1)))
+				self.__logger.debug("Market Cashflow check failed.")
+				return False
+			self.__logger.debug("Market Avg Cashflow: %.2f" % cashFlowArrayInLookback[-1])
+			self.__logger.debug("Market Avg Cashflow in lookback: %.2f" % float(cashFlowArrayInLookback[:-1].sum() / (consts.CASH_FLOW_LOOKBACK_WINDOW -1)))
+			self.__logger.debug("Market Cashflow check passed.")
+
+		# Check Market RSI
+		if consts.SPY_RSI_CHECK:
+			if len(self.__spyRSI) < consts.RSI_SETTING:
+				self.__logger.debug("Not enough Market entries for RSI computation")
+				return False
+			if (len(self.__spyRSI) < consts.RSI_LOOKBACK_WINDOW):
+				self.__logger.debug("Not enough Market entries for RSI lookback")
+				self.__logger.debug("RSI lookback: %d" % consts.RSI_LOOKBACK_WINDOW)
+				self.__logger.debug("Number of Market RSI entries: %d" % len(self.__spyRSI))
+				return False
+			rsiArrayInLookback = xiquantFuncs.dsToNumpyArray(self.__spyRSI, consts.RSI_LOOKBACK_WINDOW)
+			if rsiArrayInLookback[-1] != rsiArrayInLookback.min():
+				self.__logger.debug("Market RSI lookback check failed.")
+				return False
+			#if (self.__spyRSI[-1] <= consts.RSI_UPPER_LIMIT):
+				#   self.__logger.debug("Market RSI still not greater/equal to Overbought.")
+				#   return False
+			self.__logger.debug("Market RSI check passed.")
+		self.__logger.debug("The market is Bearish today.")
+		return True
 
 	def getOrders(self):
 		return self.__orders
@@ -169,6 +413,7 @@ class BBSMACrossover(strategy.BacktestingStrategy):
 		jsonStrategies.close()
 		jsonEntryPrice.close()
 		jsonExitPrice.close()
+		self.__profitHitInNDays = False
 
 
 	def onFinish(self, bars):
@@ -269,6 +514,7 @@ class BBSMACrossover(strategy.BacktestingStrategy):
 		execInfo = position.getExitOrder().getExecutionInfo()
 		t = self.__priceDS.getDateTimes()[-1]
 		tInSecs = xiquantFuncs.secondsSinceEpoch(t)
+		self.__profitHitInNDays = False
 
 		self.__progressStopLosses = False
 		if self.__longPos == position: 
@@ -360,7 +606,13 @@ class BBSMACrossover(strategy.BacktestingStrategy):
 		bar = feedLookbackEndAdj.getBarSeries(self.__instrumentAdj)[-1]
 
 		self.__spyDS = feedLookbackEndAdj.getCloseDataSeries(consts.MARKET + '_adjusted')
+		self.__spyCloseDS = feedLookbackEndAdj.getCloseDataSeries(consts.MARKET + '_adjusted')
+		self.__spyVolumeDS = feedLookbackEndAdj.getVolumeDataSeries(consts.MARKET + '_adjusted')
+		self.__spyRSI = indicator.RSI(self.__spyCloseDS, len(self.__spyCloseDS), consts.RSI_SETTING)
 		self.__qqqDS = feedLookbackEndAdj.getCloseDataSeries(consts.TECH_SECTOR + '_adjusted')
+		self.__qqqCloseDS = feedLookbackEndAdj.getCloseDataSeries(consts.TECH_SECTOR + '_adjusted')
+		self.__qqqVolumeDS = feedLookbackEndAdj.getVolumeDataSeries(consts.TECH_SECTOR + '_adjusted')
+		self.__qqqRSI = indicator.RSI(self.__qqqCloseDS, len(self.__qqqCloseDS), consts.RSI_SETTING)
 		self.__openDS = feedLookbackEndAdj.getOpenDataSeries(self.__instrumentAdj)
 		self.__closeDS = feedLookbackEndAdj.getCloseDataSeries(self.__instrumentAdj)
 		self.__volumeDS = feedLookbackEndAdj.getVolumeDataSeries(self.__instrumentAdj)
@@ -475,6 +727,7 @@ class BBSMACrossover(strategy.BacktestingStrategy):
 		sharesToBuy = 0
 	
 		self.__logger.info("Portfolio Cash: $%.2f" % self.getBroker().getCash(includeShort=False))
+		self.__logger.info("Portfolio Value: $%.2f" % self.getBroker().getEquity())
 		# The following explicit exit on market order occurs ONLY on the earnings day otherwise
 		# we always let the market kick us out of a position with the stop loss orders.
 		enterLong = self.enterLongSignal(bar)
@@ -490,6 +743,7 @@ class BBSMACrossover(strategy.BacktestingStrategy):
 			self.__orders[tInSecs] = existingOrdersForTime
 			self.__logger.info("Exiting a LONG position")
 			self.__logger.info("Portfolio Cash: $%.2f" % self.getBroker().getCash(includeShort=False))
+			self.__logger.info("Portfolio Value: $%.2f" % self.getBroker().getEquity())
 		elif (consts.SMA_EXIT_IF_CONVERSE_ENTRY and enterLong and self.__shortPos) or self.exitShortSignal(bar):
 			self.__portfolioCashBefore = self.getBroker().getCash(includeShort=False)
 			self.__shortPos.cancelExit()
@@ -501,12 +755,14 @@ class BBSMACrossover(strategy.BacktestingStrategy):
 			self.__orders[tInSecs] = existingOrdersForTime
 			self.__logger.debug("Exiting a SHORT position")
 			self.__logger.debug("Portfolio Cash: $%.2f" % self.getBroker().getCash(includeShort=False))
+			self.__logger.info("Portfolio Value: $%.2f" % self.getBroker().getEquity())
 		else:
 			#if self.enterLongSignal(bar):
 			if enterLong:
 				# Bullish; enter a long position.
 				self.__logger.info("Bullish; Trying to enter a LONG position")
 				self.__logger.debug("%s: Portfolio Cash: $%.2f" % (bar.getDateTime(), self.getBroker().getCash(includeShort=False)))
+				self.__logger.info("Portfolio Value: $%.2f" % self.getBroker().getEquity())
 				currPrice = bar.getClose()
 				#self.__logger.debug("%s: Close Price: $%.2f" % (bar.getDateTime(), currPrice))
 				#self.__logger.debug("%s: Open Price: $%.2f" % (bar.getDateTime(), bar.getOpen()))
@@ -578,22 +834,66 @@ class BBSMACrossover(strategy.BacktestingStrategy):
 					stopPrice = xiquantFuncs.computeStopPrice(bullishCandle, "bullish", openPrice, closePrice, stopPriceDelta)
 					# Adjust the stop price based on the last day of the backtesting period
 					if consts.SMA_STOP_PRICE_PERCENT_OR_ABS.lower() == 'percent':
-						stopPriceDelta = bar.getClose() * consts.SMA_ENTRY_DAY_STOP_PRICE_PERCENT / float(100)
+						stopPriceDelta = self.__closeDS[-2] * consts.SMA_ENTRY_DAY_STOP_PRICE_PERCENT / float(100)
 					else:
 						stopPriceDelta = consts.SMA_ENTRY_DAY_STOP_PRICE_ABS
-					if self.__closeDS[-2] >= self.__openDS[-2]:
-						stopPrice =  self.__openDS[-2] - stopPriceDelta
-					else: // Bearish candle
-						stopPrice =  self.__closeDS[-2] - stopPriceDelta
-					#stopPrice = self.__smaDS[-1] - stopPriceDelta
+					if consts.SMA_STOP_LOSS_UNDER_CANDLE_OR_SMA.lower() == 'sma':
+						stopPrice = self.__smaDS[-1] - stopPriceDelta
+					else:
+						if consts.SMA_STOP_LOSS_OVER_UNDER_PREV_CANDLE:
+							if self.__closeDS[-2] >= self.__openDS[-2]:
+								self.__logger.debug("Stop Loss Price Delta: %.2f", stopPriceDelta)
+								self.__logger.debug("Prev. Day Open: %.2f", self.__openDS[-2])
+								stopPrice =  self.__openDS[-2] - stopPriceDelta
+								self.__logger.debug("Stop Price: %.2f", stopPrice)
+							else:
+								self.__logger.debug("Stop Loss Price Delta: %.2f", stopPriceDelta)
+								self.__logger.debug("Prev. Day Close: %.2f", self.__closeDS[-2])
+								stopPrice =  self.__closeDS[-2] - stopPriceDelta
+								self.__logger.debug("Stop Price: %.2f", stopPrice)
+						else:
+							if self.__closeDS[-1] >= self.__openDS[-1]:
+								stopPrice =  self.__openDS[-1] - stopPriceDelta
+							else:
+								stopPrice =  self.__closeDS[-1] - stopPriceDelta
 					self.__entryDayStopPrice = stopPrice * self.__adjRatio
 					self.__entryDayAdjStopPrice = stopPrice * self.__adjRatio
 					self.__logger.debug("%s: Entry Day Stop Price: %.2f" % (bar.getDateTime(), self.__entryDayStopPrice))
+					# Check if difference between the entry price and the
+					# trade day stop loss is within the specified limit. If not,
+					# set the stop loss to be at a different of the specified
+					# limit from the entry price.
+					entryStopPriceDiff = 0.0
+					entryStopPriceMaxDiff = 0.0
+					if consts.SMA_DIFFERENCE_BETWEEN_ENTRY_AND_STOP_LOSS_PERCENT_OR_ABS.lower() == 'percent':
+						entryStopPriceDiff = consts.SMA_DIFFERENCE_BETWEEN_ENTRY_AND_STOP_LOSS_PERCENT * self.__adjEntryPrice / float(100)
+						self.__logger.debug("%s: Adj difference between entry and stop price: %.2f" % (bar.getDateTime(), entryStopPriceDiff))
+						entryStopPriceMaxDiff = consts.SMA_MAX_DIFFERENCE_BETWEEN_ENTRY_AND_STOP_LOSS_PERCENT * self.__adjEntryPrice / float(100)
+						self.__logger.debug("%s: Adj max allowed difference between entry and stop price: %.2f" % (bar.getDateTime(), entryStopPriceMaxDiff))
+					else:
+						entryStopPriceDiff = consts.SMA_DIFFERENCE_BETWEEN_ENTRY_AND_STOP_LOSS_ABS * self.__adjRatio
+						entryStopPriceMaxDiff = consts.SMA_MAX_DIFFERENCE_BETWEEN_ENTRY_AND_STOP_LOSS_ABS * self.__adjRatio
+					# If the difference between the entry price and the trade
+					# day's stop loss is greater than the allowed limit, then
+					# don't enter the trade.
+					if self.__adjEntryPrice - self.__entryDayAdjStopPrice > entryStopPriceMaxDiff:
+						self.__longPos.cancelEntry()
+						self.__logger.debug("Entry order cancelled due to the difference between the entry and stop prices not within the defined limit.")
+					elif self.__adjEntryPrice - self.__entryDayAdjStopPrice > entryStopPriceDiff:
+						self.__entryDayAdjStopPrice = self.__adjEntryPrice - entryStopPriceDiff
+						self.__entryDayStopPrice = self.__adjEntryPrice - entryStopPriceDiff
+						self.__logger.debug("%s: Stop Price adjusted to being within the defined limit of the entry price: %.2f" % (bar.getDateTime(), self.__entryDayAdjStopPrice))
+						if consts.SMA_STOP_LOSS_BASED_ON_ENTRY_STOP_LOSS_DIFFERENCE_AND_UNDER_SMA:
+							if self.__entryDayAdjStopPrice > self.__smaDS[-1] * self.__adjRatio:
+								self.__entryDayAdjStopPrice = self.__smaDS[-1] * self.__adjRatio - stopPriceDelta
+								self.__entryDayStopPrice = self.__smaDS[-1] * self.__adjRatio - stopPriceDelta
+
 			#elif self.enterShortSignal(bar):
 			elif enterShort:
 				# Bearish; enter a short position.
 				self.__logger.info("Bearish; Trying to enter a SHORT position")
 				self.__logger.debug("%s: Portfolio Cash: $%.2f" % (bar.getDateTime(), self.getBroker().getCash(includeShort=False)))
+				self.__logger.info("Portfolio Value: $%.2f" % self.getBroker().getEquity())
 				currPrice = bar.getClose()
 				#self.__logger.debug("%s: Close Price: $%.2f" % (bar.getDateTime(), currPrice))
 				#self.__logger.debug("%s: Open Price: $%.2f" % (bar.getDateTime(), bar.getOpen()))
@@ -666,17 +966,58 @@ class BBSMACrossover(strategy.BacktestingStrategy):
 					stopPrice = xiquantFuncs.computeStopPrice(bearishCandle, "bearish", openPrice, closePrice, stopPriceDelta)
 					# Adjust the stop price based on the last day of the backtesting period
 					if consts.SMA_STOP_PRICE_PERCENT_OR_ABS.lower() == 'percent':
-						stopPriceDelta = bar.getClose() * consts.SMA_ENTRY_DAY_STOP_PRICE_PERCENT / float(100)
+						stopPriceDelta = self.__closeDS[-2] * consts.SMA_ENTRY_DAY_STOP_PRICE_PERCENT / float(100)
 					else:
 						stopPriceDelta = consts.SMA_ENTRY_DAY_STOP_PRICE_ABS
-					#stopPrice = self.__smaDS[-1] + stopPriceDelta
-					if self.__closeDS[-2] >= self.__openDS[-2]:
-						stopPrice =  self.__closeDS[-2] + stopPriceDelta
-					else: // Bearish candle
-						stopPrice =  self.__openDS[-2] + stopPriceDelta
+					if consts.SMA_STOP_LOSS_UNDER_CANDLE_OR_SMA.lower() == 'sma':
+						stopPrice =  self.__smaDS[-1] + stopPriceDelta
+					else:
+						if consts.SMA_STOP_LOSS_OVER_UNDER_PREV_CANDLE:
+							if self.__closeDS[-2] >= self.__openDS[-2]:
+								self.__logger.debug("Stop Loss Price Delta: %.2f", stopPriceDelta)
+								self.__logger.debug("Prev. Day Close: %.2f", self.__closeDS[-2])
+								stopPrice =  self.__closeDS[-2] + stopPriceDelta
+								self.__logger.debug("Stop Price: %.2f", stopPrice)
+							else:
+								self.__logger.debug("Stop Loss Price Delta: %.2f", stopPriceDelta)
+								self.__logger.debug("Prev. Day Open: %.2f", self.__openDS[-2])
+								stopPrice =  self.__openDS[-2] + stopPriceDelta
+								self.__logger.debug("Stop Price: %.2f", stopPrice)
+						else:
+							if self.__closeDS[-1] >= self.__openDS[-1]:
+								stopPrice =  self.__closeDS[-1] + stopPriceDelta
+							else:
+								stopPrice =  self.__openDS[-1] + stopPriceDelta
 					self.__entryDayStopPrice = stopPrice * self.__adjRatio
 					self.__entryDayAdjStopPrice = stopPrice * self.__adjRatio
 					self.__logger.debug("%s: Entry Day Stop Price: %.2f" % (bar.getDateTime(), self.__entryDayStopPrice))
+					# Check if difference between the entry price and the
+					# trade day stop loss is within the specified limit. If not,
+					# set the stop loss to be at a different of the specified
+					# limit from the entry price.
+					entryStopPriceDiff = 0.0
+					if consts.SMA_DIFFERENCE_BETWEEN_ENTRY_AND_STOP_LOSS_PERCENT_OR_ABS.lower() == 'percent':
+						entryStopPriceDiff = consts.SMA_DIFFERENCE_BETWEEN_ENTRY_AND_STOP_LOSS_PERCENT * self.__adjEntryPrice / float(100)
+						self.__logger.debug("%s: Adj difference between entry and stop price: %.2f" % (bar.getDateTime(), entryStopPriceDiff))
+						entryStopPriceMaxDiff = consts.SMA_MAX_DIFFERENCE_BETWEEN_ENTRY_AND_STOP_LOSS_PERCENT * self.__adjEntryPrice / float(100)
+						self.__logger.debug("%s: Adj max allowed difference between entry and stop price: %.2f" % (bar.getDateTime(), entryStopPriceMaxDiff))
+					else:
+						entryStopPriceDiff = consts.SMA_DIFFERENCE_BETWEEN_ENTRY_AND_STOP_LOSS_ABS * self.__adjRatio
+						entryStopPriceMaxDiff = consts.SMA_MAX_DIFFERENCE_BETWEEN_ENTRY_AND_STOP_LOSS_ABS * self.__adjRatio
+					# If the difference between the entry price and the trade
+					# day's stop loss is greater than the allowed limit, then
+					# don't enter the trade.
+					if self.__entryDayAdjStopPrice - self.__adjEntryPrice > entryStopPriceMaxDiff:
+						self.__shortPos.cancelEntry()
+						self.__logger.debug("Entry order cancelled due to the difference between the entry and stop prices not within the defined limit.")
+					elif self.__entryDayAdjStopPrice - self.__adjEntryPrice > entryStopPriceDiff:
+						self.__entryDayAdjStopPrice = self.__adjEntryPrice + entryStopPriceDiff
+						self.__entryDayStopPrice = self.__adjEntryPrice + entryStopPriceDiff
+						self.__logger.debug("%s: Stop Price adjusted to being within the defined limit of the entry price: %.2f" % (bar.getDateTime(), self.__entryDayAdjStopPrice))
+						if consts.SMA_STOP_LOSS_BASED_ON_ENTRY_STOP_LOSS_DIFFERENCE_AND_UNDER_SMA:
+							if self.__entryDayAdjStopPrice < self.__smaDS[-1] * self.__adjRatio:
+								self.__entryDayAdjStopPrice = self.__smaDS[-1] * self.__adjRatio + stopPriceDelta
+								self.__entryDayStopPrice = self.__smaDS[-1] * self.__adjRatio + stopPriceDelta
 
 
 	def enterLongSignal(self, bar):
@@ -694,12 +1035,12 @@ class BBSMACrossover(strategy.BacktestingStrategy):
 
 		# Check if we already hold a position in this instrument
 		if self.__longPos != None:
-			self.__logger.debug("We already hold a position in %s" % self.__instrument)
+			self.__logger.debug("We already hold a LONG position in %s" % self.__instrument)
 			return False
 
 		# For any instrument, we trade on the same side of the market, so check the market sentiment first
 		if not self.__instrument.upper() in self.__SPYExceptions:
-			if consts.SPY_CHECK and self.isBearish():
+			if consts.SPY_CHECK and self.isMarketBearish():
 				self.__logger.debug("The market is Bearish so we will not try to go LONG.")
 				return False
 		else:
@@ -781,6 +1122,10 @@ class BBSMACrossover(strategy.BacktestingStrategy):
 				self.__logger.debug("Previous Close Price: %.2f" % self.__closeDS[-2])
 				self.__logger.debug("Previous to previous Close Price: %.2f" % self.__closeDS[-3])
 				self.__logger.debug("BB SMA Band previous: %.2f" % self.__smaDS[-2])
+				return False
+
+			# Validate the SMA trend supporting the crossover.
+			if  self.__smaDS[-1 * consts.SMA_TREND_CHECK] < self.__smaDS[-1]: 
 				return False
 
 		# Check the no. of crossovers in the lookback window
@@ -1093,12 +1438,12 @@ class BBSMACrossover(strategy.BacktestingStrategy):
 
 		# Check if we already hold a position in this instrument
 		if self.__shortPos != None:
-			self.__logger.debug("We already hold a position in %s" % self.__instrument)
+			self.__logger.debug("We already hold a SHORT position in %s" % self.__instrument)
 			return False
 
 		# For any instrument, we trade on the same side of the market, so check the market sentiment first
 		if not self.__instrument.upper() in self.__SPYExceptions:
-			if consts.SPY_CHECK and self.isBullish():
+			if consts.SPY_CHECK and self.isMarketBullish():
 				self.__logger.debug("The market is Bullish so we will not try to go short.")
 				return False
 		else:
@@ -1180,6 +1525,10 @@ class BBSMACrossover(strategy.BacktestingStrategy):
 				self.__logger.debug("Previous Close Price: %.2f" % self.__closeDS[-2])
 				self.__logger.debug("Previous to previous Close Price: %.2f" % self.__closeDS[-3])
 				self.__logger.debug("BB SMA Band previous: %.2f" % self.__smaDS[-2])
+				return False
+
+			# Validate the SMA trend supporting the crossover.
+			if  self.__smaDS[-1 * consts.SMA_TREND_CHECK] > self.__smaDS[-1]: 
 				return False
 
 		# Check the no. of crossovers in the lookback window
@@ -1518,24 +1867,47 @@ class BBSMACrossover(strategy.BacktestingStrategy):
 				profitCheck = entryPrice * consts.SMA_PROFIT_CHECK_PERCENT / float(100)
 			else:
 				profitCheck = consts.SMA_PROFIT_CHECK_ABS
+			self.__logger.debug("Close Price: %s", str(self.__closeDS[-1]))
 			self.__logger.debug("Profit Check: %s", str(profitCheck))
 			# Adjust the profit check value
 			#profitCheck *= self.__adjRatio
 			self.__logger.debug("Adjusted Profit Check: %s", str(profitCheck))
-			if bar.getClose() - entryPrice > profitCheck:
+			if (consts.SMA_STOP_PRICE_ADJ_BASED_ON_NO_PROFIT_FOR_N_DAYS and not self.__profitHitInNDays) or consts.SMA_STOP_PRICE_ADJ_NOT_BASED_ON_PROFIT_LOCK or ((bar.getClose() * self.__adjRatio) - entryPrice >= profitCheck):
+				if ((bar.getClose() * self.__adjRatio) - entryPrice >= profitCheck):
+					self.__profitHitInNDays = True
+				elif execInfo.getDateTime() + datetime.timedelta(days=consts.SMA_NUM_OF_DAYS_FOR_BOOKING_PROFIT_BEFORE_PROGRESSING_STOP_LOSS) <= self.__priceDS.getDateTimes()[-1]:
+					self.__profitHitInNDays = True
 				if consts.SMA_STOP_PRICE_PERCENT_OR_ABS.lower() == 'percent':
-					stopPriceDelta = bar.getClose() * consts.SMA_ENTRY_DAY_STOP_PRICE_PERCENT / float(100)
+					stopPriceDelta = self.__closeDS[-2] * consts.SMA_ENTRY_DAY_STOP_PRICE_PERCENT / float(100)
 				else:
 					stopPriceDelta = consts.SMA_ENTRY_DAY_STOP_PRICE_ABS
 				if consts.SMA_PROGRESS_STOP_LOSS:
+					existingStopPrice = self.__longPos.getExitOrder().getStopPrice()
+					# The stop price is already adjusted.
+					existingStopPrice = float(existingStopPrice / self.__adjRatio)
 					if consts.SMA_STOP_LOSS_UNDER_CANDLE_OR_SMA.lower() == 'sma':
 						stopPrice =  self.__smaDS[-1] - stopPriceDelta
 					else:
-						#stopPrice =  bar.getClose() - stopPriceDelta
-						if self.__closeDS[-2] >= self.__openDS[-2]:
-							stopPrice =  self.__openDS[-2] - stopPriceDelta
-						else: // Bearish candle
-							stopPrice =  self.__closeDS[-2] - stopPriceDelta
+						if consts.SMA_STOP_LOSS_OVER_UNDER_PREV_CANDLE:
+							if self.__closeDS[-2] >= self.__openDS[-2]:
+								self.__logger.debug("Stop Loss Price Delta: %.2f", stopPriceDelta)
+								self.__logger.debug("Prev. Day Open: %.2f", self.__openDS[-2])
+								stopPrice =  self.__openDS[-2] - stopPriceDelta
+								self.__logger.debug("Stop Price: %.2f", stopPrice)
+							else:
+								self.__logger.debug("Stop Loss Price Delta: %.2f", stopPriceDelta)
+								self.__logger.debug("Prev. Day Close: %.2f", self.__closeDS[-2])
+								stopPrice =  self.__closeDS[-2] - stopPriceDelta
+								self.__logger.debug("Stop Price: %.2f", stopPrice)
+						else:
+							if self.__closeDS[-1] >= self.__openDS[-1]:
+								stopPrice =  self.__openDS[-1] - stopPriceDelta
+							else:
+								stopPrice =  self.__closeDS[-1] - stopPriceDelta
+					# After the profit lock price has been breached, move the
+					# stop loss ONLY if the stop loss is above the previous one.
+					if stopPrice < existingStopPrice:
+						stopPrice = existingStopPrice
 				else:
 					stopPrice = self.__longPos.getExitOrder().getStopPrice()
 					# The stop price is already adjusted.
@@ -1597,23 +1969,47 @@ class BBSMACrossover(strategy.BacktestingStrategy):
 				profitCheck = entryPrice * consts.SMA_PROFIT_CHECK_PERCENT / float(100)
 			else:
 				profitCheck = consts.SMA_PROFIT_CHECK_ABS
+			self.__logger.debug("Close Price: %s", str(self.__closeDS[-1]))
 			self.__logger.debug("Profit Check: %s", str(profitCheck))
 			# Adjust the profit check value
 			#profitCheck *= self.__adjRatio
 			self.__logger.debug("Adjusted Profit Check: %s", str(profitCheck))
-			if entryPrice - bar.getClose() > profitCheck:
+			if (consts.SMA_STOP_PRICE_ADJ_BASED_ON_NO_PROFIT_FOR_N_DAYS and not self.__profitHitInNDays) or consts.SMA_STOP_PRICE_ADJ_NOT_BASED_ON_PROFIT_LOCK or (entryPrice - (bar.getClose() * self.__adjRatio) > profitCheck):
+				if (entryPrice - (bar.getClose() * self.__adjRatio) >= profitCheck):
+					self.__profitHitInNDays = True
+				elif execInfo.getDateTime() + datetime.timedelta(days=consts.SMA_NUM_OF_DAYS_FOR_BOOKING_PROFIT_BEFORE_PROGRESSING_STOP_LOSS) <= self.__priceDS.getDateTimes()[-1]:
+					self.__profitHitInNDays = True
 				if consts.SMA_STOP_PRICE_PERCENT_OR_ABS.lower() == 'percent':
-					stopPriceDelta = bar.getClose() * consts.SMA_ENTRY_DAY_STOP_PRICE_PERCENT / float(100)
+					stopPriceDelta = self.__closeDS[-2] * consts.SMA_ENTRY_DAY_STOP_PRICE_PERCENT / float(100)
 				else:
 					stopPriceDelta = consts.SMA_ENTRY_DAY_STOP_PRICE_ABS
 				if consts.SMA_PROGRESS_STOP_LOSS:
+					existingStopPrice = self.__shortPos.getExitOrder().getStopPrice()
+					# The stop price is already adjusted.
+					existingStopPrice = float(existingStopPrice / self.__adjRatio)
 					if consts.SMA_STOP_LOSS_UNDER_CANDLE_OR_SMA.lower() == 'sma':
 						stopPrice =  self.__smaDS[-1] + stopPriceDelta
 					else:
-						if self.__closeDS[-2] >= self.__openDS[-2]:
-							stopPrice =  self.__closeDS[-2] + stopPriceDelta
-						else: // Bearish candle
-							stopPrice =  self.__openDS[-2] + stopPriceDelta
+						if consts.SMA_STOP_LOSS_OVER_UNDER_PREV_CANDLE:
+							if self.__closeDS[-2] >= self.__openDS[-2]:
+								self.__logger.debug("Stop Loss Price Delta: %.2f", stopPriceDelta)
+								self.__logger.debug("Prev. Day Close: %.2f", self.__closeDS[-2])
+								stopPrice =  self.__closeDS[-2] + stopPriceDelta
+								self.__logger.debug("Stop Price: %.2f", stopPrice)
+							else:
+								self.__logger.debug("Stop Loss Price Delta: %.2f", stopPriceDelta)
+								self.__logger.debug("Prev. Day Open: %.2f", self.__openDS[-2])
+								stopPrice =  self.__openDS[-2] + stopPriceDelta
+								self.__logger.debug("Stop Price: %.2f", stopPrice)
+						else:
+							if self.__closeDS[-1] >= self.__openDS[-1]:
+								stopPrice =  self.__closeDS[-1] + stopPriceDelta
+							else:
+								stopPrice =  self.__openDS[-1] + stopPriceDelta
+					# After the profit lock price has been breached, move the
+					# stop loss ONLY if the stop loss is below the previous one.
+					if stopPrice > existingStopPrice:
+						stopPrice = existingStopPrice
 				else:
 					stopPrice = self.__shortPos.getExitOrder().getStopPrice()
 					# The stop price is already adjusted.
@@ -1666,7 +2062,7 @@ def main(plot):
 	startDate = dateutil.parser.parse('2005-06-30T08:00:00.000Z')
 	endDate = dateutil.parser.parse('2014-12-31T08:00:00.000Z')
 
-	instruments = ["NFLX"]
+	instruments = ["AAPL"]
 	bBandsPeriod = 20
 	startPortfolio = 1000000
 	for inst in instruments:
