@@ -18,9 +18,10 @@ from xiQuant_strategies import xiQuantStrategyUtil, xiquantStrategyParams
 #listStr = 'CUSTOM'
 #listStr = 'xiQuant-100'
 #listStr = 'Abhi-26'
-listStr = 'SMA20-CUSTOMUNIV'
+#listStr = 'SMA20-CUSTOMUNIV'
 #listStr = 'xiQuant-99'
 #listStr = 'SP-500'
+listStr = 'xiQuantXXX-2014'
 
 tickerList = util.getTickerList(listStr)
 

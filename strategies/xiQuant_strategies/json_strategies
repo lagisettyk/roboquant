@@ -83,7 +83,7 @@
 												]
 										},
 					"xWick_Rel_To_Candle": "Cutoff_Check",
-					"XCandle_Len_Check": "Against_Average_Length",
+					"xCandle_Len_Check": "Against_Average_Length",
 					"xCrossover_Check": "Total",
 					"xPrice_Jump": "Price_Jump_Check",
 					"xVolume": "Volume_Check",
@@ -101,6 +101,7 @@
 									"Pointing_Up"
 								]
 						},
+					"xSAR": "Angles_Higher",
 					"xMACD": "No_Divergence",
 					"xADX_And_DMI": {
 									"AND": [
@@ -118,7 +119,7 @@
 												]
 										},
 					"xWick_Rel_To_Candle": "Cutoff_Check",
-					"XCandle_Len_Check": "Against_Average_Length",
+					"xCandle_Len_Check": "Against_Average_Length",
 					"xCrossover_Check": "Total",
 					"xPrice_Jump": "Price_Jump_Check",
 					"xVolume": "Volume_Check",
@@ -136,6 +137,7 @@
 									"Pointing_Up"
 								]
 						},
+					"xSAR": "Angles_Lower",
 					"xMACD": "No_Divergence",
 					"xADX_And_DMI": {
 									"AND": [
@@ -221,26 +223,26 @@
 													"Bounce"
 												]
 										},
-					"xWick_Rel_To_Candle": "Cutoff_Check",
-					"xCandle_Len_Check": "Against_Average_Length",
-					"xPrice_Jump": "Price_Jump_Check",
-					"xVolume": "Volume_Check",
-					"xCash_Flow": "Cash_Flow_Check",
-					"xResistance_Or_Support": "Resistance_Check",
-					"xAverages": {
+					"Wick_Rel_To_Candle": "Cutoff_Check",
+					"Candle_Len_Check": "Against_Average_Length",
+					"Price_Jump": "Price_Jump_Check",
+					"Volume": "Volume_Check",
+					"Cash_Flow": "Cash_Flow_Check",
+					"Resistance_Or_Support": "Resistance_Check",
+					"Averages": {
 								"AND": [
 										"Price_Check",
 										"Wick_Top_Check"
 								]
 						},
-					"xRSI": {
+					"RSI": {
 							"AND": [
 									"Greater_Than_Oversold",
 									"Pointing_Up"
 								]
 						},
-					"xMACD": "No_Divergence",
-					"xADX_And_DMI": {
+					"MACD": "No_Divergence",
+					"ADX_And_DMI": {
 									"AND": [
 											"DMI_Plus_Higher",
 											"DMI_Minus_Lower",
@@ -254,26 +256,26 @@
 													"Bounce"
 												]
 										},
-					"xWick_Rel_To_Candle": "Cutoff_Check",
-					"xCandle_Len_Check": "Against_Average_Length",
-					"xPrice_Jump": "Price_Jump_Check",
-					"xVolume": "Volume_Check",
-					"xCash_Flow": "Cash_Flow_Check",
-					"xResistance_Or_Support": "Resistance_Check",
-					"xAverages": {
+					"Wick_Rel_To_Candle": "Cutoff_Check",
+					"Candle_Len_Check": "Against_Average_Length",
+					"Price_Jump": "Price_Jump_Check",
+					"Volume": "Volume_Check",
+					"Cash_Flow": "Cash_Flow_Check",
+					"Resistance_Or_Support": "Resistance_Check",
+					"Averages": {
 								"AND": [
 										"Price_Check",
 										"Wick_Top_Check"
 								]
 						},
-					"xRSI": {
+					"RSI": {
 							"AND": [
 									"Greater_Than_Oversold",
 									"Pointing_Up"
 								]
 						},
-					"xMACD": "No_Divergence",
-					"xADX_And_DMI": {
+					"MACD": "No_Divergence",
+					"ADX_And_DMI": {
 									"AND": [
 											"DMI_Plus_Higher",
 											"DMI_Minus_Lower",

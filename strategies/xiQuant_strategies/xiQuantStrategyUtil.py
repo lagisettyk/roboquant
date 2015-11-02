@@ -542,8 +542,8 @@ def tickersRankByCashFlow(date, sortOrder='Reverse'):
     import collections
 
     momentum_rank = {}
-    tickerList = util.getMasterTickerList()
-    #tickerList = util.getTickerList('SP-500')
+    #tickerList = util.getMasterTickerList()
+    tickerList = util.getTickerList('SP-500')
     for x in range(len(tickerList)):
         moneyflow = cashflow_timeseries_TN(tickerList[x], (date - datetime.timedelta(days=10)), date)
         if len(moneyflow) > 1:
@@ -1017,6 +1017,9 @@ def compute_SMA(instrument, startdate, enddate ):
                         bar.getLow(), bar.getClose()]
         adj_Close_Series.append(adjPrice_val)
 
+    sar = indicator.SAR(barDS, len(barDS), consts.SAR_AF, consts.SAR_MAXAF)
+    sarDS = numpy_to_highchartds(dateTimes, sar, startdate, enddate)
+
     #startdate = startdate - datetime.timedelta(days=consts.RESISTANCE_LOOKBACK_WINDOW)
     print "inside SMA"
     print startdate, enddate
@@ -1031,7 +1034,7 @@ def compute_SMA(instrument, startdate, enddate ):
         results = run_master_strategy(100000, fakecsv, startdate, enddate, filterAction='both', rank=10000, fakeCSV=True)
         resultDS = results_to_highchartsds(results)
 
-    return smaDS, adj_Close_Series, orderDS, resultDS, upperDS, middleDS, lowerDS, sma50DS, sma200DS
+    return smaDS, adj_Close_Series, orderDS, resultDS, upperDS, middleDS, lowerDS, sma50DS, sma200DS, sarDS
 
 def compute_EMA(instrument, startdate, enddate ):
     from pyalgotrade.talibext import indicator

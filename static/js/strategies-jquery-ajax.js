@@ -430,6 +430,7 @@ $(document).ready( function() {
                   smaseries[6] = {name: "lower", data: data.lower};
                   smaseries[7] = {name: "stop-loss", data: data.orders};
                   smaseries[8] = {name: "entry-exit", data: data.resultdata};
+                  smaseries[9] = {name: "sar", data: data.sar};
                   displaySMAData(smaseries,stkticker);
                 }
                 if (indicator == "EMA-10")
@@ -579,6 +580,20 @@ function displaySMAData (dataList, ticker) {
                     valueDecimals: 2
                 },
                 id : 'dataseries9'
+               },{
+                color: '#0000ff',
+                name : dataList[9].name,
+                data : dataList[9].data,
+                lineWidth : 0,
+                marker : {
+                    enabled : true,
+                    radius : 5
+                },
+                turboThreshold: 0, ///Speed up and make sure it supports more points
+                tooltip: {
+                    valueDecimals: 2
+                },
+                id : 'dataseries10'
                }]
             });
     }

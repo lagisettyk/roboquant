@@ -253,10 +253,10 @@ specdate2 = dateutil.parser.parse(' 2014-04-04')
 
 
 
-#periodAnalysis('SMA20-SP-500-OCT27MORNINGVER-2015','MasterOrders_BBSMAXOverMTM_Both_SP-500-SMA20-OCT27-MORNINGVER.csv', stdate, enddate, 360, 25)
+periodAnalysis('SMA20-SP-500-OCT27MORNINGVER-2015','MasterOrders_BBSMAXOverMTM_Both_SP-500-SMA20-OCT27-MORNINGVER.csv', stdate, enddate, 360, 25)
 #periodAnalysis('SMA20-SP-500-OCT27AFTERNOONVER-2015','MasterOrders_BBSMAXOverMTM_Both_SP-500-SMA20-OCT27-AFTERNOONVER.csv', stdate, enddate, 360, 25)
 #periodAnalysis('SMA20-xiQuant-99-OCT27MORNINGVER-2015','MasterOrders_BBSMAXOverMTM_Both_SMA20-CUSTOMUNIV-OCT27-MORNINGVER.csv', stdate, enddate, 360, 25)
-periodAnalysis('SMA20-xiQuant-99-OCT27AFTERNOONVER-2015','MasterOrders_BBSMAXOverMTM_Both_SMA20-CUSTOMUNIV-OCT27-AFTERNOONVER.csv', stdate, enddate, 360, 25)
+#periodAnalysis('SMA20-xiQuant-99-OCT27AFTERNOONVER-2015','MasterOrders_BBSMAXOverMTM_Both_SMA20-CUSTOMUNIV-OCT27-AFTERNOONVER.csv', stdate, enddate, 360, 25)
 
 
 
