@@ -72,6 +72,7 @@ class xiQuantAdjustBars():
 			dividendList = []
 
 			for bar in bars_in_dtrange:
+				'''
 				splitdata = float(bar.getSplit())
 				#dividend = float(bar.getDividend())
 				dividend = 0.0
@@ -80,11 +81,12 @@ class xiQuantAdjustBars():
 				if dividend != 0.0:
 					adjFactor = (bar.getClose() + bar.getDividend()) / bar.getClose()
 					dividendList.append(adjFactor)
+				'''
 				#### Special case.... end date / analysis date nothing to do..
 				if (k==0):
-					bar = BasicBar(bar.getDateTime(), 
+					bar_basic = BasicBar(bar.getDateTime(), 
 						bar.getOpen() , bar.getHigh(), bar.getLow(), bar.getClose(), bar.getVolume(), bar.getClose(), Frequency.DAY)
-					basicbars.append(bar)
+					basicbars.append(bar_basic)
 				else:
 					#### Adjust OHLC & Volume data for split adjustments and dividend adjustments
 					Open = bar.getOpen()
@@ -107,10 +109,19 @@ class xiQuantAdjustBars():
 						Low  = Low / adjFactor
 						Close = Close / adjFactor
 						Volume = Volume * adjFactor
-					bar = BasicBar(bar.getDateTime(), 
+					bar_basic = BasicBar(bar.getDateTime(), 
 						Open , High, Low, Close, Volume, Close, Frequency.DAY)
-					basicbars.append(bar)
+					basicbars.append(bar_basic)
 				k +=1
+				######## Now check if any splits are reported we need to apply them for past dates...
+				splitdata = float(bar.getSplit())
+				#dividend = float(bar.getDividend())
+				dividend = 0.0
+				if splitdata != 1.0:
+					splitdataList.append(bar.getSplit())
+				if dividend != 0.0:
+					adjFactor = (bar.getClose() + bar.getDividend()) / bar.getClose()
+					dividendList.append(adjFactor)
 
 
 			DateTimes = []
@@ -187,6 +198,7 @@ def adjustBars(barsDict, startdate, enddate, keyFlag=True):
 		splitdataList = []
 		dividendList = []
 		for bar in bars_in_dtrange:
+			'''
 			splitdata = float(bar.getSplit())
 			#dividend = float(bar.getDividend())
 			dividend = 0.0
@@ -195,11 +207,12 @@ def adjustBars(barsDict, startdate, enddate, keyFlag=True):
 			if dividend != 0.0:
 				adjFactor = (bar.getClose() + bar.getDividend()) / bar.getClose()
 				dividendList.append(adjFactor)
+			'''
 			#### Special case.... end date / analysis date nothing to do..
 			if (k==0):
-				bar = BasicBar(bar.getDateTime(), 
+				bar_basic = BasicBar(bar.getDateTime(), 
 					bar.getOpen() , bar.getHigh(), bar.getLow(), bar.getClose(), bar.getVolume(), bar.getClose(), Frequency.DAY)
-				basicbars.append(bar)
+				basicbars.append(bar_basic)
 			else:
 				#### Adjust OHLC & Volume data for split adjustments and dividend adjustments
 
@@ -225,10 +238,19 @@ def adjustBars(barsDict, startdate, enddate, keyFlag=True):
 					Volume = Volume * adjFactor
 
 
-				bar = BasicBar(bar.getDateTime(), 
+				bar_basic = BasicBar(bar.getDateTime(), 
 					Open , High, Low, Close, Volume, Close, Frequency.DAY)
-				basicbars.append(bar)
+				basicbars.append(bar_basic)
 			k +=1
+			#### Now make sure we get split list populated so that we can apply splits for previous days..
+			splitdata = float(bar.getSplit())
+			#dividend = float(bar.getDividend())
+			dividend = 0.0
+			if splitdata != 1.0:
+				splitdataList.append(bar.getSplit())
+			if dividend != 0.0:
+				adjFactor = (bar.getClose() + bar.getDividend()) / bar.getClose()
+				dividendList.append(adjFactor)
 		
 		if keyFlag:
 			feed.loadBars(key+"_adjusted", basicbars)

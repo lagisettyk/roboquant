@@ -81,6 +81,14 @@ def getTickerList(strategy):
 			file_tickerlist = getRelativePath('xiQuant50.csv')
 		if strategy == 'xiQuantXXX-2014':
 			file_tickerlist = getRelativePath('xiQuantXXX-2014.csv')
+		if strategy == 'xiQuantXXX-2009':
+			file_tickerlist = getRelativePath('xiQuantXXX-2009.csv')
+		if strategy == 'xiQuantXXX-2009':
+			file_tickerlist = getRelativePath('xiQuantXXX-2009.csv')
+		if strategy == 'xiQuantXXX-2013-2014':
+			file_tickerlist = getRelativePath('xiQuantXXX-2013-2014.csv')
+		if strategy == 'xiQuantCBOE-2013-2014':
+			file_tickerlist = getRelativePath('xiQuantCBOE-2013-2014.csv')
 		with open(file_tickerlist, 'rU') as csvfile:
 			reader = csv.DictReader(csvfile)
 			for row in reader:

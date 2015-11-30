@@ -1,4 +1,4 @@
-{"BB_Spread_Call": {
+{"BB_Spread_Call": {"Price": {
 					"OR": {
 							"Entry_Day": {
 											"Stop_Limit": "Open_Plus_Close_By_2"
@@ -13,8 +13,9 @@
 										}
 								}
 						}
+					}
 				},
-"BB_Spread_Put": {
+"BB_Spread_Put": {"Price": {
 					"OR": {
 							"Entry_Day": {
 											"Stop_Limit": "Open_Plus_Close_By_2"
@@ -29,8 +30,9 @@
 										}
 								}
 						}
+					}
 				},
-"EMA_Breach_Mtm_Call": {
+"EMA_Breach_Mtm_Call": {"Price": {
 					"OR": {
 							"Entry_Day": {
 											"Stop_Limit": "Open_Plus_Close_By_2"
@@ -45,8 +47,9 @@
 										}
 								}
 						}
+					}
 				},
-"EMA_Breach_Mtm_Put": {
+"EMA_Breach_Mtm_Put": {"Price": {
 					"OR": {
 							"Entry_Day": {
 											"Stop_Limit": "Open_Plus_Close_By_2"
@@ -61,8 +64,10 @@
 										}
 								}
 						}
+					}
 				},
 "BB_SMA_Crossover_Mtm_Call": {
+				"Price": {
 					"OR": {
 							"Entry_Day": {
 											"Stop_Limit": "Open_Plus_Close_By_2"
@@ -77,8 +82,21 @@
 										}
 								}
 						}
+					},
+					"xParabolic_SAR": "Price_Touch",
+					"xVolume_Price_Trend": "Divergence",
+					"xRSI_Price_Trend": "Divergence",
+					"xMACD_Price_Trend": "Divergence",
+					"xCash_Flow": "Moves_Down",
+					"xBollinger_Bands": {
+										"AND": [
+												"Lower_Band",
+												"Curving_In"
+											]
+										}
 				},
 "BB_SMA_Crossover_Mtm_Put": {
+				"Price": {
 					"OR": {
 							"Entry_Day": {
 											"Stop_Limit": "Open_Plus_Close_By_2"
@@ -93,5 +111,17 @@
 										}
 								}
 						}
-				}
+					},
+					"xParabolic_SAR": "Price_Touch",
+					"xVolume_Price_Trend": "Divergence",
+					"xRSI_Price_Trend": "Divergence",
+					"xMACD_Price_Trend": "Divergence",
+					"xCash_Flow": "Moves_Up",
+					"xBollinger_Bands": {
+										"AND": [
+												"Upper_Band",
+												"Curving_In"
+											]
+										}
+			}
 		}

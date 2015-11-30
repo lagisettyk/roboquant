@@ -18,10 +18,12 @@ from xiQuant_strategies import xiQuantStrategyUtil, xiquantStrategyParams
 #listStr = 'CUSTOM'
 #listStr = 'xiQuant-100'
 #listStr = 'Abhi-26'
-#listStr = 'SMA20-CUSTOMUNIV'
+listStr = 'SMA20-CUSTOMUNIV'
 #listStr = 'xiQuant-99'
 #listStr = 'SP-500'
-listStr = 'xiQuantXXX-2014'
+#listStr = 'xiQuantXXX-2014'
+#listStr = 'xiQuantCBOE-2013-2014'
+#listStr = 'xiQuantXXX-2013-2014'
 
 tickerList = util.getTickerList(listStr)
 
@@ -81,7 +83,8 @@ def test_parallel_strategy():
 	redis_conn = util.get_redis_conn()
 	q = Queue(connection=redis_conn, default_timeout=1500)  # no args implies the default queue
 	import dateutil.parser
-	startdate = dateutil.parser.parse('2005-06-30T08:00:00.000Z')
+	#startdate = dateutil.parser.parse('2005-06-30T08:00:00.000Z')
+	startdate = dateutil.parser.parse('2010-09-30')
 	enddate = dateutil.parser.parse('2014-12-31T08:00:00.000Z')
 	#startdate = dateutil.parser.parse('2012-06-30T08:00:00.000Z')
 	#enddate = dateutil.parser.parse('2015-08-31T08:00:00.000Z')
@@ -131,7 +134,7 @@ def test_parallel_strategy():
 	######### before passing let's sort orders based on moneyness rank
 	#####################################################################
 	#sorted_datarows = sorted(dataRows, key = lambda x: (int(x[1]), int(x[3])))
-	dataRows.sort(key = operator.itemgetter(0, 5))
+	dataRows.sort(key = operator.itemgetter(0, 6))
 
 
 	fake_csv = util.make_fake_csv(dataRows)
@@ -155,7 +158,9 @@ def run_parallel_BBSMAXOverMTM():
 	q = Queue(connection=redis_conn, default_timeout=1500)  # no args implies the default queue
 	import dateutil.parser
 	startdate = dateutil.parser.parse('2005-06-30T08:00:00.000Z')
+	#startdate = dateutil.parser.parse('2010-09-30')
 	enddate = dateutil.parser.parse('2014-12-31T08:00:00.000Z')
+	#enddate = dateutil.parser.parse('2010-01-30T08:00:00.000Z')
 
 	jobList = []
 
@@ -274,7 +279,7 @@ def run_parallel_EMABreachMTM():
 	######### before passing let's sort orders based on moneyness rank
 	#####################################################################
 	#sorted_datarows = sorted(dataRows, key = lambda x: (int(x[1]), int(x[3])))
-	dataRows.sort(key = operator.itemgetter(0, 5))
+	dataRows.sort(key = operator.itemgetter(0, 6))
 
 
 	fake_csv = util.make_fake_csv(dataRows)
@@ -346,7 +351,7 @@ def run_parallel_EMATrend():
 	######### before passing let's sort orders based on moneyness rank
 	#####################################################################
 	#sorted_datarows = sorted(dataRows, key = lambda x: (int(x[1]), int(x[3])))
-	dataRows.sort(key = operator.itemgetter(0, 5))
+	dataRows.sort(key = operator.itemgetter(0, 6))
 
 
 	fake_csv = util.make_fake_csv(dataRows)

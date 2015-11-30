@@ -1,3 +1,2 @@
 Instrument,Trade-Type,Entry-Date,Entry-Price,Quantity,StopLoss-Exit-Date,StopLoss-Exit-Price,StopLoss-Exit-PorL,Exit-Date,Exit-Price,PorL,Actual-PorL,Strategy,Current-Pos
-CRM,SHORT,2010-11-17,109.91,864,No-Exit,0.0,0.0,2010-11-18,116.44,-5638.90,-5638.90,BB 20 SMA Xover Mtm,[]
-CRM,LONG,2011-01-06,144.16,624,No-Exit,0.0,0.0,2011-01-20,133.21,-6832.80,-6832.80,BB 20 SMA Xover Mtm,[]
+XOM,SHORT,2008-10-10,63.86,1412,No-Exit,0.0,0.0,2008-10-13,72.80,-12623.28,-12623.28,BB Spread,[]

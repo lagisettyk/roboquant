@@ -94,10 +94,10 @@ class EMACrossover(strategy.BacktestingStrategy):
 	def initLogging(self):
 		logger = logging.getLogger("xiQuant")
 		logger.propagate = True # stop the logs from going to the console
-		logger.setLevel(logging.CRITICAL)
+		logger.setLevel(logging.DEBUG)
 		logFileName = "EMA_Breach_Mtm_" + self.__instrument + ".log"
 		handler = logging.FileHandler(logFileName, delay=True)
-		handler.setLevel(logging.CRITICAL)
+		handler.setLevel(logging.DEBUG)
 		#formatter = logging.Formatter('%(asctime)s %(name)-12s %(levelname)-8s %(message)s')
 		formatter = logging.Formatter('%(levelname)-8s %(message)s')
 		handler.setFormatter(formatter)
@@ -405,7 +405,10 @@ class EMACrossover(strategy.BacktestingStrategy):
 		self.__stdDevUpper = indicator.STDDEV(self.__upperBBDataSeries, len(self.__upperBBDataSeries), consts.SMA_TINY)
 		#print "Std Dev Upper: ", self.__stdDevUpper
 
-		self.__emaTiny1 = indicator.EMA(self.__closeDS, len(self.__closeDS), consts.EMA_TINY_1)
+		self.__ema10 = indicator.EMA(self.__closeDS, len(self.__closeDS), 10)
+		self.__ema5 = indicator.EMA(self.__closeDS, len(self.__closeDS), 5)
+		self.__ema40 = indicator.EMA(self.__closeDS, len(self.__closeDS), 40)
+
 
 		# Set the EMA dataseries based on the type specified.
 		if consts.EMA_TYPE == consts.EMA_SHORT_1:
@@ -783,6 +786,22 @@ class EMACrossover(strategy.BacktestingStrategy):
 				self.__logger.debug("Previous to previous Close Price: %.2f" % self.__closeDS[-3])
 				self.__logger.debug("EMA 10 previous: %.2f" % self.__emaDS[-2])
 				return False
+
+		# Validate the SMA trend supporting the crossover.
+			if  self.__emaDS[-10] < self.__emaDS[-1]: 
+				return False
+
+			##### Check for eliminating last V pattern crossover
+			if self.__emaDS[-3] < self.__emaDS[-1]: 
+				return False
+
+			#### Additional confirmation of SMA trend based on most recent bars
+			if self.__ema5[-1] < self.__emaDS[-1] or self.__ema10[-1] < self.__emaDS[-1] or self.__ema40[-1] < self.__emaDS[-1]:
+				pass
+			else:
+				return False
+
+
 			
 		# Check the no. of crossovers in the lookback window
 		if "Crossover_Check" in self.__inpStrategy["EMA_Breach_Mtm_Call"] and "Total" in self.__inpStrategy["EMA_Breach_Mtm_Call"]["Crossover_Check"]:
@@ -1184,6 +1203,20 @@ class EMACrossover(strategy.BacktestingStrategy):
 				self.__logger.debug("EMA 10 previous: %.2f" % self.__emaDS[-2])
 				return False
 
+			# Validate the SMA trend supporting the crossover.
+			if  self.__emaDS[-1 * consts.EMA_TREND_CHECK] > self.__emaDS[-1]: 
+				return False
+
+			##### Check for eliminating last V pattern crossover
+			if self.__emaDS[-3] > self.__emaDS[-1]: 
+				return False
+
+			#### Additional confirmation of SMA trend based on most recent bars
+			if self.__ema5[-1] > self.__emaDS[-1] or self.__ema10[-1] > self.__emaDS[-1] or self.__ema40[-1] > self.__emaDS[-1]:
+				pass
+			else:
+				return False
+
 		# Check the no. of crossovers in the lookback window
 		if "Crossover_Check" in self.__inpStrategy["EMA_Breach_Mtm_Put"] and "Total" in self.__inpStrategy["EMA_Breach_Mtm_Put"]["Crossover_Check"]:
 			totalEMACrossovers = xiquantFuncs.totalCrossovers(self.__closeDS, self.__emaDS, (-1 * consts.EMA_CROSSOVERS_LOOKBACK), -2)
@@ -1517,23 +1550,50 @@ class EMACrossover(strategy.BacktestingStrategy):
 			self.__logger.debug("Entry Price: %s", str(entryPrice))
 			candleLen = bar.getClose() - bar.getOpen()
 			profitCheck = 0.0
-			if consts.EMA_PROFIT_CHECK_PERCENT_OR_ABS.lower() == 'percent':
-				#profitCheck = bar.getClose() * consts.EMA_PROFIT_CHECK_PERCENT / float(100)
-				profitCheck = entryPrice * consts.EMA_PROFIT_CHECK_PERCENT / float(100)
+			if consts.SMA_PROFIT_CHECK_PERCENT_OR_ABS.lower() == 'percent':
+				profitCheck = entryPrice * consts.SMA_PROFIT_CHECK_PERCENT / float(100)
 			else:
-				profitCheck = consts.EMA_PROFIT_CHECK_ABS
+				profitCheck = consts.SMA_PROFIT_CHECK_ABS
+			self.__logger.debug("Close Price: %s", str(self.__closeDS[-1]))
+			self.__logger.debug("Profit Check: %s", str(profitCheck))
 			# Adjust the profit check value
 			#profitCheck *= self.__adjRatio
-			#if bar.getClose() - entryPrice > profitCheck:
-			#if self.__emaDS[-1] - self.__emaDS[-2] > profitCheck:
-			if (self.__emaDS[-1] - self.__emaDS[-2]) * self.__adjRatio > profitCheck:
-				if consts.EMA_STOP_PRICE_PERCENT_OR_ABS.lower() == 'percent':
-					stopPriceDelta = bar.getClose() * consts.EMA_ENTRY_DAY_STOP_PRICE_PERCENT / float(100)
+			self.__logger.debug("Adjusted Profit Check: %s", str(profitCheck))
+			if consts.SMA_STOP_PRICE_ADJ_NOT_BASED_ON_PROFIT_LOCK or ((bar.getClose() * self.__adjRatio) - entryPrice >= profitCheck):
+				if consts.SMA_STOP_PRICE_PERCENT_OR_ABS.lower() == 'percent':
+					if consts.SMA_STOP_LOSS_OVER_UNDER_PREV_CANDLE:
+						stopPriceDelta = self.__closeDS[-2] * consts.SMA_ENTRY_DAY_STOP_PRICE_PERCENT / float(100)
+					else:
+						stopPriceDelta = self.__closeDS[-1] * consts.SMA_ENTRY_DAY_STOP_PRICE_PERCENT / float(100)
 				else:
-					stopPriceDelta = consts.EMA_ENTRY_DAY_STOP_PRICE_ABS
-				if consts.EMA_PROGRESS_STOP_LOSS:
-					stopPrice =  self.__emaDS[-1] - stopPriceDelta
-					#stopPrice =  self.__emaDS[-1] + stopPriceDelta
+					stopPriceDelta = consts.SMA_ENTRY_DAY_STOP_PRICE_ABS
+				if consts.SMA_PROGRESS_STOP_LOSS:
+					existingStopPrice = self.__longPos.getExitOrder().getStopPrice()
+					# The stop price is already adjusted.
+					existingStopPrice = float(existingStopPrice / self.__adjRatio)
+					if consts.SMA_STOP_LOSS_UNDER_CANDLE_OR_SMA.lower() == 'sma':
+						stopPrice =  self.__smaDS[-1] - stopPriceDelta
+					else:
+						if consts.SMA_STOP_LOSS_OVER_UNDER_PREV_CANDLE:
+							if self.__closeDS[-2] >= self.__openDS[-2]:
+								self.__logger.debug("Stop Loss Price Delta: %.2f", stopPriceDelta)
+								self.__logger.debug("Prev. Day Open: %.2f", self.__openDS[-2])
+								stopPrice =  self.__openDS[-2] - stopPriceDelta
+								self.__logger.debug("Stop Price: %.2f", stopPrice)
+							else:
+								self.__logger.debug("Stop Loss Price Delta: %.2f", stopPriceDelta)
+								self.__logger.debug("Prev. Day Close: %.2f", self.__closeDS[-2])
+								stopPrice =  self.__closeDS[-2] - stopPriceDelta
+								self.__logger.debug("Stop Price: %.2f", stopPrice)
+						else:
+							if self.__closeDS[-1] >= self.__openDS[-1]:
+								stopPrice =  self.__openDS[-1] - stopPriceDelta
+							else:
+								stopPrice =  self.__closeDS[-1] - stopPriceDelta
+					# After the profit lock price has been breached, move the
+					# stop loss ONLY if the stop loss is above the previous one.
+					if stopPrice < existingStopPrice:
+						stopPrice = existingStopPrice
 				else:
 					stopPrice = self.__longPos.getExitOrder().getStopPrice()
 					# The stop price is already adjusted.
@@ -1590,23 +1650,50 @@ class EMACrossover(strategy.BacktestingStrategy):
 			self.__logger.debug("Entry Price: %s", str(entryPrice))
 			candleLen = bar.getClose() - bar.getOpen()
 			profitCheck = 0.0
-			if consts.EMA_PROFIT_CHECK_PERCENT_OR_ABS.lower() == 'percent':
-				#profitCheck = bar.getClose() * consts.EMA_PROFIT_CHECK_PERCENT / float(100)
-				profitCheck = entryPrice * consts.EMA_PROFIT_CHECK_PERCENT / float(100)
+			if consts.SMA_PROFIT_CHECK_PERCENT_OR_ABS.lower() == 'percent':
+				profitCheck = entryPrice * consts.SMA_PROFIT_CHECK_PERCENT / float(100)
 			else:
-				profitCheck = consts.EMA_PROFIT_CHECK_ABS
+				profitCheck = consts.SMA_PROFIT_CHECK_ABS
+			self.__logger.debug("Close Price: %s", str(self.__closeDS[-1]))
+			self.__logger.debug("Profit Check: %s", str(profitCheck))
 			# Adjust the profit check value
 			#profitCheck *= self.__adjRatio
-			#if entryPrice - bar.getClose() > profitCheck:
-			#if self.__emaDS[-2] - self.__emaDS[-1] > profitCheck:
-			if (self.__emaDS[-2] - self.__emaDS[-1]) * self.__adjRatio > profitCheck:
-				if consts.EMA_STOP_PRICE_PERCENT_OR_ABS.lower() == 'percent':
-					stopPriceDelta = bar.getClose() * consts.EMA_ENTRY_DAY_STOP_PRICE_PERCENT / float(100)
+			self.__logger.debug("Adjusted Profit Check: %s", str(profitCheck))
+			if consts.SMA_STOP_PRICE_ADJ_NOT_BASED_ON_PROFIT_LOCK or (entryPrice - (bar.getClose() * self.__adjRatio) > profitCheck):
+				if consts.SMA_STOP_PRICE_PERCENT_OR_ABS.lower() == 'percent':
+					if consts.SMA_STOP_LOSS_OVER_UNDER_PREV_CANDLE:
+						stopPriceDelta = self.__closeDS[-2] * consts.SMA_ENTRY_DAY_STOP_PRICE_PERCENT / float(100)
+					else:
+						stopPriceDelta = self.__closeDS[-1] * consts.SMA_ENTRY_DAY_STOP_PRICE_PERCENT / float(100)
 				else:
-					stopPriceDelta = consts.EMA_ENTRY_DAY_STOP_PRICE_ABS
-				if consts.EMA_PROGRESS_STOP_LOSS:
-					stopPrice =  self.__emaDS[-1] + stopPriceDelta
-					#stopPrice =  self.__emaDS[-1] - stopPriceDelta
+					stopPriceDelta = consts.SMA_ENTRY_DAY_STOP_PRICE_ABS
+				if consts.SMA_PROGRESS_STOP_LOSS:
+					existingStopPrice = self.__shortPos.getExitOrder().getStopPrice()
+					# The stop price is already adjusted.
+					existingStopPrice = float(existingStopPrice / self.__adjRatio)
+					if consts.SMA_STOP_LOSS_UNDER_CANDLE_OR_SMA.lower() == 'sma':
+						stopPrice =  self.__smaDS[-1] + stopPriceDelta
+					else:
+						if consts.SMA_STOP_LOSS_OVER_UNDER_PREV_CANDLE:
+							if self.__closeDS[-2] >= self.__openDS[-2]:
+								self.__logger.debug("Stop Loss Price Delta: %.2f", stopPriceDelta)
+								self.__logger.debug("Prev. Day Close: %.2f", self.__closeDS[-2])
+								stopPrice =  self.__closeDS[-2] + stopPriceDelta
+								self.__logger.debug("Stop Price: %.2f", stopPrice)
+							else:
+								self.__logger.debug("Stop Loss Price Delta: %.2f", stopPriceDelta)
+								self.__logger.debug("Prev. Day Open: %.2f", self.__openDS[-2])
+								stopPrice =  self.__openDS[-2] + stopPriceDelta
+								self.__logger.debug("Stop Price: %.2f", stopPrice)
+						else:
+							if self.__closeDS[-1] >= self.__openDS[-1]:
+								stopPrice =  self.__closeDS[-1] + stopPriceDelta
+							else:
+								stopPrice =  self.__openDS[-1] + stopPriceDelta
+					# After the profit lock price has been breached, move the
+					# stop loss ONLY if the stop loss is below the previous one.
+					if stopPrice > existingStopPrice:
+						stopPrice = existingStopPrice
 				else:
 					stopPrice = self.__shortPos.getExitOrder().getStopPrice()
 					# The stop price is already adjusted.

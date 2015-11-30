@@ -185,12 +185,12 @@ def periodAnalysis(runName, fileName, stdate, enddate, slidingRange, cutOff):
 import dateutil.parser
 stdate = dateutil.parser.parse('2005-06-30')
 #stdate = dateutil.parser.parse('2007-01-01')
-#stdate = dateutil.parser.parse('2009-05-20')
-#enddate = dateutil.parser.parse('2010-05-15')
+#stdate = dateutil.parser.parse('2009-01-01')
+#enddate = dateutil.parser.parse('2010-01-30')
 #enddate = dateutil.parser.parse('2007-01-31')
-#stdate = dateutil.parser.parse('2013-04-29')
-#enddate = dateutil.parser.parse('2014-04-24')
-#stdate = dateutil.parser.parse('2011-09-30')
+#stdate = dateutil.parser.parse('2010-09-30')
+#enddate = dateutil.parser.parse('2014-03-31')
+#stdate = dateutil.parser.parse('2013-01-01')
 #enddate = dateutil.parser.parse('2009-01-30')
 enddate = dateutil.parser.parse('2014-12-31')
 #enddate = dateutil.parser.parse('2009-12-31')
@@ -247,9 +247,10 @@ specdate2 = dateutil.parser.parse(' 2014-04-04')
 #periodAnalysis('xiQuant-100-BBSpread2-0-OCT14-2015-BASELINE','MasterOrders_Both_xiQuant-100-BASELINE-1.csv', stdate, enddate, 360, 25)
 #periodAnalysis('xiQuant-100-BBSpread2-0-OCT14-2015-PRICEJUMP','MasterOrders_Both_xiQuant-100-PRICEJUMP.csv', stdate, enddate, 360, 25)
 
-#periodAnalysis('xiQuant-99-BBSpread1-5-OCT20-2015','MasterOrders_Both_xiQuant-99-BB1-5.csv', stdate, enddate, 360, 25)
+
 #periodAnalysis('xiQuant-99-BBSMA20-CUSTOM-OCT31-2015','MasterOrders_BBSMAXOverMTM_Both_xiQuant-99.csv', stdate, enddate, 360, 100)
 #periodAnalysis('xiQuant-99-BBSMA20-SP-500-OCT25-2015','MasterOrders_BBSMAXOverMTM_Both_SMA20-CUSTOMUNIV-SMAEXP.csv', stdate, enddate, 720, 25)
+#periodAnalysis('SMA20-xiQuantXXX-2014-BASELINE_PLUS_V-NOV1-2015','MasterOrders_BBSMAXOverMTM_Both_xiQuantXXX-2014.csv', stdate, enddate, 360, 25)
 
 
 
@@ -260,6 +261,14 @@ specdate2 = dateutil.parser.parse(' 2014-04-04')
 
 #periodAnalysis('SMA20-xiQuant-99-BASELINE_PLUS_V-NOV1-2015','MasterOrders_BBSMAXOverMTM_Both_SMA20-CUSTOMUNIV-SMAEXP.csv', stdate, enddate, 360, 25)
 #periodAnalysis('SMA20-SP-500-BASELINE_PLUS_V-OCT31-2015','MasterOrders_BBSMAXOverMTM_Both_SP-500-SMA20-OCT31-V.csv', stdate, enddate, 360, 25)
+#periodAnalysis('xiQuant-99-BBSpread1-5-NOV2-2015','MasterOrders_Both_xiQuant-99-BB1-5.csv', stdate, enddate, 360, 5)
+#periodAnalysis('xiQuant-99-BBSpread2-0-NOV2-2015','MasterOrders_Both_xiQuant-99-BB2-0.csv', stdate, enddate, 360, 5)
+#periodAnalysis('SP-500-BBSpread1-5-NOV2-2015','MasterOrders_Both_SP-500-BB1-5-NOV2.csv', stdate, enddate, 360, 5)
+#periodAnalysis('SP-500-BBSpread2-0-NOV2-2015','MasterOrders_Both_SP-500-BB2-0-NOV2-2015.csv', stdate, enddate, 360, 5)
+#periodAnalysis('SMA20-SP-500-DMI-ENTRY-NOV5-2015','MasterOrders_BBSMAXOverMTM_Both_SP-500-SMA20-NOV5-DMI.csv', stdate, enddate, 360, 25)
+
+#periodAnalysis('SMA20-CUSTOM-2013-2014-NOV5','MasterOrders_BBSMAXOverMTM_Both_xiQuantXXX-2014.csv', stdate, enddate, 360, 25)
+#periodAnalysis('BBSpread-CUSTOM-2013-2014-NOV5','MasterOrders_Both_xiQuantXXX-2013-2014.csv', stdate, enddate, 360, 25)
 
 
 
@@ -270,7 +279,7 @@ specdate2 = dateutil.parser.parse(' 2014-04-04')
 
 '''
 #tickerList = util.getTickerList('SP-500')
-tickerList = ['PCLN']
+tickerList = ['NKE']
 for ticker in tickerList:
     redis_build_CSV_EOD(ticker, stdate, enddate)
     print "Successfuly exported EODRAW data: ", ticker
@@ -311,7 +320,6 @@ for ticker in tickerList:
 #results_momentum_list = xiQuantStrategyUtil.tickersRankByMoneyFlowPercent(enddate)
 #print results_momentum_list
 
-
 '''
 from collections import Counter
 results_momentum_list_long = xiQuantStrategyUtil.topNMomentumTickerList(stdate, enddate, 5)
@@ -322,17 +330,20 @@ c = Counter()
 for d in dicts:
     c.update(d)
 #print c
-#topN = dict((list(dict(c).items())[:100]))
-topN = dict((list(dict(c).items())[:50]))
+topN = dict((list(dict(c).items())[:100]))
+#topN = dict((list(dict(c).items())[:50]))
 #topN = dict((list(dict(c).items())[:]))
 list_of_lists = []
 list_of_lists.append(topN.keys())
-with open('xiQuantXXX-2014.csv', 'w') as fp:
+with open('xiQuantCBOE-2013-2014.csv', 'w') as fp:
     writer = csv.writer(fp, delimiter=',')
     writer.writerows(list_of_lists)
-'''
 
 print "Successfully exported custom ticker list..."
+'''
+
+
+
 
 
 #mktReturn = xiQuantStrategyUtil.getMarketReturn(stdate, enddate)
@@ -617,19 +628,34 @@ print port_results.getPortfolioResult()
 #port_results = xiQuantStrategyUtil.run_master_strategy(100000, 'MasterOrders_Both_CUSTOM.csv', stdate, enddate, filterAction='both', rank=20)
 #port_results = xiQuantStrategyUtil.run_master_strategy(100000, 'MasterOrders_Both_xiQuant-100-PRICEJUMP.csv', stdate, enddate, filterAction='both', rank=25)
 #port_results = xiQuantStrategyUtil.run_master_strategy(100000, 'MasterOrders_BBSMAXOverMTM_Both_xiQuant-100-PROFIT-2PERCENT.csv', stdate, enddate, filterAction='both', rank=25)
-#port_results = xiQuantStrategyUtil.run_master_strategy(100000, 'MasterOrders_BBSMAXOverMTM_Both_xiQuant-99.csv', stdate, enddate, filterAction='both', rank=100)
+
+
+#port_results = xiQuantStrategyUtil.run_master_strategy(100000, 'MasterOrders_Both_xiQuant-99-BB2-0.csv', stdate, enddate, filterAction='both', rank=20)
+#port_results = xiQuantStrategyUtil.run_master_strategy(100000, 'MasterOrders_Both_xiQuant-99-BB1-5.csv', stdate, enddate, filterAction='both', rank=20)
+#port_results = xiQuantStrategyUtil.run_master_strategy(100000, 'MasterOrders_Both_SP-500-BB1-5-NOV2-2015.csv', stdate, enddate, filterAction='both', rank=100)
+
+
 #port_results = xiQuantStrategyUtil.run_master_strategy(100000, 'MasterOrders_BBSMAXOverMTM_Both_xiQuant-100-PSTL-Candle.csv', stdate, enddate, filterAction='both', rank=25)
 #port_results = xiQuantStrategyUtil.run_master_strategy(100000, 'MasterOrders_BBSMAXOverMTM_Both_SP-500-SMA20-OCT24-40-10.csv', stdate, enddate, filterAction='both', rank=40)
 #port_results = xiQuantStrategyUtil.run_master_strategy(100000, 'MasterOrders_BBSMAXOverMTM_Both_xiQuant-99-SMA-CUSTOM.csv', stdate, enddate, filterAction='both', rank=25)
 #port_results = xiQuantStrategyUtil.run_master_strategy(100000, 'MasterOrders_BBSMAXOverMTM_Both_SMA20-CUSTOMUNIV.csv', stdate, enddate, filterAction='both', rank=25)
 #port_results = xiQuantStrategyUtil.run_master_strategy(100000, 'MasterOrders_BBSMAXOverMTM_Both_SMA20-CUSTOMUNIV-SMAEXP.csv', stdate, enddate, filterAction='both', rank=25)
 
-#port_results = xiQuantStrategyUtil.run_master_strategy(100000, 'MasterOrders_BBSMAXOverMTM_Both_SP-500-SMA20-NOV1-ELOSS.csv', stdate, enddate, filterAction='both', rank=25)
-#port_results = xiQuantStrategyUtil.run_master_strategy(100000, 'MasterOrders_BBSMAXOverMTM_Both_SP-500-SMA20-OCT31-V.csv', stdate, enddate, filterAction='both', rank=25)
+#port_results = xiQuantStrategyUtil.run_master_strategy(100000, 'MasterOrders_BBSMAXOverMTM_Both_xiQuantXXX-2014.csv', stdate, enddate, filterAction='both', rank=25)
+#port_results = xiQuantStrategyUtil.run_master_strategy(100000, 'MasterOrders_BBSMAXOverMTM_Both_xiQuantXXX-2009.csv', stdate, enddate, filterAction='both', rank=25)
+
 #port_results = xiQuantStrategyUtil.run_master_strategy(100000, 'MasterOrders_BBSMAXOverMTM_Both_SP-500-SMA20-OCT27-MORNINGVER.csv', stdate, enddate, filterAction='both', rank=25)
 #port_results = xiQuantStrategyUtil.run_master_strategy(100000, 'MasterOrders_BBSMAXOverMTM_Both_SP-500-SMA20-OCT27-AFTERNOONVER.csv', stdate, enddate, filterAction='both', rank=25)
 #port_results = xiQuantStrategyUtil.run_master_strategy(100000, 'MasterOrders_BBSMAXOverMTM_Both_SMA20-CUSTOMUNIV-OCT27-MORNINGVER.csv', stdate, enddate, filterAction='both', rank=25)
 #port_results = xiQuantStrategyUtil.run_master_strategy(100000, 'MasterOrders_BBSMAXOverMTM_Both_SMA20-CUSTOMUNIV-OCT27-AFTERNOONVER.csv', stdate, enddate, filterAction='both', rank=25)
+
+#port_results = xiQuantStrategyUtil.run_master_strategy(100000, 'MasterOrders_Both_SP-500-BB1-5-NOV2.csv', stdate, enddate, filterAction='both', rank=5)
+#port_results = xiQuantStrategyUtil.run_master_strategy(100000, 'MasterOrders_Both_SP-500-BB2-0-NOV2-2015.csv', stdate, enddate, filterAction='both', rank=5)
+#port_results = xiQuantStrategyUtil.run_master_strategy(100000, 'MasterOrders_Both_xiQuant-99-BB2-0.csv', stdate, enddate, filterAction='both', rank=5)
+#port_results = xiQuantStrategyUtil.run_master_strategy(100000, 'MasterOrders_Both_xiQuant-99-BB1-5.csv', stdate, enddate, filterAction='both', rank=5)
+#port_results = xiQuantStrategyUtil.run_master_strategy(100000, 'MasterOrders_Both_xiQuantXXX-2013-2014.csv', stdate, enddate, filterAction='both', rank=25)
+#port_results = xiQuantStrategyUtil.run_master_strategy(100000, 'MasterOrders_Both_xiQuantCBOE-2013-2014.csv', stdate, enddate, filterAction='both', rank=25)
+#port_results = xiQuantStrategyUtil.run_master_strategy(100000, 'MasterOrders_BBSMAXOverMTM_Both_xiQuantXXX-2014.csv', stdate, enddate, filterAction='both', rank=25)
 
 #upper, middle, lower, adjOHLCSeries, emaDS, orderDS, resultDS = xiQuantStrategyUtil.compute_BBands('AAPL', stdate, enddate)
 #print orderDS
@@ -638,8 +664,9 @@ print port_results.getPortfolioResult()
 #smaDS, adj_Close_Series, orderDS, resultDS, upperDS, middleDS, lowerDS, sma50DS, sma200DS, sarDS = xiQuantStrategyUtil.computeIndicators('AAPL', 'SMA-20', stdate, enddate)
 #print sarDS
 
-#ema, adjOHLCSeries = xiQuantStrategyUtil.computeIndicators('AAPL', 'EMA-10', stdate, enddate)
-#print ema, adjOHLCSeries
+#ema, adjOHLCSeries, dmiplus, dmiminus, adx, macd, sar, rsi, priceTrend, volTrend = xiQuantStrategyUtil.computeIndicators('AAPL', 'EMA-10', stdate, enddate)
+#print macd[0], macd[1], macd[2]
+#print dmiplus
 
 '''
 #tickerList = util.getTickerList('Abhi-26')
@@ -658,10 +685,11 @@ for ticker in tickerList:
         pass
 '''
 
+'''
 #tickerList = util.getTickerList('Abhi-26')
 #tickerList = ['AAPL', 'GOOGL', 'MA', 'FDX', 'NFLX', 'AMZN']
 #tickerList = ['HK_2338']
-tickerList = ['AAPL']
+tickerList = ['EOG']
 for ticker in tickerList:
     try:
         results = xiQuantStrategyUtil.run_strategy_BBSMAXOverMTM(20, ticker, 100000, stdate, enddate)
@@ -672,9 +700,8 @@ for ticker in tickerList:
     except Exception,e:
         print str(e)
         pass
-
-
 '''
+
 #tickerList = util.getTickerList('Abhi-26')
 #tickerList = ['AAPL', 'GOOGL', 'MA', 'FDX', 'NFLX', 'AMZN']
 tickerList = ['AAPL']
@@ -689,7 +716,7 @@ for ticker in tickerList:
     except Exception,e:
         print str(e)
         pass
-'''
+
 
 '''
 #tickerList = util.getTickerList('Abhi-26')

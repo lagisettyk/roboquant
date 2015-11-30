@@ -542,8 +542,8 @@ def tickersRankByCashFlow(date, sortOrder='Reverse'):
     import collections
 
     momentum_rank = {}
-    #tickerList = util.getMasterTickerList()
-    tickerList = util.getTickerList('SP-500')
+    tickerList = util.getMasterTickerList()
+    #tickerList = util.getTickerList('SP-500')
     for x in range(len(tickerList)):
         moneyflow = cashflow_timeseries_TN(tickerList[x], (date - datetime.timedelta(days=10)), date)
         if len(moneyflow) > 1:
@@ -828,6 +828,23 @@ def getOrdersFilteredByRules(orders, instrument):
 
         return filteredOrders
 
+def numpy_to_highchartdsWithDates(datetimes, data, startdate, enddate):
+    dataseries = []
+    dateList = list(datetimes)
+    dateList.sort()
+    dtIndex = -1
+    for x in reversed(data):
+        dt = dateList[dtIndex]
+        sec = calendar.timegm(dt.timetuple())
+        if math.isnan(x):
+            pass #### Do nothing
+        else:
+            #val = [int(sec * 1000), x]
+            val = [dt, x]
+            dataseries.append(val)
+        dtIndex = dtIndex - 1
+
+    return list(reversed(dataseries))
 
 def numpy_to_highchartds(datetimes, data, startdate, enddate):
     dataseries = []
@@ -1050,6 +1067,28 @@ def compute_EMA(instrument, startdate, enddate ):
 
     dateTimes = feedLookbackEndAdj.getDateTimes(instrument + "_adjusted")
     emaDS = numpy_to_highchartds(dateTimes, ema_10, startdate, enddate)
+
+    #dmiplus = indicator.PLUS_DI(feedLookbackEndAdj.getBarSeries(instrument + "_adjusted"), len(feedLookbackEndAdj.getBarSeries(instrument + "_adjusted")), 14)
+    dmiplus = indicator.PLUS_DI(feedLookbackEndAdj.getBarSeries(instrument + "_adjusted"), 28, 14)
+    dmiplusDS = numpy_to_highchartdsWithDates(dateTimes, dmiplus, startdate, enddate)
+
+    dmiminus = indicator.MINUS_DI(feedLookbackEndAdj.getBarSeries(instrument + "_adjusted"), len(feedLookbackEndAdj.getBarSeries(instrument + "_adjusted")), 14)
+    dmiminusDS = numpy_to_highchartds(dateTimes, dmiminus, startdate, enddate)
+
+    adx = indicator.ADX(feedLookbackEndAdj.getBarSeries(instrument + "_adjusted"), len(feedLookbackEndAdj.getBarSeries(instrument + "_adjusted")), 14)
+    adxDS = numpy_to_highchartds(dateTimes, adx, startdate, enddate)
+
+    macd = indicator.MACD(closeDS, len(closeDS), 26, 12, 9)
+    #macdDS = numpy_to_highchartds(dateTimes, macd, startdate, enddate)
+
+    sar = indicator.SAR(feedLookbackEndAdj.getBarSeries(instrument + "_adjusted"), len(feedLookbackEndAdj.getBarSeries(instrument + "_adjusted")), consts.SAR_AF, consts.SAR_MAXAF)
+    sarDS = numpy_to_highchartdsWithDates(dateTimes, sar, startdate, enddate)
+
+    rsi = indicator.RSI(closeDS, len(closeDS), consts.RSI_SETTING)
+    rsiDS = numpy_to_highchartds(dateTimes, rsi, startdate, enddate)
+
+    priceTrend = indicator.HT_TRENDLINE(closeDS, len(closeDS))
+    volumeTrend = indicator.HT_TRENDLINE(feedLookbackEndAdj.getVolumeDataSeries(instrument + "_adjusted"), len(feedLookbackEndAdj.getVolumeDataSeries(instrument + "_adjusted")))
     
     ##########Display price seriesin the center of Bolinger bands......##################
     barDS = feedLookbackEndAdj.getBarSeries(instrument + "_adjusted")
@@ -1062,7 +1101,7 @@ def compute_EMA(instrument, startdate, enddate ):
                         bar.getLow(), bar.getClose()]
         adj_Close_Series.append(adjPrice_val)
 
-    return emaDS, adj_Close_Series
+    return emaDS, adj_Close_Series, dmiplusDS, dmiminusDS, adxDS, macd, sarDS, rsiDS, priceTrend, volumeTrend
 
 
 def computeIndicators(instrument, indicator, startdate, enddate ):
@@ -1198,6 +1237,8 @@ def run_master_strategy(initialcash, masterFile, startdate, enddate, filterActio
         ordersFile = Orders_exec.OrdersFile(masterFile, filterAction, rank, fakecsv=True)
     else:
         filePath = os.path.join(os.path.dirname(__file__), masterFile)
+        print "===================================: ", filePath, filterAction, rank
+        print "======================================================"
         ordersFile = Orders_exec.OrdersFile(filePath, filterAction, rank)
     #startdate = datetime.datetime.fromtimestamp(ordersFile.getFirstDate()) - datetime.timedelta(days=1)
     #enddate = datetime.datetime.fromtimestamp(ordersFile.getLastDate()) +  datetime.timedelta(days=1)
